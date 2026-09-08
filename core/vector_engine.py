@@ -3,6 +3,9 @@ import re
 from typing import Dict, List, Tuple, Any, Optional
 
 
+import zlib
+
+
 class VectorSearchEngine:
     """
     Lightweight Semantic Vector Engine.
@@ -17,8 +20,8 @@ class VectorSearchEngine:
     @staticmethod
     def _hash_token(token: str, dim: int) -> Tuple[int, float]:
         """Maps a token to a consistent vector dimension and directional sign."""
-        h = hash(token)
-        idx = abs(h) % dim
+        h = zlib.crc32(token.encode("utf-8"))
+        idx = h % dim
         sign = 1.0 if (h % 2 == 0) else -1.0
         return idx, sign
 

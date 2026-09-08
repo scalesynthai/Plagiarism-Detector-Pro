@@ -729,14 +729,14 @@ function renderStudentCoach(data) {
     const overallBadge = document.getElementById('coach-overall-badge');
     const totalIssues = claims.length + toneSuggestions.length;
     if (overallBadge) {
+        overallBadge.style.background = '';
+        overallBadge.style.color = '';
         if (totalIssues === 0 && (thesis.score || 0) >= 70) {
+            overallBadge.className = 'badge-pill success';
             overallBadge.textContent = '🌟 Stellar Scholarly Writing';
-            overallBadge.style.background = 'rgba(16,185,129,0.2)';
-            overallBadge.style.color = '#34d399';
         } else {
+            overallBadge.className = 'badge-pill warning';
             overallBadge.textContent = `${claims.length} Citation Check(s) • ${toneSuggestions.length} Tone Boost(s)`;
-            overallBadge.style.background = 'rgba(245,158,11,0.2)';
-            overallBadge.style.color = '#fbbf24';
         }
     }
 
@@ -810,7 +810,13 @@ function renderStudentCoach(data) {
     const thesisScoreBadge = document.getElementById('coach-thesis-score-badge');
     const thesisContent = document.getElementById('coach-thesis-content');
     if (thesisScoreBadge) {
-        thesisScoreBadge.textContent = `Score: ${thesis.score || 0}/100`;
+        const score = thesis.score || 0;
+        thesisScoreBadge.textContent = `Score: ${score}/100`;
+        thesisScoreBadge.style.background = '';
+        thesisScoreBadge.style.color = '';
+        if (score >= 70) thesisScoreBadge.className = 'badge-pill success';
+        else if (score >= 40) thesisScoreBadge.className = 'badge-pill warning';
+        else thesisScoreBadge.className = 'badge-pill danger';
     }
     if (thesisContent) {
         thesisContent.innerHTML = `
