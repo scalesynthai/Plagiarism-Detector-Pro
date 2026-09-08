@@ -1498,6 +1498,44 @@ textarea:focus, input:focus, select:focus {
 }
 
 /* ==============================================================================
+   TOAST NOTIFICATIONS & HIGHLIGHT EFFECTS
+   ============================================================================== */
+.clay-toast {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    background: var(--ink);
+    color: var(--on-primary);
+    padding: 12px 20px;
+    border-radius: var(--rounded-md);
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: var(--shadow-float);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: toastSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    max-width: 440px;
+}
+
+@keyframes toastSlideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulseHighlight {
+    0% { box-shadow: 0 0 0 3px var(--primary); background-color: var(--surface-card); }
+    50% { box-shadow: 0 0 0 5px var(--brand-mint); background-color: rgba(164, 212, 197, 0.25); }
+    100% { box-shadow: none; }
+}
+
+.pulse-highlight {
+    animation: pulseHighlight 1.5s ease-out;
+    border-radius: var(--rounded-md);
+}
+
+/* ==============================================================================
    FOOTER (Clay Warm Cream Footer)
    ============================================================================== */
 .footer-container {

@@ -201,6 +201,9 @@ Achiam, J., Adler, S., Agarwal, S., Ahmad, L., Akkaya, I., Aleman, F. L., ... & 
 
     // 11. Initial load of institutional corpus
     loadSourcesList();
+
+    // 12. Footer links & Integrity Standards actions
+    setupFooterLinks();
 });
 
 /* ==============================================================================
@@ -1553,3 +1556,125 @@ function escapeHtml(str) {
         '"': '&quot;'
     }[tag] || tag));
 }
+
+/* ==============================================================================
+   FOOTER ACTIONS & INTEGRITY STANDARDS QUICK-JUMPS
+   ============================================================================== */
+function switchTab(tabId) {
+    const targetBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+    if (targetBtn) {
+        targetBtn.click();
+        targetBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+}
+
+function setupFooterLinks() {
+    // 1. Core Modules links
+    document.querySelectorAll('.footer-action-link[data-tab]').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const tabId = link.getAttribute('data-tab');
+            switchTab(tabId);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    });
+
+    // 2. Integrity Standards links
+    document.querySelectorAll('.footer-action-link[data-action]').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const action = link.getAttribute('data-action');
+            handleIntegrityAction(action);
+        });
+    });
+}
+
+function handleIntegrityAction(action) {
+    switch (action) {
+        case 'integrity-draft-shield': {
+            switchTab('tab-text');
+            const toggle = document.getElementById('text-private-draft');
+            if (toggle) {
+                toggle.checked = true;
+                const container = toggle.closest('.switch-label') || toggle.parentElement;
+                container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                container.classList.remove('pulse-highlight');
+                void container.offsetWidth;
+                container.classList.add('pulse-highlight');
+                showClayToast('🛡️ Private Draft Shield Active: Zero database retention guaranteed.');
+            }
+            break;
+        }
+        case 'integrity-double-blind': {
+            const phdCard = document.getElementById('phd-auditor-card');
+            const resultsSec = document.getElementById('results-section');
+            if (resultsSec && resultsSec.style.display !== 'none' && phdCard) {
+                phdCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                phdCard.classList.remove('pulse-highlight');
+                void phdCard.offsetWidth;
+                phdCard.classList.add('pulse-highlight');
+            } else {
+                switchTab('tab-text');
+                showClayToast('🔬 PhD Conference Auditor: Evaluates double-blind anonymity & LaTeX isolation on scan.');
+            }
+            break;
+        }
+        case 'integrity-student-coach': {
+            const coachCard = document.getElementById('student-coach-card');
+            const resultsSec = document.getElementById('results-section');
+            if (resultsSec && resultsSec.style.display !== 'none' && coachCard) {
+                coachCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                coachCard.classList.remove('pulse-highlight');
+                void coachCard.offsetWidth;
+                coachCard.classList.add('pulse-highlight');
+            } else {
+                switchTab('tab-text');
+                showClayToast('🧑‍🎓 Student Integrity Coach: Evaluates thesis strength, claims, and scholarly tone.');
+            }
+            break;
+        }
+        case 'integrity-authorship-cert': {
+            const certModal = document.getElementById('cert-modal');
+            const openCertBtn = document.getElementById('download-cert-btn');
+            if (openCertBtn && openCertBtn.offsetParent !== null) {
+                openCertBtn.click();
+            } else if (certModal) {
+                certModal.classList.add('active');
+                const studentNameInput = document.getElementById('cert-student-name');
+                if (studentNameInput) setTimeout(() => studentNameInput.focus(), 50);
+            }
+            break;
+        }
+        case 'integrity-openalex-arxiv': {
+            switchTab('tab-cite');
+            const input = document.getElementById('cite-query-input');
+            if (input) {
+                input.focus();
+                input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                input.classList.remove('pulse-highlight');
+                void input.offsetWidth;
+                input.classList.add('pulse-highlight');
+                showClayToast('📚 OpenAlex & arXiv: Paste a DOI or arXiv ID to auto-generate ready citations.');
+            }
+            break;
+        }
+    }
+}
+
+function showClayToast(message, duration = 3500) {
+    const existing = document.querySelector('.clay-toast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.className = 'clay-toast';
+    toast.innerHTML = `<span>${message}</span>`;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+        toast.style.transition = 'all 0.25s ease';
+        setTimeout(() => toast.remove(), 250);
+    }, duration);
+}
+
