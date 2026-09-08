@@ -172,4 +172,5 @@ class AcademicStudentCoach:
             "has_method": has_method,
             "has_significance": has_significance,
             "feedback": feedback if feedback else ["Opening paragraph possesses clear thesis framing and methodology context."],
+            "disclaimer": "This analysis and thesis diagnostic are provided for advisory and developmental validation purposes only. Final integrity evaluations and academic assessments are determined by institutional honor codes, university guidelines, and faculty review.",
         }

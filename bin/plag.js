@@ -76,6 +76,16 @@ function getOption(flag) {
     return idx !== -1 ? args[idx + 1] : null;
 }
 
+function printDisclaimer() {
+    console.log(`${colors.gray}--------------------------------------------------------------------------------${colors.reset}`);
+    console.log(`${colors.gray}⚖️  ACADEMIC ADVISORY DISCLAIMER:${colors.reset}`);
+    console.log(`${colors.gray}This originality assessment and thesis diagnostic are provided for advisory and${colors.reset}`);
+    console.log(`${colors.gray}formative validation purposes only. Institutional integrity evaluations, final${colors.reset}`);
+    console.log(`${colors.gray}grades, and official approvals are governed strictly by your university's honor${colors.reset}`);
+    console.log(`${colors.gray}code, academic syllabus, and faculty review.${colors.reset}`);
+    console.log(`${colors.gray}--------------------------------------------------------------------------------${colors.reset}\n`);
+}
+
 async function main() {
     const isJson = args.includes("--json");
     const isVerbose = args.includes("--verbose");
@@ -108,23 +118,22 @@ async function main() {
                 text = DocumentExtractor.extractFromFile(input);
             }
 
-            if (!isJson) {
-                printBanner();
-                console.log(`${colors.cyan}🔍 Scanning originality, AI content, and academic metrics...${colors.reset}\n`);
+            if (isJson) {
+                const res = await scan(text);
+                console.log(JSON.stringify(res, null, 2));
+                return;
             }
+
+            printBanner();
+            console.log(`🔍 Scanning originality, AI content, and academic metrics...\n`);
 
             try {
                 const res = await scan(text, {
                     excludeQuotes: args.includes("--exclude-quotes")
                 });
 
-                if (isJson) {
-                    console.log(JSON.stringify(res, null, 2));
-                    return;
-                }
-
-                const riskColor = res.safeassign_risk === "Low Risk" ? colors.green : (res.safeassign_risk === "Medium Risk" ? colors.yellow : colors.red);
-                const aiColor = (res.ai_analysis && res.ai_analysis.ai_probability > 65) ? colors.red : colors.green;
+                const riskColor = res.overall_similarity > 25 ? colors.red : res.overall_similarity > 15 ? colors.yellow : colors.green;
+                const aiColor = res.ai_analysis && res.ai_analysis.ai_probability > 40 ? colors.magenta : colors.green;
 
                 console.log(`${colors.bold}📊 ORIGINALITY & SAFEASSIGN METRICS:${colors.reset}`);
                 console.log(`  • Plagiarism Similarity:  ${riskColor}${res.overall_similarity}% (${res.safeassign_risk})${colors.reset}`);
@@ -167,6 +176,7 @@ async function main() {
                     });
                 }
                 console.log("");
+                printDisclaimer();
             } catch (err) {
                 console.error(`${colors.red}Scan Error: ${err.message}${colors.reset}`);
                 process.exit(1);
@@ -210,6 +220,7 @@ async function main() {
                 console.log(`  [${idx + 1}] Replace ${colors.red}'${t.matched_term}'${colors.reset} with: ${colors.green}${t.scholarly_replacements.join(", ")}${colors.reset}`);
             });
             console.log("");
+            printDisclaimer();
             break;
         }
 

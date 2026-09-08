@@ -96,3 +96,10 @@ plag cite 10.1038/s41586-020-2649-2
 # Format messy references
 plag alphabetize my_bibliography.txt
 ```
+
+---
+
+## ⚖️ Institutional Academic Advisory & Disclaimer
+
+This skill and its associated tools are designed for **pre-submission validation and academic coaching**. Final academic integrity determinations and evaluations are governed exclusively by your educational institution's honor code and instructor review.
+

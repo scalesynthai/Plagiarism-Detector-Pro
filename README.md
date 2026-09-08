@@ -246,6 +246,15 @@ make test
 
 ---
 
+## ⚖️ Institutional Academic Advisory & Disclaimer
+
+> [!IMPORTANT]
+> **Advisory & Formative Validation Purpose**: The originality metrics, AI content detection probabilities, thesis strength scores, and writing coach diagnostics provided by Plagiarism Detector Pro (CLI, Web Application, and MCP Integration) are designed strictly for **pre-submission validation, developmental self-review, and academic coaching**.
+> 
+> Official academic integrity determinations, final course grades, and institutional submission clearances are governed exclusively by your university's specific **Honor Code, academic policies, course syllabus, and faculty review**. No automated scoring tool constitutes a final institutional endorsement.
+
+---
+
 ## 🤝 Contributing & Security
 
 Contributions are warmly welcomed! Please read our [**Contributing Guide**](CONTRIBUTING.md) and [**Code of Conduct**](CODE_OF_CONDUCT.md) before submitting pull requests.
@@ -263,3 +272,4 @@ This project is open-source software licensed under the [**MIT License**](LICENS
 <div align="center">
   <sub>Engineered by <a href="https://github.com/ScaleSynthAI">ScaleSynthAI</a> • Maintained for Scholars, Students, and Researchers Worldwide.</sub>
 </div>
+
