@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plagiarism Detector Pro - Student & Enterprise AI Suite</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-wrapper">
+        <!-- Brand Header with Theme Switcher -->
+        <header class="brand-header">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 8px;">
+                <div class="brand-badge">🎓 Student-Safe & Enterprise Academic Originality Suite</div>
+                <div class="theme-toggle-container">
+                    <button id="theme-toggle-btn" class="theme-btn" title="Toggle Light/Dark Academic Theme">
+                        <span id="theme-icon">☀️</span> <span id="theme-text">Paper Mode</span>
+                    </button>
+                </div>
+            </div>
+            <h1 class="brand-title">Plagiarism Detector Pro</h1>
+            <p class="brand-subtitle">
+                Academic originality verification with dual Plagiarism & AI-content scoring, Private Draft Shield, citation coaching, and student honor certificates.
+            </p>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="tabs-nav">
+            <button class="tab-btn active" data-tab="tab-text">
+                ✍️ Direct Text
+            </button>
+            <button class="tab-btn" data-tab="tab-file">
+                📁 Upload Document (.docx, .pdf, .tex)
+            </button>
+            <button class="tab-btn" data-tab="tab-compare">
+                📑 Compare Drafts (v1 vs v2)
+            </button>
+            <button class="tab-btn" data-tab="tab-cite">
+                📚 Citation & BibTeX
+            </button>
+            <button class="tab-btn" data-tab="tab-batch">
+                📦 Batch Class (.zip)
+            </button>
+            <button class="tab-btn" data-tab="tab-sources">
+                🏛️ Institutional Corpus (<span id="nav-sources-count">{{ sources_count }}</span>)
+            </button>
+        </nav>
+
+        <!-- Tab 1: Text Input with Productivity Toolbar & Live Stats -->
+        <div id="tab-text" class="tab-panel active">
+            <div class="glass-card">
+                <!-- Academic Sample Presets & Quick Actions -->
+                <div class="editor-toolbar">
+                    <div class="preset-group">
+                        <span class="toolbar-label">⚡ Load Academic Presets:</span>
+                        <button type="button" class="preset-btn" data-preset="ai">🧠 Deep Learning Paper</button>
+                        <button type="button" class="preset-btn" data-preset="diamond">💎 Diamond Statistics Study</button>
+                        <button type="button" class="preset-btn" data-preset="crispr">🧬 CRISPR Biotechnology</button>
+                    </div>
+                    <div class="toolbar-actions">
+                        <button type="button" id="btn-paste-clipboard" class="toolbar-action-btn" title="Paste clipboard text">📋 Paste</button>
+                        <button type="button" id="btn-clear-text" class="toolbar-action-btn" title="Clear text editor">🧹 Clear</button>
+                    </div>
+                </div>
+
+                <form id="text-scan-form">
+                    <div class="form-group">
+                        <label for="query-text" style="display: flex; justify-content: space-between; align-items: center;">
+                            <span>Input Academic Text or Research Excerpt</span>
+                            <span class="hotkey-tip">Tip: Press <strong>Cmd/Ctrl + Enter</strong> to scan</span>
+                        </label>
+                        <textarea id="query-text" name="query" placeholder="Type or paste student submission, essay, LaTeX, or research excerpt here..." autofocus>{{ query_text or '' }}</textarea>
+                    </div>
+
+                    <!-- Live Real-Time Manuscript Metrics Bar -->
+                    <div class="live-stats-bar">
+                        <div class="stat-pill"><span id="live-words">0</span> Words</div>
+                        <div class="stat-pill"><span id="live-chars">0</span> Characters</div>
+                        <div class="stat-pill"><span id="live-sentences">0</span> Sentences</div>
+                        <div class="stat-pill"><span id="live-paragraphs">0</span> Paragraphs</div>
+                        <div class="stat-pill"><span id="live-reading-time">~0 min</span> Read Time</div>
+                        <div class="stat-pill highlight"><span id="live-readability">College Level</span></div>
+                    </div>
+
+                    <!-- Assignment Word-Budget & Target Tracker -->
+                    <div class="word-budget-tracker" id="word-budget-container">
+                        <div class="budget-header">
+                            <div class="budget-title">
+                                <span>🎯 <strong>Assignment Word-Budget Tracker</strong></span>
+                                <span id="budget-status-pill" class="budget-status-pill on-track">0% of target</span>
+                            </div>
+                            <div class="budget-target-controls">
+                                <label for="budget-target-select" style="font-size: 12px; margin: 0; color: var(--text-secondary);">Target:</label>
+                                <select id="budget-target-select" class="budget-select">
+                                    <option value="500">500 words (Short Essay)</option>
+                                    <option value="1000" selected>1,000 words (Standard Paper)</option>
+                                    <option value="1500">1,500 words (Term Paper)</option>
+                                    <option value="2000">2,000 words (Research Paper)</option>
+                                    <option value="3000">3,000 words (Advanced Seminar)</option>
+                                    <option value="5000">5,000 words (Thesis Draft)</option>
+                                    <option value="custom">Custom Target...</option>
+                                </select>
+                                <input type="number" id="budget-custom-input" class="budget-custom-input" placeholder="e.g. 1200" style="display: none;" min="50" max="50000">
+                            </div>
+                        </div>
+                        <div class="budget-progress-track">
+                            <div id="budget-progress-fill" class="budget-progress-fill" style="width: 0%;"></div>
+                        </div>
+                        <div class="budget-metrics-subtext">
+                            <span id="budget-words-count">0 / 1,000 words written</span>
+                            <span id="budget-words-remaining">1,000 words needed</span>
+                        </div>
+                    </div>
+
+                    <div class="toggle-container">
+                        <label class="switch-label" style="margin-bottom: 8px;">
+                            <input type="checkbox" id="text-private-draft" checked>
+                            <span class="toggle-text">🛡️ <strong>Student Private Draft Shield</strong> (Guarantees zero database storage — safe against future Canvas/Turnitin self-plagiarism flags)</span>
+                        </label>
+                        <label class="switch-label" style="margin-bottom: 8px;">
+                            <input type="checkbox" id="text-live-search" checked>
+                            <span class="toggle-text">🌐 <strong>Real-Time Global Database Search</strong> (Wikipedia, arXiv, OpenAlex, CrossRef, Web)</span>
+                        </label>
+                        <label class="switch-label">
+                            <input type="checkbox" id="text-exclude-quotes">
+                            <span class="toggle-text">💬 <strong>Exclude Quotations & Verified Citations</strong></span>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn-primary" data-original-text="Run Dual Plagiarism & AI Scan">
+                        <span>🔍 Run Dual Plagiarism & AI Scan</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Tab 2: Document Upload -->
+        <div id="tab-file" class="tab-panel">
+            <div class="glass-card">
+                <form id="file-scan-form">
+                    <label>Select or Drag & Drop Academic Document</label>
+                    <div class="dropzone" id="scan-dropzone">
+                        <span class="dropzone-icon">📄</span>
+                        <div class="dropzone-title">Drag & drop your document here, or click to browse</div>
+                        <div class="dropzone-desc">Supports Word (.docx), Adobe PDF (.pdf), LaTeX (.tex), Jupyter (.ipynb), and Markdown (.md)</div>
+                        <div class="format-pills">
+                            <span class="pill">.DOCX</span>
+                            <span class="pill">.PDF</span>
+                            <span class="pill">.TEX</span>
+                            <span class="pill">.IPYNB</span>
+                            <span class="pill">.TXT</span>
+                            <span class="pill">.MD</span>
+                        </div>
+                        <input type="file" id="file-input" name="file" accept=".docx,.pdf,.tex,.ipynb,.txt,.md,.rtf,.csv" style="display: none;">
+                    </div>
+
+                    <div id="scan-file-preview" class="file-preview">
+                        <div class="file-info">
+                            <span>📄</span>
+                            <div>
+                                <div id="scan-file-name" style="font-weight: 600;">document.docx</div>
+                                <div id="scan-file-size" style="font-size: 12px; color: var(--text-muted);">0 KB</div>
+                            </div>
+                        </div>
+                        <button type="button" id="scan-remove-file" class="remove-file-btn" title="Remove file">✕</button>
+                    </div>
+
+                    <div class="toggle-container">
+                        <label class="switch-label" style="margin-bottom: 8px;">
+                            <input type="checkbox" id="file-private-draft" checked>
+                            <span class="toggle-text">🛡️ <strong>Student Private Draft Shield</strong> (Never stored into institutional database)</span>
+                        </label>
+                        <label class="switch-label" style="margin-bottom: 8px;">
+                            <input type="checkbox" id="file-live-search" checked>
+                            <span class="toggle-text">🌐 <strong>Real-Time Global Database Search</strong> (Wikipedia, arXiv, OpenAlex, CrossRef, Web)</span>
+                        </label>
+                        <label class="switch-label">
+                            <input type="checkbox" id="file-exclude-quotes">
+                            <span class="toggle-text">💬 <strong>Exclude Quotations & Verified Citations</strong></span>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn-primary" data-original-text="Upload & Scan Document">
+                        <span>🚀 Upload & Scan Document</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Tab 3: Draft v1 vs Draft v2 Revision Comparator -->
+        <div id="tab-compare" class="tab-panel">
+            <div class="glass-card">
+                <h3 class="section-title">📑 Draft-to-Draft Revision Comparator</h3>
+                <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 16px;">
+                    Compare your <strong>Draft v1</strong> against your <strong>Revised Draft v2</strong>. Accurately tracks newly added content, modified phrasing, deleted paragraphs, and revision percentages before advisor submission.
+                </p>
+
+                <form id="compare-drafts-form">
+                    <div class="draft-compare-grid">
+                        <div class="draft-column">
+                            <label for="draft-v1-text"><strong>Draft 1 (Original Version)</strong></label>
+                            <textarea id="draft-v1-text" placeholder="Paste your previous draft here..." style="min-height: 200px;"></textarea>
+                        </div>
+                        <div class="draft-column">
+                            <label for="draft-v2-text"><strong>Draft 2 (Revised Version)</strong></label>
+                            <textarea id="draft-v2-text" placeholder="Paste your revised manuscript here..." style="min-height: 200px;"></textarea>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-primary" style="margin-top: 16px; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">
+                        <span>⚡ Compare Draft Revision Deltas</span>
+                    </button>
+                </form>
+
+                <!-- Comparison Output -->
+                <div id="compare-results-container" style="display: none; margin-top: 24px;">
+                    <hr style="border: none; border-top: 1px solid var(--card-border); margin: 20px 0;">
+                    <h3 class="section-title">📊 Revision Delta Analysis</h3>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div id="cmp-similarity" class="stat-val" style="color: #38bdf8;">0%</div>
+                            <div class="stat-lbl">Draft Continuity</div>
+                        </div>
+                        <div class="stat-card">
+                            <div id="cmp-revision" class="stat-val" style="color: #34d399;">0%</div>
+                            <div class="stat-lbl">New Content Added</div>
+                        </div>
+                        <div class="stat-card">
+                            <div id="cmp-words-delta" class="stat-val">+0</div>
+                            <div class="stat-lbl">Word Count Delta</div>
+                        </div>
+                        <div class="stat-card">
+                            <div id="cmp-modified-count" class="stat-val" style="color: #fbbf24;">0</div>
+                            <div class="stat-lbl">Modified Blocks</div>
+                        </div>
+                    </div>
+
+                    <div id="cmp-details-container" style="margin-top: 16px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 4: 1-Click DOI & arXiv Citation / BibTeX Generator -->
+        <div id="tab-cite" class="tab-panel">
+            <div class="glass-card">
+                <h3 class="section-title">📚 Instant DOI, arXiv & Scientific Citation Generator</h3>
+                <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 16px;">
+                    Paste any <strong>DOI</strong> (e.g. <code>10.1145/3318464.3389700</code>), <strong>arXiv ID / URL</strong> (e.g. <code>2304.12345</code>), or <strong>Paper Title</strong> to auto-generate ready-to-copy BibTeX, APA 7th, MLA 9th, IEEE, and Chicago citations.
+                </p>
+
+                <form id="cite-generator-form">
+                    <div class="form-group" style="display: flex; gap: 10px;">
+                        <input type="text" id="cite-query-input" placeholder="e.g., 10.1038/s41586-020-2649-2 or 1706.03762 or Attention Is All You Need" style="flex: 1; padding: 12px 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); border-radius: 8px; color: white; font-size: 14px;">
+                        <button type="submit" class="btn-primary" style="width: auto; padding: 0 24px;">
+                            <span>🔍 Generate Citations</span>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Citation Outputs -->
+                <div id="cite-results-container" style="display: none; margin-top: 24px;">
+                    <div id="cite-paper-header" style="background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                        <h4 id="cite-res-title" style="margin: 0 0 6px 0; color: #60a5fa; font-size: 16px;">Paper Title</h4>
+                        <div id="cite-res-authors" style="font-size: 13px; color: var(--text-secondary);">Authors</div>
+                        <div id="cite-res-meta" style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Journal & Year</div>
+                    </div>
+
+                    <div class="citation-cards-grid">
+                        <div class="citation-card">
+                            <div class="citation-header">
+                                <strong>BibTeX (@article)</strong>
+                                <button class="btn-copy-cite" data-target="cite-val-bibtex">📋 Copy BibTeX</button>
+                            </div>
+                            <pre id="cite-val-bibtex" class="citation-box-mono">...</pre>
+                        </div>
+
+                        <div class="citation-card">
+                            <div class="citation-header">
+                                <strong>APA 7th Edition</strong>
+                                <button class="btn-copy-cite" data-target="cite-val-apa">📋 Copy APA</button>
+                            </div>
+                            <div id="cite-val-apa" class="citation-box">...</div>
+                        </div>
+
+                        <div class="citation-card">
+                            <div class="citation-header">
+                                <strong>MLA 9th Edition</strong>
+                                <button class="btn-copy-cite" data-target="cite-val-mla">📋 Copy MLA</button>
+                            </div>
+                            <div id="cite-val-mla" class="citation-box">...</div>
+                        </div>
+
+                        <div class="citation-card">
+                            <div class="citation-header">
+                                <strong>IEEE Format</strong>
+                                <button class="btn-copy-cite" data-target="cite-val-ieee">📋 Copy IEEE</button>
+                            </div>
+                            <div id="cite-val-ieee" class="citation-box">...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr style="border: none; border-top: 1px solid var(--card-border); margin: 28px 0;">
+
+                <!-- Bibliography Alphabetizer & Clean Formatter Tool -->
+                <div>
+                    <h3 class="section-title">🔤 Reference List Alphabetizer & Formatter</h3>
+                    <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 14px;">
+                        Paste your unorganized bibliography or list of references below. This tool will auto-sort them alphabetically by primary author, validate publication years, check for DOIs, and format clean hanging-indents.
+                    </p>
+
+                    <form id="alphabetize-references-form">
+                        <div class="form-group">
+                            <textarea id="raw-references-input" placeholder="Paste your reference list here (one citation per paragraph/entry)...
+Example:
+Vaswani, A. et al. (2017). Attention is all you need. NeurIPS.
+Devlin, J. et al. (2018). BERT: Pre-training of deep bidirectional transformers.
+Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165." style="min-height: 140px;"></textarea>
+                        </div>
+
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <button type="submit" class="btn-primary" style="width: auto; padding: 10px 20px; background: linear-gradient(135deg, #059669 0%, #047857 100%);">
+                                <span>🔤 Alphabetize & Format References</span>
+                            </button>
+                            <button type="button" id="btn-sample-references" class="btn-secondary" style="padding: 10px 14px; font-size: 13px;">
+                                💡 Load Sample References
+                            </button>
+                        </div>
+                    </form>
+
+                    <div id="alphabetize-results-container" style="display: none; margin-top: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                            <div style="font-size: 13px; font-weight: 600; color: #34d399;">
+                                ✅ <span id="alphabetized-count">0</span> References Sorted & Verified
+                            </div>
+                            <button id="btn-copy-alphabetized" class="btn-primary" style="padding: 6px 14px; font-size: 12px; width: auto; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                                📋 Copy Formatted Bibliography
+                            </button>
+                        </div>
+                        <div id="alphabetized-output-list" class="alphabetized-references-box">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 5: Batch Upload (.ZIP / Multiple Files) -->
+        <div id="tab-batch" class="tab-panel">
+            <div class="glass-card">
+                <h3 class="section-title">📦 Batch Assignment Processing (Class Gradebook)</h3>
+                <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 16px;">
+                    Upload a <strong>ZIP archive</strong> of student assignments or select multiple document files. The engine will scan all submissions concurrently.
+                </p>
+
+                <form id="batch-scan-form">
+                    <div class="dropzone" id="batch-dropzone">
+                        <span class="dropzone-icon">🗂️</span>
+                        <div class="dropzone-title">Upload .ZIP Archive or Select Multiple Files</div>
+                        <div class="dropzone-desc">Accepts .zip, .docx, .pdf, .txt, .tex, .ipynb</div>
+                        <input type="file" id="batch-file-input" name="files" multiple accept=".zip,.docx,.pdf,.txt,.tex,.ipynb,.md" style="display: none;">
+                    </div>
+
+                    <div id="batch-file-preview" class="file-preview">
+                        <div class="file-info">
+                            <span>📦</span>
+                            <div>
+                                <div id="batch-file-name" style="font-weight: 600;">class_submissions.zip</div>
+                                <div id="batch-file-size" style="font-size: 12px; color: var(--text-muted);">0 KB</div>
+                            </div>
+                        </div>
+                        <button type="button" id="batch-remove-file" class="remove-file-btn" title="Remove file">✕</button>
+                    </div>
+
+                    <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%);">
+                        <span>⚡ Process Class Batch Submissions</span>
+                    </button>
+                </form>
+
+                <!-- Batch Results Gradebook -->
+                <div id="batch-results-container" style="display: none; margin-top: 28px;">
+                    <hr style="border: none; border-top: 1px solid var(--card-border); margin: 24px 0;">
+                    <h3 class="section-title">📊 Aggregated Class Gradebook</h3>
+
+                    <div class="stats-grid" style="margin-bottom: 20px;">
+                        <div class="stat-card">
+                            <div id="batch-stat-total" class="stat-val">0</div>
+                            <div class="stat-lbl">Submissions</div>
+                        </div>
+                        <div class="stat-card">
+                            <div id="batch-stat-avg-plag" class="stat-val">0%</div>
+                            <div class="stat-lbl">Avg. Plagiarism</div>
+                        </div>
+                        <div class="stat-card">
+                            <div id="batch-stat-avg-ai" class="stat-val">0%</div>
+                            <div class="stat-lbl">Avg. AI Score</div>
+                        </div>
+                        <div class="stat-card">
+                            <div id="batch-stat-high-risk" class="stat-val" style="color: var(--danger);">0</div>
+                            <div class="stat-lbl">High Risk Papers</div>
+                        </div>
+                    </div>
+
+                    <table class="gradebook-table">
+                        <thead>
+                            <tr>
+                                <th>Student / Document</th>
+                                <th>Word Count</th>
+                                <th>Plagiarism Index</th>
+                                <th>AI Probability</th>
+                                <th>SafeAssign Risk</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="batch-gradebook-body">
+                            <!-- Populated dynamically via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 6: Institutional Corpus -->
+        <div id="tab-sources" class="tab-panel">
+            <div class="glass-card">
+                <h3 class="section-title">Add Document to Institutional Corpus</h3>
+                <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 16px;">
+                    Upload dissertations, textbooks, or course archives into your permanent institutional comparison database.
+                </p>
+
+                <form id="add-source-form">
+                    <div class="dropzone" id="source-dropzone">
+                        <span class="dropzone-icon">📥</span>
+                        <div class="dropzone-title">Upload source file to add to repository</div>
+                        <div class="dropzone-desc">Accepts .txt, .docx, .pdf, .tex, .ipynb, .md</div>
+                        <input type="file" id="source-file-input" accept=".docx,.pdf,.tex,.ipynb,.txt,.md,.rtf" style="display: none;">
+                    </div>
+
+                    <div id="source-file-preview" class="file-preview">
+                        <div class="file-info">
+                            <span>📄</span>
+                            <div>
+                                <div id="source-file-name" style="font-weight: 600;">thesis_sample.pdf</div>
+                                <div id="source-file-size" style="font-size: 12px; color: var(--text-muted);">0 KB</div>
+                            </div>
+                        </div>
+                        <button type="button" id="source-remove-file" class="remove-file-btn" title="Remove file">✕</button>
+                    </div>
+
+                    <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                        <span>➕ Add to Institutional Repository</span>
+                    </button>
+                </form>
+
+                <hr style="border: none; border-top: 1px solid var(--card-border); margin: 28px 0;">
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <h3 class="section-title" style="margin-bottom: 4px;">Active Institutional Repository Documents</h3>
+                        <p style="color: var(--text-secondary); font-size: 13px; margin: 0;">
+                            Permanent reference library for multi-dimensional plagiarism cross-matching. Deletion requires Admin PIN.
+                        </p>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <input type="text" id="sources-search-input" placeholder="🔍 Filter documents..." style="padding: 8px 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); border-radius: 8px; color: white; font-size: 13px; min-width: 220px;">
+                    </div>
+                </div>
+                <div id="sources-list-container" class="sources-list">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Single Analysis Report Dashboard -->
+        <section id="results-section" class="results-section" style="display: none;">
+            <div class="glass-card">
+                <!-- Header Actions -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px;">
+                    <h2 class="section-title" style="margin-bottom: 0;">📊 Academic Originality & AI Report</h2>
+                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <span id="scan-sources-meta" class="live-scan-badge">🌐 Global Academic & Web Scan</span>
+                        <button id="download-cert-btn" class="btn-primary" style="padding: 8px 14px; font-size: 13px; background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);">📜 Export Student Certificate</button>
+                        <button id="download-pdf-btn" class="btn-pdf">📄 Export Printable Report</button>
+                    </div>
+                </div>
+
+                <!-- Obfuscation Alert Banner -->
+                <div id="obfuscation-alert" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid var(--danger); border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; color: #fca5a5;">
+                    <div style="font-weight: 700; font-size: 14px; margin-bottom: 4px;">⚠️ Character Obfuscation Detected</div>
+                    <div id="obfuscation-desc" style="font-size: 13px;">...</div>
+                </div>
+
+                <!-- Student Pre-Submission Health Checklist -->
+                <div id="student-checklist-card" style="background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); border-radius: 10px; padding: 16px; margin-bottom: 24px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                        <span style="font-weight: 700; font-size: 14px; color: var(--text-primary);">🎓 Pre-Submission Integrity Checklist</span>
+                        <span id="checklist-overall-badge" class="pill" style="background: rgba(16,185,129,0.2); color: #34d399; font-weight: 600;">Ready for Canvas/Turnitin Submission</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                        <div id="chk-plag" style="background: rgba(0,0,0,0.2); padding: 10px 12px; border-radius: 6px; font-size: 13px; border-left: 3px solid var(--success);">
+                            <div style="font-weight: 600; color: var(--text-primary);" id="chk-plag-title">✅ Plagiarism: Safe (< 15%)</div>
+                            <div style="font-size: 11px; color: var(--text-muted);" id="chk-plag-desc">Minimal matching phrases</div>
+                        </div>
+                        <div id="chk-ai" style="background: rgba(0,0,0,0.2); padding: 10px 12px; border-radius: 6px; font-size: 13px; border-left: 3px solid var(--success);">
+                            <div style="font-weight: 600; color: var(--text-primary);" id="chk-ai-title">✅ AI Likelihood: Low</div>
+                            <div style="font-size: 11px; color: var(--text-muted);" id="chk-ai-desc">Organic human syntax variance</div>
+                        </div>
+                        <div id="chk-cite" style="background: rgba(0,0,0,0.2); padding: 10px 12px; border-radius: 6px; font-size: 13px; border-left: 3px solid var(--primary);">
+                            <div style="font-weight: 600; color: var(--text-primary);" id="chk-cite-title">📚 Citations: Verified</div>
+                            <div style="font-size: 11px; color: var(--text-muted);" id="chk-cite-desc">In-text citations detected</div>
+                        </div>
+                        <div id="chk-read" style="background: rgba(0,0,0,0.2); padding: 10px 12px; border-radius: 6px; font-size: 13px; border-left: 3px solid #6366f1;">
+                            <div style="font-weight: 600; color: var(--text-primary);" id="chk-read-title">📖 Readability: College Level</div>
+                            <div style="font-size: 11px; color: var(--text-muted);" id="chk-read-desc">Grade 11-12 Academic Standard</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PhD Research & Conference Double-Blind Auditor -->
+                <div id="phd-auditor-card" style="background: rgba(30, 58, 138, 0.15); border: 1px solid rgba(59, 130, 246, 0.35); border-radius: 10px; padding: 16px; margin-bottom: 24px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                        <span style="font-weight: 700; font-size: 14px; color: #93c5fd;">🔬 PhD & Conference Pre-Flight Auditor (NeurIPS / ICML / ICLR / IEEE)</span>
+                        <span id="phd-readiness-badge" class="pill" style="background: rgba(59, 130, 246, 0.25); color: #60a5fa; font-weight: 600;">100/100 • Conference Ready</span>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; margin-bottom: 8px;">
+                        <div style="background: rgba(0,0,0,0.25); padding: 12px; border-radius: 6px; font-size: 13px;">
+                            <div style="font-weight: 600; color: #e2e8f0;" id="phd-anon-status">🔒 Double-Blind Anonymity: Compliant</div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;" id="phd-anon-desc">Zero self-identifying prior citations or unblinded repository links found.</div>
+                        </div>
+                        <div style="background: rgba(0,0,0,0.25); padding: 12px; border-radius: 6px; font-size: 13px;">
+                            <div style="font-weight: 600; color: #e2e8f0;" id="phd-format-status">📐 LaTeX & Math Environment Isolation: Active</div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Formulas and algorithmic syntax protected from false similarity flags.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Student Academic Writing & Integrity Coach Card -->
+                <div id="student-coach-card" class="student-coach-card" style="margin-bottom: 24px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 20px;">🧑‍🎓</span>
+                            <div>
+                                <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text-primary);">Student Academic Writing & Integrity Coach</h3>
+                                <div style="font-size: 12px; color: var(--text-secondary);">Automated claim citation verification, tone enhancement, and thesis strength evaluation</div>
+                            </div>
+                        </div>
+                        <span id="coach-overall-badge" class="pill" style="background: rgba(16,185,129,0.15); color: #34d399; font-weight: 600;">Well-Supported Writing</span>
+                    </div>
+
+                    <div class="coach-grid">
+                        <!-- Card 1: Unsupported Claims -->
+                        <div class="coach-subcard">
+                            <div class="coach-subcard-header">
+                                <div>
+                                    <h4 style="margin: 0; font-size: 13px; font-weight: 700; color: #f59e0b;">🔍 Unsupported Claims & Missing Citations</h4>
+                                    <div style="font-size: 11px; color: var(--text-muted);">Empirical/statistical statements lacking parenthetical citation</div>
+                                </div>
+                                <span id="coach-claims-count-badge" class="pill" style="background: rgba(245,158,11,0.2); color: #f59e0b; font-size: 11px;">0 Claims</span>
+                            </div>
+                            <div id="coach-claims-list" class="coach-list-container">
+                                <div style="font-size: 12px; color: var(--text-muted); font-style: italic;">All empirical statements have accompanying citations or no unsupported claims found.</div>
+                            </div>
+                        </div>
+
+                        <!-- Card 2: Scholarly Tone Booster -->
+                        <div class="coach-subcard">
+                            <div class="coach-subcard-header">
+                                <div>
+                                    <h4 style="margin: 0; font-size: 13px; font-weight: 700; color: #60a5fa;">✍️ Scholarly Tone & Vocabulary Booster</h4>
+                                    <div style="font-size: 11px; color: var(--text-muted);">Upgrade informal expressions to rigorous academic prose</div>
+                                </div>
+                                <span id="coach-tone-count-badge" class="pill" style="background: rgba(59,130,246,0.2); color: #60a5fa; font-size: 11px;">0 Suggestions</span>
+                            </div>
+                            <div id="coach-tone-list" class="coach-list-container">
+                                <div style="font-size: 12px; color: var(--text-muted); font-style: italic;">Strong formal tone detected throughout manuscript.</div>
+                            </div>
+                        </div>
+
+                        <!-- Card 3: Thesis & Scientific Abstract Strength -->
+                        <div class="coach-subcard">
+                            <div class="coach-subcard-header">
+                                <div>
+                                    <h4 style="margin: 0; font-size: 13px; font-weight: 700; color: #a78bfa;">🎯 Thesis & Abstract Strength</h4>
+                                    <div style="font-size: 11px; color: var(--text-muted);">Scientific argument completeness & structure</div>
+                                </div>
+                                <span id="coach-thesis-score-badge" class="pill" style="background: rgba(167,139,250,0.2); color: #c084fc; font-size: 11px;">Score: --/100</span>
+                            </div>
+                            <div id="coach-thesis-content" class="coach-list-container">
+                                <div style="font-size: 12px; color: var(--text-muted);">Scan a document to evaluate thesis clarity, methodology, and significance.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dual Hero Score: Plagiarism + AI -->
+                <div class="result-hero">
+                    <div class="score-gauges">
+                        <div id="score-circle-plag" class="score-circle success">
+                            <div id="score-number-plag" class="score-number">0.0%</div>
+                            <div class="score-label">Plagiarism</div>
+                        </div>
+                        <div id="score-circle-ai" class="score-circle ai-purple">
+                            <div id="score-number-ai" class="score-number">0.0%</div>
+                            <div class="score-label">AI Content</div>
+                        </div>
+                    </div>
+
+                    <div class="verdict-info">
+                        <div id="verdict-badge" class="verdict-badge success">Low Risk</div>
+                        <div id="verdict-title" class="verdict-title">Original Academic Work</div>
+                        <div id="verdict-desc" class="verdict-desc">Content appears original with organic syntax.</div>
+                    </div>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div id="stat-total-words" class="stat-val">0</div>
+                        <div class="stat-lbl">Total Words</div>
+                    </div>
+                    <div class="stat-card">
+                        <div id="stat-flagged-words" class="stat-val">0</div>
+                        <div class="stat-lbl">Matching Words</div>
+                    </div>
+                    <div class="stat-card">
+                        <div id="stat-ai-burstiness" class="stat-val">0.0</div>
+                        <div class="stat-lbl">Burstiness Index</div>
+                    </div>
+                    <div class="stat-card">
+                        <div id="stat-citations-count" class="stat-val">0</div>
+                        <div class="stat-lbl">Citations Identified</div>
+                    </div>
+                    <div class="stat-card">
+                        <div id="stat-sources-searched" class="stat-val">0</div>
+                        <div class="stat-lbl">Databases Searched</div>
+                    </div>
+                </div>
+
+                <!-- Interactive Full-Text Manuscript Inspector -->
+                <div class="manuscript-inspector-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                        <div>
+                            <h3 class="section-title" style="margin-bottom: 2px;">🔍 Interactive Full-Text Manuscript Inspector</h3>
+                            <div style="font-size: 12px; color: var(--text-muted);">Click any sentence to inspect side-by-side diff matches, copy citations, and get 1-click paraphrase advice.</div>
+                        </div>
+                        <div class="inspector-legend">
+                            <span class="legend-tag orig">🟢 Original</span>
+                            <span class="legend-tag flag">🔴 Matched Passage</span>
+                            <span class="legend-tag cite">🔵 Cited Source</span>
+                            <span class="legend-tag ai">🟣 AI Likelihood</span>
+                        </div>
+                    </div>
+                    <div id="manuscript-viewer" class="manuscript-body-text">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                </div>
+
+                <!-- Sources Breakdown Table -->
+                <h3 class="section-title" style="margin-top: 28px;">📑 Academic & Global Database Source Breakdown</h3>
+                <table class="sources-table">
+                    <thead>
+                        <tr>
+                            <th>Matched Publication / Source</th>
+                            <th>Database Type</th>
+                            <th>Corpus Size</th>
+                            <th>Similarity Index</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sources-breakdown-body">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+
+                <!-- Highlighted Text -->
+                <h3 class="section-title" style="margin-top: 28px;">📝 Side-by-Side Sentence Inspection & Attribution</h3>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px;">
+                    Click any highlighted sentence to open the <strong>Side-by-Side Split Diff Comparison</strong>, auto-generate citations (APA/MLA/IEEE), and view paraphrase coaching tips.
+                </p>
+                <div id="highlighted-text" class="text-viewer">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Side-by-Side Diff Modal with 1-Click AI Paraphraser -->
+        <div id="diff-modal" class="diff-modal">
+            <div class="diff-box">
+                <div class="diff-header">
+                    <div>
+                        <h3 style="font-size: 18px; font-weight: 700;">Side-by-Side Source Comparison</h3>
+                        <span id="diff-modal-meta" style="font-size: 12px; color: var(--text-muted);">Match Confidence: 85%</span>
+                    </div>
+                    <button id="close-diff-modal" class="remove-file-btn" style="font-size: 24px;">✕</button>
+                </div>
+
+                <div class="diff-grid">
+                    <div class="diff-pane">
+                        <h4>Student Submission</h4>
+                        <div id="diff-student-text" class="diff-highlight">...</div>
+                    </div>
+                    <div class="diff-pane">
+                        <h4>Original Reference Source (<span id="diff-source-name">...</span>)</h4>
+                        <div id="diff-source-text" style="background: rgba(16, 185, 129, 0.15); border-left: 3px solid var(--success); padding: 8px; border-radius: 4px; color: #a7f3d0;">...</div>
+                        <div style="margin-top: 10px;">
+                            <a id="diff-source-link" href="#" target="_blank" rel="noopener noreferrer" style="color: var(--primary); font-size: 13px;">🔗 View Original Publication ↗</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 1-Click Paraphrase Suggester & Citation Injector -->
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); border-radius: 8px; padding: 14px; margin-top: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+                        <span style="font-weight: 700; font-size: 13px; color: var(--text-primary);">💡 Paraphrase & Attribution Coach</span>
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                            <button id="btn-trigger-paraphrase" class="btn-primary" style="padding: 4px 10px; font-size: 11px; background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%);">✨ AI Paraphrase Suggestions</button>
+                            <button id="btn-copy-apa" class="btn-pdf" style="padding: 4px 10px; font-size: 11px;">📋 Copy APA 7th</button>
+                            <button id="btn-copy-mla" class="btn-pdf" style="padding: 4px 10px; font-size: 11px;">📋 Copy MLA 9th</button>
+                            <button id="btn-copy-ieee" class="btn-pdf" style="padding: 4px 10px; font-size: 11px;">📋 Copy IEEE</button>
+                        </div>
+                    </div>
+                    <div id="diff-paraphrase-tip" style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; font-style: italic;">
+                        Synthesize the core finding in your own words and introduce with an attribution clause.
+                    </div>
+                    <div id="copy-citation-feedback" style="display: none; font-size: 12px; color: var(--success); margin-top: 6px; font-weight: 600;">
+                        ✓ Citation copied to clipboard!
+                    </div>
+
+                    <!-- Paraphrase Suggestions Box -->
+                    <div id="paraphrase-suggestions-box" style="display: none; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--card-border);">
+                        <div style="font-size: 12px; font-weight: 600; color: #c084fc; margin-bottom: 8px;">✨ Academic Synthesis Options:</div>
+                        <div id="paraphrase-items-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                    </div>
+                </div>
+
+                <div style="text-align: right; margin-top: 16px;">
+                    <button id="diff-modal-close-btn" class="btn-secondary">Close Comparison</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Student Certificate Input Modal -->
+        <div id="cert-modal" class="diff-modal">
+            <div class="diff-box" style="max-width: 500px;">
+                <div class="diff-header">
+                    <div>
+                        <h3 style="font-size: 18px; font-weight: 700;">📜 Export Student Authorship Certificate</h3>
+                        <span style="font-size: 12px; color: var(--text-muted);">Generate a verifiable academic honor certificate</span>
+                    </div>
+                    <button id="close-cert-modal" class="remove-file-btn" style="font-size: 24px;">✕</button>
+                </div>
+
+                <div style="margin: 16px 0;">
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label for="cert-student-name">Student Full Name</label>
+                        <input type="text" id="cert-student-name" placeholder="e.g., Jane Doe" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.2); border: 1px solid var(--card-border); border-radius: 6px; color: white;">
+                    </div>
+                    <div class="form-group">
+                        <label for="cert-paper-title">Paper / Manuscript Title</label>
+                        <input type="text" id="cert-paper-title" placeholder="e.g., Deep Learning in Healthcare Essay" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.2); border: 1px solid var(--card-border); border-radius: 6px; color: white;">
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                    <button id="cert-cancel-btn" class="btn-secondary">Cancel</button>
+                    <button id="cert-confirm-btn" class="btn-primary" style="padding: 10px 18px; background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);">
+                        🖨️ Generate & Print Certificate
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Security PIN Modal -->
+        <div id="pin-modal" class="diff-modal">
+            <div class="diff-box" style="max-width: 440px;">
+                <div class="diff-header">
+                    <div>
+                        <h3 style="font-size: 18px; font-weight: 700; color: #f87171;">🔒 Admin Security PIN</h3>
+                        <span style="font-size: 12px; color: var(--text-muted);">Protected institutional document deletion</span>
+                    </div>
+                    <button id="close-pin-modal" class="remove-file-btn" style="font-size: 24px;">✕</button>
+                </div>
+
+                <div style="margin: 18px 0;">
+                    <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">
+                        You are deleting <strong id="pin-modal-filename" style="color: #60a5fa;">document.txt</strong> from the permanent corpus. Enter the Admin PIN to authorize:
+                    </p>
+                    <div class="form-group" style="margin-bottom: 8px;">
+                        <input type="password" id="admin-pin-input" placeholder="Enter Admin PIN" style="width: 100%; padding: 12px 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); border-radius: 8px; color: white; font-size: 15px; letter-spacing: 2px;">
+                    </div>
+                    <div id="pin-error-feedback" style="display: none; color: #f87171; font-size: 12px; font-weight: 600; margin-top: 6px;">
+                        ❌ Invalid Admin PIN. Deletion forbidden.
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                    <button id="pin-cancel-btn" class="btn-secondary">Cancel</button>
+                    <button id="pin-confirm-btn" class="btn-primary" style="padding: 10px 18px; background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);">
+                        🗑️ Authorize & Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

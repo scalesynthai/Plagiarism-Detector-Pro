@@ -1,0 +1,6 @@
+In diamond valuation and pricing models, the classical 4Cs—carat, cut, color, and clarity—serve as foundational attributes for determining market value.
+Empirical pricing analyses often show an apparent paradox: lower-grade diamond colors or lower clarity ratings can appear to have higher median market prices in aggregate distributions.
+This counterintuitive trend emerges because larger carat diamonds with lower clarity grades dominate the aggregate sample, masking the true marginal premium of high-clarity stones.
+Python data analytics workflows leverage libraries like Pandas, NumPy, Seaborn, and Matplotlib to stratify pricing distributions across carat weight bins.
+Detecting Simpson's paradox in diamond pricing demonstrates how exploratory data analysis and inferential visualizations expose confounding variable interactions that naive regressions overlook.
+Applying log transformations and multi-variable regression reveals the true conditional price elasticity with respect to cut precision and clarity standards.

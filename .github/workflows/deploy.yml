@@ -1,0 +1,28 @@
+name: Deploy to Komodo
+
+on:
+  push:
+    branches: [ main ]
+  workflow_run:
+    workflows: ["CI Pipeline"]
+    types: [completed]
+    branches: [ main ]
+
+jobs:
+  deploy:
+    name: Trigger Komodo Deployment
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    steps:
+      - name: Trigger Komodo Webhook
+        env:
+          KOMODO_WEBHOOK_URL: ${{ secrets.KOMODO_WEBHOOK_URL }}
+        run: |
+          if [ -z "$KOMODO_WEBHOOK_URL" ]; then
+            echo "KOMODO_WEBHOOK_URL secret not configured yet. Skipping webhook trigger."
+            echo "To enable automated deployments, add KOMODO_WEBHOOK_URL to GitHub Repository Secrets."
+            exit 0
+          fi
+          echo "Triggering Komodo deployment webhook..."
+          curl -s -X POST "$KOMODO_WEBHOOK_URL" -H "Content-Type: application/json" -d '{"event": "push", "ref": "refs/heads/main"}'
+          echo "Komodo deploy trigger sent successfully!"

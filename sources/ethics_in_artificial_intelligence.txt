@@ -1,0 +1,9 @@
+Ethics in Artificial Intelligence and Autonomous Systems
+
+Artificial intelligence (AI) has rapidly transitioned from theoretical computer science into ubiquitous socio-technical systems that influence human decision-making, criminal justice sentencing, healthcare diagnostics, and autonomous vehicles. As algorithmic systems assume higher autonomy, establishing robust ethical frameworks and moral responsibility becomes paramount.
+
+One primary concern in AI ethics is algorithmic bias and discriminatory fairness. Machine learning models trained on historical datasets inevitably encode societal prejudices, demographic disparities, and systemic inequities. When predictive policing or credit scoring algorithms operate on skewed historical data, they perpetuate feedback loops that disproportionately harm marginalized communities. Ensuring algorithmic fairness requires rigorous fairness-aware training objectives, demographic parity audits, and counterfactual fairness evaluations.
+
+A second critical pillar is transparency, interpretability, and explainable AI (XAI). Deep neural networks frequently operate as opaque black boxes, making it difficult for stakeholders to trace how specific inputs produce life-altering outputs. Explainability methods, such as Local Interpretable Model-agnostic Explanations (LIME) and SHAP (SHapley Additive exPlanations), attempt to provide post-hoc interpretations, though questions remain regarding their fidelity and susceptibility to adversarial manipulation.
+
+Finally, moral accountability in autonomous weaponry and self-driving cars raises profound philosophical questions. The classic trolley problem illustrates the ethical dilemma of programming autonomous agents to choose between conflicting harms. International regulatory bodies emphasize human-in-the-loop oversight to ensure that lethal decisions remain strictly governed by human moral agency and international humanitarian law.

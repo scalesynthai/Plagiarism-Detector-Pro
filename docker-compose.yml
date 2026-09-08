@@ -1,0 +1,31 @@
+services:
+  plagiarism-detector:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: scalesynthai/plagiarism-detector-pro:latest
+    container_name: plagiarism-detector-pro
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    environment:
+      - PORT=5001
+      - HOST=0.0.0.0
+      - FLASK_DEBUG=False
+      - WEB_SEARCH_TIMEOUT=6
+      - MAX_CONTENT_LENGTH=33554432
+      - SOURCES_DIR=/app/sources
+      - SECRET_KEY=${SECRET_KEY:-komodo-plagiarism-pro-secret-2026}
+      - ADMIN_PIN=${ADMIN_PIN:-1234}
+    volumes:
+      # Persistent volume for institutional reference corpus
+      - plagiarism_sources:/app/sources
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/sources"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  plagiarism_sources:
+    name: plagiarism_detector_sources_data

@@ -1,0 +1,38 @@
+name: 💡 Feature Request
+description: Propose an idea or enhancement for Plagiarism Detector Pro
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting a new idea or enhancement!
+  - type: input
+    id: feature-title
+    attributes:
+      label: Feature Title
+      description: A concise title for your proposal.
+      placeholder: e.g., Support for LaTeX / BibTeX bibliography citations
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or Motivation
+      description: Is your feature request related to a problem or academic workflow need?
+      placeholder: Describe why this feature would be valuable for educators/students.
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: A clear and concise description of what you want to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Additional Context or Alternatives
+      description: Any alternative solutions or features you've considered.
+    validations:
+      required: false

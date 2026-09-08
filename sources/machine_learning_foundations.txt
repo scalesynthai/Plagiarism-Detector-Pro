@@ -1,0 +1,5 @@
+Machine learning systems utilize loss minimization, gradient descent, and cross-validation to generalize patterns from empirical training sets.
+Supervised learning models predict continuous outcomes via linear regression and categorical classes through logistic regression and decision trees.
+Unsupervised learning algorithms, such as k-means clustering and principal component analysis, uncover latent structures and reduce dimensional complexity.
+In deep learning frameworks, backpropagation computes partial derivatives of loss functions across multi-layer neural networks with non-linear activation functions.
+Model evaluation metrics including precision, recall, F1-score, and area under the ROC curve prevent misleading interpretations caused by severe class imbalance.

@@ -1,0 +1,45 @@
+name: 🐛 Bug Report
+description: Create a report to help us fix a defect or unexpected behavior
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report an issue!
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: A brief summary of the issue.
+      placeholder: e.g., PDF report download fails on multi-page manuscripts
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Detailed steps to reproduce the behavior.
+      placeholder: |
+        1. Upload document 'sample.pdf'
+        2. Click 'Run SafeAssign & AI Scan'
+        3. Click 'Export Academic PDF'
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs. Actual Behavior
+      description: What did you expect to happen and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment Info
+      description: Python version, OS, browser, etc.
+      placeholder: |
+        - Python: 3.11.2
+        - OS: macOS / Ubuntu 22.04
+        - Browser: Chrome 124
+    validations:
+      required: false

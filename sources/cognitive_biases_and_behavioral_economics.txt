@@ -1,0 +1,13 @@
+Cognitive Biases, Heuristics, and Behavioral Economics
+
+Cognitive psychology and behavioral economics examine the systematic deviations from normative rationality that characterize human judgment and decision-making. Pioneered by Daniel Kahneman and Amos Tversky, Prospect Theory challenges the classical economic assumption of the rational utility-maximizing agent (Homo economicus) by demonstrating that human choices are systematically distorted by cognitive heuristics, mental shortcuts, and loss aversion.
+
+Dual-Process Theory posits that human cognition is governed by two interacting cognitive systems: System 1 operates automatically, fast, intuitively, and with little or no voluntary effort, whereas System 2 allocates attention to effortful mental operations, complex computations, conscious reasoning, and critical self-monitoring. While System 1 heuristics are computationally efficient for rapid survival, they frequently generate predictable cognitive biases.
+
+Prominent heuristics and biases include:
+1. The Availability Heuristic: People assess the probability of an event based on the cognitive ease with which relevant instances come to mind, leading to distorted risk perceptions.
+2. The Representativeness Heuristic: Probabilities are evaluated by the degree to which an object or event resembles a typical prototype, often neglecting base rate statistical probabilities.
+3. Anchoring and Adjustment: Initial arbitrary numeric anchors exert an outsized influence on subsequent quantitative judgments and price negotiations.
+4. Loss Aversion: Psychological studies reveal that the pain of losing is approximately twice as intense as the pleasure of gaining equivalent value.
+
+In public policy and marketing, Choice Architecture and Nudge Theory leverage these behavioral insights to guide human behavior predictably without forbidding options or significantly altering economic incentives.

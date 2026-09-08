@@ -1,0 +1,9 @@
+CRISPR-Cas9 Gene Editing and Molecular Therapeutics
+
+The discovery of the clustered regularly interspaced short palindromic repeats (CRISPR) and CRISPR-associated protein 9 (Cas9) system represents one of the most transformative breakthroughs in modern molecular biology, genetics, and biotechnology. Originally identified as an adaptive immune defense mechanism in bacteria and archaea against invading bacteriophages, CRISPR-Cas9 has been repurposed as a versatile and programmable RNA-guided endonuclease for targeted genome engineering.
+
+The molecular architecture of the CRISPR-Cas9 system consists of two primary components: the Cas9 endonuclease enzyme and a single guide RNA (sgRNA). The sgRNA contains a 20-nucleotide targeting sequence that binds complementarily to the target DNA sequence adjacent to a protospacer adjacent motif (PAM), typically 5'-NGG-3' for Streptococcus pyogenes Cas9 (SpCas9). Upon binding, Cas9 introduces a site-specific double-strand break (DSB) in the DNA phosphodiester backbone.
+
+Cellular repair pathways resolve double-strand breaks via two primary endogenous mechanisms: Non-Homologous End Joining (NHEJ) and Homology-Directed Repair (HDR). NHEJ is an error-prone ligation process that frequently introduces insertions and deletions (indels), leading to frame-shift mutations and targeted gene knockouts. Conversely, HDR utilizes a homologous donor DNA template to achieve precise nucleotide substitutions, gene insertions, or point mutation corrections.
+
+Therapeutic applications of CRISPR encompass targeted treatments for monogenic genetic disorders, including sickle cell anemia, beta-thalassemia, and Duchenne muscular dystrophy. Additionally, base editing and prime editing technologies expand precision gene editing by enabling single-nucleotide transitions without creating double-strand breaks, thereby substantially reducing off-target genomic cleavage.

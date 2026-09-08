@@ -1,0 +1,6 @@
+Simpson's paradox is a well-documented phenomenon in probability and statistics in which a trend appears in several groups of data but disappears or reverses when the groups are combined.
+This result is often encountered in social-science and medical-science statistics and is particularly problematic when frequency data is unduly given causal interpretations.
+The paradox can be resolved when confounding variables and causal relations are appropriately addressed and controlled in the statistical model.
+In statistical inference and data visualization, ignoring subgroup distributions or treating aggregate visualizations as ground truth can lead to misleading conclusions.
+Simpson's paradox illustrates that statistical association does not imply causation, and stratified analysis by relevant subgroups is critical when investigating complex empirical datasets.
+When visual encoding is used as an exploratory tool rather than merely a presentation layer, it helps uncover hidden confounding factors and conditional relationships across data partitions.

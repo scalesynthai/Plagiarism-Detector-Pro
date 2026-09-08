@@ -1,0 +1,9 @@
+Cloud Computing Architecture and Distributed Systems Fundamentals
+
+Cloud computing represents a paradigm shift from traditional on-premise hardware infrastructure to on-demand network access to a shared pool of configurable computing resources (networks, servers, storage, applications, and services). The foundational architecture of cloud computing relies upon distributed systems principles, virtualization, microservices, and elastic resource allocation.
+
+The National Institute of Standards and Technology (NIST) defines five essential characteristics of cloud computing: on-demand self-service, broad network access, resource pooling, rapid elasticity, and measured service. Service models are conventionally categorized into Infrastructure as a Service (IaaS), Platform as a Service (PaaS), and Software as a Service (SaaS). Deployment models encompass public cloud, private cloud, hybrid cloud, and multi-cloud architectures.
+
+Distributed data storage and fault tolerance in the cloud are governed by the CAP Theorem (Brewer's Theorem), which states that a distributed data store can simultaneously guarantee at most two out of three properties: Consistency, Availability, and Partition Tolerance. Systems prioritizing high availability (such as DynamoDB and Cassandra) often adopt eventual consistency models, whereas relational ACID databases prioritize strong serializable consistency.
+
+Containerization technologies, notably Docker, and container orchestration engines like Kubernetes, have superseded monolithic virtual machines by providing lightweight OS-level virtualization. Microservices communicate asynchronously via message queues and event streams (e.g., Apache Kafka, RabbitMQ) to ensure high scalability, loose coupling, and resilient fault isolation across geo-distributed cloud datacenters.

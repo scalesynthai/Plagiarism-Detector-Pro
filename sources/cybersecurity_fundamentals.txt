@@ -1,0 +1,5 @@
+Cybersecurity is the practice of protecting systems, networks, and software programs from digital attacks.
+These cyberattacks are usually aimed at accessing, altering, or destroying sensitive information or extorting money from users.
+Implementing effective cybersecurity measures is particularly challenging today because there are more devices than people and attackers are becoming more innovative.
+A successful cybersecurity approach has multiple layers of protection spread across computers, networks, programs, and data.
+In an organization, people, processes, and technology must all complement one another to create an effective defense against cyber threats.
