@@ -214,7 +214,7 @@ function initTheme() {
     const themeText = document.getElementById('theme-text');
     const htmlElem = document.documentElement;
 
-    const savedTheme = localStorage.getItem('plag_theme') || 'light';
+    const savedTheme = localStorage.getItem('plag_theme') || 'dark';
     htmlElem.setAttribute('data-theme', savedTheme);
     updateThemeUI(savedTheme);
 
@@ -235,7 +235,7 @@ function initTheme() {
             themeText.textContent = 'Dark Mode';
         } else {
             themeIcon.textContent = '☀️';
-            themeText.textContent = 'Paper Mode';
+            themeText.textContent = 'Light Mode';
         }
     }
 }

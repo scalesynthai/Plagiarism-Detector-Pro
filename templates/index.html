@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,7 +17,7 @@
                 <div class="brand-badge">🎓 Student-Safe & Enterprise Academic Originality Suite</div>
                 <div class="theme-toggle-container">
                     <button id="theme-toggle-btn" class="theme-btn" title="Toggle Light/Dark Academic Theme">
-                        <span id="theme-icon">☀️</span> <span id="theme-text">Paper Mode</span>
+                        <span id="theme-icon">☀️</span> <span id="theme-text">Light Mode</span>
                     </button>
                 </div>
             </div>
@@ -254,7 +254,7 @@
 
                 <form id="cite-generator-form">
                     <div class="form-group" style="display: flex; gap: 10px;">
-                        <input type="text" id="cite-query-input" placeholder="e.g., 10.1038/s41586-020-2649-2 or 1706.03762 or Attention Is All You Need" style="flex: 1; padding: 12px 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); border-radius: 8px; color: white; font-size: 14px;">
+                        <input type="text" id="cite-query-input" placeholder="e.g., 10.1038/s41586-020-2649-2 or 1706.03762 or Attention Is All You Need" style="flex: 1; padding: 12px 14px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; color: var(--text-primary); font-size: 14px;">
                         <button type="submit" class="btn-primary" style="width: auto; padding: 0 24px;">
                             <span>🔍 Generate Citations</span>
                         </button>
@@ -466,7 +466,7 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                         </p>
                     </div>
                     <div style="display: flex; gap: 8px; align-items: center;">
-                        <input type="text" id="sources-search-input" placeholder="🔍 Filter documents..." style="padding: 8px 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); border-radius: 8px; color: white; font-size: 13px; min-width: 220px;">
+                        <input type="text" id="sources-search-input" placeholder="🔍 Filter documents..." style="padding: 8px 14px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; color: var(--text-primary); font-size: 13px; min-width: 220px;">
                     </div>
                 </div>
                 <div id="sources-list-container" class="sources-list">
@@ -495,25 +495,25 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                 </div>
 
                 <!-- Student Pre-Submission Health Checklist -->
-                <div id="student-checklist-card" style="background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); border-radius: 10px; padding: 16px; margin-bottom: 24px;">
+                <div id="student-checklist-card" class="student-checklist-card" style="border: 1px solid var(--card-border); border-radius: 10px; padding: 16px; margin-bottom: 24px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
                         <span style="font-weight: 700; font-size: 14px; color: var(--text-primary);">🎓 Pre-Submission Integrity Checklist</span>
                         <span id="checklist-overall-badge" class="pill" style="background: rgba(16,185,129,0.2); color: #34d399; font-weight: 600;">Ready for Canvas/Turnitin Submission</span>
                     </div>
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
-                        <div id="chk-plag" style="background: rgba(0,0,0,0.2); padding: 10px 12px; border-radius: 6px; font-size: 13px; border-left: 3px solid var(--success);">
+                        <div id="chk-plag" class="checklist-subitem" style="padding: 10px 12px; border-radius: 6px; font-size: 13px; border-left: 3px solid var(--success);">
                             <div style="font-weight: 600; color: var(--text-primary);" id="chk-plag-title">✅ Plagiarism: Safe (< 15%)</div>
                             <div style="font-size: 11px; color: var(--text-muted);" id="chk-plag-desc">Minimal matching phrases</div>
                         </div>
-                        <div id="chk-ai" style="background: rgba(0,0,0,0.2); padding: 10px 12px; border-radius: 6px; font-size: 13px; border-left: 3px solid var(--success);">
+                        <div id="chk-ai" class="checklist-subitem" style="padding: 10px 12px; border-radius: 6px; font-size: 13px; border-left: 3px solid var(--success);">
                             <div style="font-weight: 600; color: var(--text-primary);" id="chk-ai-title">✅ AI Likelihood: Low</div>
                             <div style="font-size: 11px; color: var(--text-muted);" id="chk-ai-desc">Organic human syntax variance</div>
                         </div>
-                        <div id="chk-cite" style="background: rgba(0,0,0,0.2); padding: 10px 12px; border-radius: 6px; font-size: 13px; border-left: 3px solid var(--primary);">
+                        <div id="chk-cite" class="checklist-subitem" style="padding: 10px 12px; border-radius: 6px; font-size: 13px; border-left: 3px solid var(--primary);">
                             <div style="font-weight: 600; color: var(--text-primary);" id="chk-cite-title">📚 Citations: Verified</div>
                             <div style="font-size: 11px; color: var(--text-muted);" id="chk-cite-desc">In-text citations detected</div>
                         </div>
-                        <div id="chk-read" style="background: rgba(0,0,0,0.2); padding: 10px 12px; border-radius: 6px; font-size: 13px; border-left: 3px solid #6366f1;">
+                        <div id="chk-read" class="checklist-subitem" style="padding: 10px 12px; border-radius: 6px; font-size: 13px; border-left: 3px solid #6366f1;">
                             <div style="font-weight: 600; color: var(--text-primary);" id="chk-read-title">📖 Readability: College Level</div>
                             <div style="font-size: 11px; color: var(--text-muted);" id="chk-read-desc">Grade 11-12 Academic Standard</div>
                         </div>
@@ -521,19 +521,19 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                 </div>
 
                 <!-- PhD Research & Conference Double-Blind Auditor -->
-                <div id="phd-auditor-card" style="background: rgba(30, 58, 138, 0.15); border: 1px solid rgba(59, 130, 246, 0.35); border-radius: 10px; padding: 16px; margin-bottom: 24px;">
+                <div id="phd-auditor-card" class="phd-auditor-card" style="border: 1px solid rgba(59, 130, 246, 0.35); border-radius: 10px; padding: 16px; margin-bottom: 24px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-                        <span style="font-weight: 700; font-size: 14px; color: #93c5fd;">🔬 PhD & Conference Pre-Flight Auditor (NeurIPS / ICML / ICLR / IEEE)</span>
+                        <span style="font-weight: 700; font-size: 14px; color: #93c5fd;" id="phd-card-title">🔬 PhD & Conference Pre-Flight Auditor (NeurIPS / ICML / ICLR / IEEE)</span>
                         <span id="phd-readiness-badge" class="pill" style="background: rgba(59, 130, 246, 0.25); color: #60a5fa; font-weight: 600;">100/100 • Conference Ready</span>
                     </div>
                     
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; margin-bottom: 8px;">
-                        <div style="background: rgba(0,0,0,0.25); padding: 12px; border-radius: 6px; font-size: 13px;">
-                            <div style="font-weight: 600; color: #e2e8f0;" id="phd-anon-status">🔒 Double-Blind Anonymity: Compliant</div>
+                        <div class="phd-subitem" style="padding: 12px; border-radius: 6px; font-size: 13px;">
+                            <div style="font-weight: 600; color: var(--text-primary);" id="phd-anon-status">🔒 Double-Blind Anonymity: Compliant</div>
                             <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;" id="phd-anon-desc">Zero self-identifying prior citations or unblinded repository links found.</div>
                         </div>
-                        <div style="background: rgba(0,0,0,0.25); padding: 12px; border-radius: 6px; font-size: 13px;">
-                            <div style="font-weight: 600; color: #e2e8f0;" id="phd-format-status">📐 LaTeX & Math Environment Isolation: Active</div>
+                        <div class="phd-subitem" style="padding: 12px; border-radius: 6px; font-size: 13px;">
+                            <div style="font-weight: 600; color: var(--text-primary);" id="phd-format-status">📐 LaTeX & Math Environment Isolation: Active</div>
                             <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Formulas and algorithmic syntax protected from false similarity flags.</div>
                         </div>
                     </div>
@@ -775,11 +775,11 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                 <div style="margin: 16px 0;">
                     <div class="form-group" style="margin-bottom: 12px;">
                         <label for="cert-student-name">Student Full Name</label>
-                        <input type="text" id="cert-student-name" placeholder="e.g., Jane Doe" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.2); border: 1px solid var(--card-border); border-radius: 6px; color: white;">
+                        <input type="text" id="cert-student-name" placeholder="e.g., Jane Doe" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 6px; color: var(--text-primary);">
                     </div>
                     <div class="form-group" style="margin-bottom: 12px;">
                         <label for="cert-paper-title">Paper / Manuscript Title</label>
-                        <input type="text" id="cert-paper-title" placeholder="e.g., Deep Learning in Healthcare Essay" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.2); border: 1px solid var(--card-border); border-radius: 6px; color: white;">
+                        <input type="text" id="cert-paper-title" placeholder="e.g., Deep Learning in Healthcare Essay" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 6px; color: var(--text-primary);">
                     </div>
                     <div style="padding: 8px 10px; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 6px; font-size: 11px; color: var(--text-muted); line-height: 1.4;">
                         ℹ️ <em>Advisory Note:</em> Certificates validate independent pre-submission originality and are subject to institutional honor codes.
@@ -811,7 +811,7 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                         You are deleting <strong id="pin-modal-filename" style="color: #60a5fa;">document.txt</strong> from the permanent corpus. Enter the Admin PIN to authorize:
                     </p>
                     <div class="form-group" style="margin-bottom: 8px;">
-                        <input type="password" id="admin-pin-input" placeholder="Enter Admin PIN" style="width: 100%; padding: 12px 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); border-radius: 8px; color: white; font-size: 15px; letter-spacing: 2px;">
+                        <input type="password" id="admin-pin-input" placeholder="Enter Admin PIN" style="width: 100%; padding: 12px 14px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; color: var(--text-primary); font-size: 15px; letter-spacing: 2px;">
                     </div>
                     <div id="pin-error-feedback" style="display: none; color: #f87171; font-size: 12px; font-weight: 600; margin-top: 6px;">
                         ❌ Invalid Admin PIN. Deletion forbidden.
