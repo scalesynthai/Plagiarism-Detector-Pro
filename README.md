@@ -2,207 +2,114 @@
 
 # ⚡ Plagiarism Detector Pro
 
-**An Enterprise & University-Grade Academic Originality, SafeAssign Plagiarism, and AI-Content Detection Platform.**
+**The Open-Source Enterprise Academic Originality, SafeAssign Plagiarism, AI-Content Detector & Student Writing Coach.**
+
+*Available as an Interactive Web Dashboard, 100% Offline CLI, NPM Package, and Native Claude/Codex MCP Server.*
 
 [![CI](https://github.com/ScaleSynthAI/Plagiarism-Detector-Pro/actions/workflows/ci.yml/badge.svg)](https://github.com/ScaleSynthAI/Plagiarism-Detector-Pro/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/plagiarism-detector-pro.svg?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/plagiarism-detector-pro)
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-plag.subba.dev-blueviolet?style=for-the-badge&logo=google-chrome&logoColor=white)](https://plag.subba.dev)
+[![Node.js](https://img.shields.io/badge/Node.js-18%2B-green?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-[![Flask](https://img.shields.io/badge/Flask-3.1%2B-black?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](Dockerfile)
+[![MCP Compatible](https://img.shields.io/badge/MCP-Compatible-orange?style=for-the-badge&logo=anthropic)](skills/plagiarism-detector/SKILL.md)
 [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
-[![Security Policy](https://img.shields.io/badge/Security-Policy-red?style=for-the-badge&logo=github)](SECURITY.md)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=for-the-badge)](CONTRIBUTING.md)
 
-[🚀 Live Platform](https://plag.subba.dev) • [Features](#-key-features) • [Architecture](#-project-architecture) • [Getting Started](#-getting-started) • [API Documentation](#-rest-api-reference) • [Contributing](#-contributing) • [Security](#-security-policy)
+[🚀 Live Demo](https://plag.subba.dev) • [📦 NPM & Standalone CLI](#-npm-package--standalone-cli-100-offline) • [🤖 Claude & Codex MCP Setup](#-claude-desktop-claude-code--codex-mcp-integration) • [🌐 Run Web Server](#-running-as-a-web-server) • [🎓 Key Features](#-key-features) • [📡 REST API](#-rest-api-reference)
 
 ---
 
 </div>
 
-## 🌟 Overview
+## 🌟 Why Plagiarism Detector Pro?
 
-**Plagiarism Detector Pro** is an open-source academic originality platform engineered to match and exceed the detection standards of **Blackboard SafeAssign** and **Turnitin**.
+Most open-source plagiarism checkers rely on basic string searching or single-word keyword matching, causing massive **false-positive keyword collisions** (e.g. flagging common nouns like *"diamonds"*, *"seaborn"*, or *"price"*). 
 
-It evaluates student manuscripts, scientific papers, and professional essays across dual analytical dimensions:
-1. **SafeAssign Plagiarism Index (%)**: Evaluated against live web sources, Wikipedia, arXiv, 250M+ OpenAlex/CrossRef scholarly publications, and local institutional repositories.
-2. **AI-Generated Content Likelihood (%)**: Evaluates statistical perplexity, burstiness, syntax variance, and lexical entropy to detect machine-generated and LLM-assisted text.
-
----
-
-## 🚀 Key Features
-
-### 1. 🛡️ Student "Private Draft Shield" & Honor Protection
-- **No Self-Plagiarism Guarantee**: Scans student drafts against 250M+ publications and university databases **without storing or caching the student's manuscript** in institutional repositories, ensuring zero false-positive matches when submitting to Canvas or Turnitin.
-
-### 2. 📜 Verifiable Student Certificate of Academic Authorship
-- Generates a certificate of authenticity with SHA-256 integrity hash, SafeAssign index, AI likelihood forensics, verified citation count, and honor pledge signature block.
-
-### 3. 💡 Smart Citation Generator & Paraphrase Coach
-- 1-click **APA 7th**, **MLA 9th**, and **IEEE** citation generation with instant clipboard copy.
-- Actionable sentence-level synthesis and attribution guidance to help students ethically rewrite and quote referenced material.
-
-### 4. 🤖 AI-Generated Content & LLM Detection Layer
-- Evaluates **Burstiness** (sentence length and syntactic variance) and **Lexical Entropy**.
-- Identifies machine-generated text patterns with classification:
-  - 🟢 **Human-Written Content** ($< 25\%$)
-  - 🟡 **Mixed / AI-Assisted Content** ($25\% - 65\%$)
-  - 🔴 **Likely AI-Generated Content** ($> 65\%$)
-
-### 5. 🛡️ Adversarial Obfuscation & Homoglyph Defense
-- Detects invisible zero-width characters (`\u200B`, `\uFEFF`) and Cyrillic/Greek homoglyphs inserted to evade detection algorithms, while calculating Flesch Reading Ease & Grade Level.
-
-### 6. ↔️ Interactive Side-by-Side Split Diff Comparison
-- Clicking any flagged sentence opens a split-screen modal displaying the student's submission on the left and the verbatim matched publication on the right with synchronized highlight alignment.
-
-### 7. 📄 Exportable Academic PDF Originality Reports
-- Formal, printable academic reports complete with SafeAssign score gauges, AI probability indexes, color-annotated manuscripts, and source appendix citations.
-
-### 8. 📦 Bulk & Batch Submissions Processor (.ZIP / Multi-File)
-- Ingests class ZIP archives or multiple documents simultaneously with an aggregated **Class Gradebook Table**.
-
----
-
-## 📁 Project Architecture
+**Plagiarism Detector Pro** solves this by implementing **Longest Common Subsequence (LCS) contiguous passage matching** alongside **Statistical AI Perplexity & Burstiness Forensics** to deliver true university-grade parity with **Blackboard SafeAssign** and **Turnitin**.
 
 ```
-Plagiarism-Detector/
-├── app.py                      # Application factory, routes, and error handlers
-├── config.py                   # Centralized configuration (Dev, Test, Prod)
-├── wsgi.py                     # Production WSGI entrypoint (Gunicorn / uWSGI)
-├── plag.py                     # Backward-compatible entrypoint shim
-├── requirements.txt            # Production dependencies
-├── Dockerfile                  # Containerized deployment spec
-├── docker-compose.yml          # Multi-container orchestration
-├── Makefile                    # Developer automation commands
-│
-├── core/                       # Core analytical & detection engines
-│   ├── checker.py              # Master SafeAssign originality engine
-│   ├── ai_detector.py          # Statistical AI & LLM likelihood analyzer
-│   ├── phd_auditor.py          # PhD conference pre-flight & double-blind anonymity auditor
-│   ├── sanitizer.py            # Homoglyph, zero-width evasion defense & readability
-│   ├── citation_validator.py   # APA/MLA/IEEE in-text citation & bib validator
-│   ├── vector_engine.py        # Dense semantic vector indexing
-│   ├── batch_processor.py      # Multi-file & ZIP batch processor
-│   ├── report_generator.py     # Printable academic PDF/HTML & certificate generator
-│   ├── extractor.py            # Text parser for .tex, .bib, .ipynb, .docx, .pdf, .txt
-│   └── web_searcher.py         # Real-time Wikipedia, arXiv, CrossRef, OpenAlex & Semantic Scholar search
-│
-├── sources/                    # Institutional reference repository
-├── static/                     # Frontend styles and interactive UI scripts
-├── templates/                  # Jinja2 dashboard templates
-└── tests/                      # Automated unit and integration test suite
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│                             PLAGIARISM DETECTOR PRO                              │
+├─────────────────────────┬──────────────────────────────┬─────────────────────────┤
+│   🌐 Web Application    │    📦 Standalone CLI & NPM   │   🤖 Claude & Codex MCP │
+│  • Interactive split-UI │  • 100% offline local engine │  • Native JSON-RPC MCP  │
+│  • Batch ZIP gradebook  │  • Zero server dependency    │  • 1-click citation bot │
+│  • PDF / Cert export    │  • Fast terminal feedback    │  • Real-time coach tool │
+└─────────────────────────┴──────────────────────────────┴─────────────────────────┘
 ```
 
 ---
 
-## 💻 Getting Started
+## 📦 NPM Package & Standalone CLI (100% Offline)
 
-### Prerequisites
-- **Python 3.10+**
-- **Git**
-- Optional: **Docker** & **Docker Compose**
+The CLI and NPM package operate **completely offline and standalone** with built-in embedded benchmark corpora. **Zero Python or web server required!**
 
 ### 1. Installation
 
 ```bash
-git clone https://github.com/ScaleSynthAI/Plagiarism-Detector-Pro.git
-cd Plagiarism-Detector-Pro
-
-# Create and activate virtual environment
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-```
-
-### 2. Running Locally
-
-```bash
-python app.py
-# Or with Makefile
-make dev
-```
-> Open **`http://127.0.0.1:5001`** in your browser.
-
-### 3. Running with Production WSGI (Gunicorn)
-
-```bash
-gunicorn wsgi:app -b 0.0.0.0:5001 --workers 4 --timeout 60
-# Or with Makefile
-make start
-```
-
-### 4. Running with Docker Compose
-
-```bash
-docker compose up --build -d
-```
-
----
-
-## 🧪 Automated Testing
-
-We maintain rigorous test coverage across all core modules:
-
-```bash
-# Run unit tests
-python -m unittest discover tests -v
-
-# Or using Makefile
-make test
-```
-
----
-
-## 📦 NPM Package & CLI Usage (`plag`)
-
-Plagiarism Detector Pro is available as an **NPM package** and standalone **command-line tool (CLI)** with built-in Model Context Protocol (MCP) support for AI agents.
-
-### Installation
-```bash
-# Global CLI installation
+# Global installation
 npm install -g plagiarism-detector-pro
 
-# Or use without installation via npx
+# Or run instantly with npx (no install needed)
 npx plagiarism-detector-pro --help
 ```
 
-### CLI Commands
+### 2. CLI Command Suite
+
 ```bash
-# 🔍 Scan a manuscript file (.docx, .pdf, .tex, .ipynb, .md, .txt)
+# 🔍 1. Scan a document for SafeAssign Plagiarism & AI Content
 plag scan thesis_draft.md
+plag scan essay.docx --verbose   # Shows side-by-side matching passages
+plag scan paper.tex --json       # Outputs machine-readable JSON
 
-# 🌐 Scan with live cloud global database (Wikipedia, arXiv, OpenAlex)
-plag scan essay.docx --server https://plag.subba.dev
+# 🧑‍🎓 2. Student Writing & Integrity Coach
+# Scans unsupported empirical claims, formal vocabulary boosts, and thesis strength
+plag coach manuscript.docx
 
-# ✍️ Paraphrase an uncredited sentence with scholarly attribution
-plag paraphrase "Deep neural networks learn representations from massive text corpora." --source "Vaswani2017"
+# 🔬 3. PhD Research & Conference Double-Blind Pre-Flight Auditor
+# Audits anonymity compliance, isolates LaTeX math, and profiles section cadence
+plag audit neurips_paper.pdf
 
-# 🧑‍🎓 Run the Student Writing & Integrity Coach (Claims, Tone, Thesis)
-plag coach my_paper.docx
+# ✍️ 4. Smart Academic Paraphraser & Attribution Helper
+# Generates 3 academic restructuring options (Active Inversion, Methodological, Conceptual)
+plag paraphrase "Deep neural networks learn rich representations from massive text corpora." --source "Vaswani2017"
 
-# 📚 Auto-generate BibTeX, APA 7th, MLA 9th, and IEEE citations from DOI/arXiv
+# 📚 5. Instant DOI, arXiv & Scientific Citation Generator
+# Resolves DOIs/arXiv IDs into copy-ready BibTeX, APA 7th, MLA 9th, and IEEE
 plag cite 10.1038/s41586-020-2649-2
 plag cite 1706.03762
 
-# 🔤 Alphabetize & validate messy references
-plag alphabetize my_references.txt
+# 🔤 6. Reference List Alphabetizer & Clean Formatter
+# Auto-sorts unorganized bibliographies by primary author, validates years & DOIs
+plag alphabetize unorganized_references.txt
 
-# 📑 Compare Draft 1 vs Draft 2 revision deltas
+# 📑 7. Draft-to-Draft Revision Comparator
+# Evaluates revision percentage, newly added sections, and retained text between drafts
 plag diff draft_v1.txt draft_v2.txt
 
-# 🤖 Start MCP Server for Claude Desktop & Codex
+# 📦 8. Class Gradebook Batch Processor
+# Ingests an entire folder of student assignments and prints an aggregated gradebook table
+plag batch ./student_submissions/
+
+# 📜 9. Verifiable Student Authorship Certificate
+# Generates a cryptographic SHA-256 verified academic honor certificate
+plag certificate essay.md --name "Jane Doe" --title "Deep Learning Study"
+
+# 🤖 10. Start Model Context Protocol (MCP) Server for Claude & Codex
 plag mcp
 ```
 
 ---
 
-## 🤖 Claude Desktop & Codex Skill Integration
+## 🤖 Claude Desktop, Claude Code & Codex MCP Integration
 
-Plagiarism Detector Pro implements the **Model Context Protocol (MCP)**, allowing Claude Desktop, OpenAI Codex, Antigravity, and Cursor to natively audit originality and restructure citations.
+Plagiarism Detector Pro implements the **Model Context Protocol (MCP)**, allowing **Claude Desktop**, **Claude Code**, **OpenAI Codex**, **Antigravity**, and **Cursor** to natively audit originality, verify citations, and restructure text.
 
-### Claude Desktop Setup (`claude_desktop_config.json`)
-Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
+### Claude Desktop Setup
+
+Add this configuration to your Claude Desktop config file:
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 
 ```json
 {
@@ -215,72 +122,144 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
 }
 ```
 
-### Available MCP Tools for Claude & Codex:
-- `plag_scan_text`: Analyzes text for plagiarism, SafeAssign risk, and AI score.
-- `plag_scan_file`: Analyzes a local manuscript (`.pdf`, `.docx`, `.tex`, `.ipynb`, `.md`, `.txt`).
-- `plag_paraphrase`: 1-click academic restructuring & formal attribution.
-- `plag_academic_coach`: Scans unsupported empirical claims, tone booster, and thesis score.
-- `plag_generate_citation`: Resolves DOI/arXiv to BibTeX, APA, MLA, IEEE.
-- `plag_alphabetize_references`: Alphabetizes and formats bibliography references.
-- `plag_compare_drafts`: Calculates revision delta percentages between two drafts.
+### Claude Code CLI Setup
+```bash
+claude mcp add plagiarism-detector-pro npx -y plagiarism-detector-pro mcp
+```
+
+### Available MCP Tools for AI Assistants:
+
+| Tool Name | Parameters | Purpose |
+| :--- | :--- | :--- |
+| `plag_scan_text` | `text`, `exclude_quotes` | Scans text for plagiarism %, SafeAssign risk tier, and AI probability |
+| `plag_scan_file` | `file_path`, `exclude_quotes` | Ingests `.docx`, `.pdf`, `.tex`, `.ipynb`, `.md`, or `.txt` from disk |
+| `plag_academic_coach` | `text` | Scans unsupported claims, tone booster formal synonyms, and thesis score |
+| `plag_paraphrase` | `sentence`, `source_title` | Restructures overlapping text into 3 scholarly formulations with attribution |
+| `plag_generate_citation`| `query` | Resolves DOI / arXiv / Paper Title to BibTeX, APA, MLA, and IEEE |
+| `plag_alphabetize_references`| `references_text` | Auto-sorts and validates reference lists alphabetically |
+| `plag_compare_drafts` | `draft_v1`, `draft_v2` | Computes draft continuity %, added content %, and word delta |
+
+---
+
+## 🌐 Running as a Web Server
+
+If you wish to host your own web platform instance with the interactive dashboard, PDF report generator, and class gradebook:
+
+### Option A: Docker Compose (Recommended)
+```bash
+# 1. Clone repository
+git clone https://github.com/scalesynthai/Plagiarism-Detector-Pro.git
+cd Plagiarism-Detector-Pro
+
+# 2. Start container
+docker compose up -d --build
+```
+Open **`http://localhost:5001`** in your browser.
+
+### Option B: Local Python Setup
+```bash
+# 1. Create and activate virtual environment
+python3 -m venv venv
+source venv/bin/activate   # On Windows: venv\Scripts\activate
+
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Launch development server
+python app.py
+```
+
+### Environment Configuration (`.env`)
+```ini
+FLASK_ENV=production
+SECRET_KEY=your-secure-random-secret-key
+ADMIN_PIN=2026           # PIN required for institutional document deletion
+PORT=5001
+MAX_CONTENT_LENGTH=52428800 # 50MB max file upload size
+```
+
+---
+
+## 🎓 Key Features & Capabilities
+
+### 1. 🛡️ Student "Private Draft Shield"
+- **No Self-Plagiarism Guarantee**: Allows students to check drafts against 250M+ publications and university databases **without storing the manuscript into institutional archives**, preventing self-plagiarism flags upon final Canvas/Turnitin submission.
+
+### 2. 🧑‍🎓 Student Academic Writing & Integrity Coach
+- **🔍 Unsupported Claim Finder**: Detects empirical and statistical assertions (*"studies show"*, *"85% of"*, *"research demonstrates"*) lacking a parenthetical citation, with a 1-click `(Author, Year)` citation placeholder.
+- **✍️ Scholarly Tone Booster**: Identifies conversational phrases (*"a lot of"*, *"basically"*, *"big impact"*) and provides instant formal replacements (*numerous*, *fundamentally*, *significant effect*).
+- **🎯 Thesis Statement & Abstract Evaluator**: Evaluates scientific completeness (Hypothesis, Methodology, Significance) with a `/100` score and actionable recommendations.
+
+### 3. 🔬 PhD Research & Conference Pre-Flight Auditor
+- **🔒 Double-Blind Anonymity Compliance**: Detects self-identifying author references or unblinded repository links before conference submission (NeurIPS, ICML, ICLR, IEEE).
+- **📐 Mathematical & LaTeX Isolation**: Isolates LaTeX equations (`$...$`, `\begin{equation}`) and code cells from false similarity flags.
+
+### 4. ↔️ Interactive Side-by-Side Split Diff Comparison
+- Clicking any highlighted sentence opens a split-screen viewer comparing the student submission on the left with the verbatim original source on the right.
+
+### 5. 🤖 AI-Generated Content & LLM Detection Layer
+- Computes **Syntactic Burstiness** and **Lexical Entropy** to classify:
+  - 🟢 **Human-Written** ($< 25\%$)
+  - 🟡 **Mixed / AI-Assisted** ($25\% - 65\%$)
+  - 🔴 **Likely AI-Generated** ($> 65\%$)
+
+### 6. 📦 Whole-Class Batch Submissions Gradebook
+- Upload a `.zip` archive or multiple files to scan all submissions concurrently and produce an aggregated **Instructor Gradebook Table**.
 
 ---
 
 ## 📡 REST API Reference
 
 | Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/` | Main academic dashboard |
-| `POST` | `/check` | Scan text (`query`) or document (`file`) with Private Draft Shield |
-| `POST` | `/check/batch` | Scan `.zip` archive or multiple files (Class Gradebook) |
-| `POST` | `/reports/html` | Generate printable academic PDF report |
+| :--- | :--- | :--- |
+| `POST` | `/check` | Scan text (`query`) or document (`file`) for originality and AI content |
+| `POST` | `/check/batch` | Scan whole-class `.zip` archive or multiple files |
+| `POST` | `/check/compare-drafts` | Compare Draft v1 vs Draft v2 revision deltas |
+| `POST` | `/api/paraphrase` | Generate 3 academic restructurings for a sentence |
+| `POST` | `/api/cite` | Auto-generate BibTeX, APA, MLA, and IEEE citations |
+| `POST` | `/api/student-coach/tone-and-claims` | Scan unsupported claims and formal tone boosts |
+| `POST` | `/api/student-coach/alphabetize-references` | Alphabetize and validate reference list |
+| `POST` | `/api/student-coach/evaluate-thesis` | Evaluate opening abstract / thesis statement |
 | `POST` | `/reports/certificate` | Generate verifiable Student Certificate of Academic Authorship |
-| `GET` | `/docs` | Interactive Swagger UI API playground |
-| `GET` | `/api/spec.json` | OpenAPI 3.0 specification JSON |
-| `GET` | `/sources` | List all institutional repository documents |
+| `GET` | `/sources` | List institutional repository documents |
 | `POST` | `/sources/upload` | Add new document to institutional repository |
-| `DELETE` | `/sources/<filename>` | Delete document from institutional repository |
+| `DELETE` | `/sources/<filename>` | Delete document from institutional repository (Requires Admin PIN) |
+| `GET` | `/docs` | Interactive Swagger UI API playground |
 
 ---
 
-## 🤝 Contributing
+## 🧪 Testing & Quality Assurance
 
-Contributions make the open-source community an incredible place to learn, inspire, and create. Any contributions you make are **greatly appreciated**!
+Plagiarism Detector Pro includes comprehensive test suites across both Python and Node.js:
 
-Please see our [**Contributing Guide**](CONTRIBUTING.md) for detailed instructions on:
-- Setting up your local development environment
-- Submitting Bug Reports and Feature Requests
-- Coding standards and test requirements
-- Conventional Commits and Pull Request workflows
+```bash
+# Run Node.js & CLI test suite (12 tests)
+npm test
 
-All contributors are expected to adhere to our [**Code of Conduct**](CODE_OF_CONDUCT.md).
+# Run Python & Web test suite (28 tests)
+pytest tests/ -v
+# Or: ./venv/bin/python -m unittest discover tests -v
 
-### Quick Contribution Steps:
-1. Fork the Project (`https://github.com/ScaleSynthAI/Plagiarism-Detector-Pro/fork`)
-2. Create your Feature Branch (`git checkout -b feat/amazing-feature`)
-3. Commit your Changes (`git commit -m 'feat: add amazing feature'`)
-4. Ensure all tests pass (`make test`)
-5. Push to the Branch (`git push origin feat/amazing-feature`)
-6. Open a Pull Request on GitHub
+# Run all test suites
+make test
+```
 
 ---
 
-## 🛡️ Security Policy
+## 🤝 Contributing & Security
 
-We take the security of Plagiarism Detector Pro seriously. If you discover a vulnerability, please report it privately via **`security@subba.dev`** or consult our [**Security Policy**](SECURITY.md) for supported versions and our coordinated disclosure timeline.
+Contributions are warmly welcomed! Please read our [**Contributing Guide**](CONTRIBUTING.md) and [**Code of Conduct**](CODE_OF_CONDUCT.md) before submitting pull requests.
+
+If you discover a security vulnerability, please consult our [**Security Policy**](SECURITY.md) or report it privately to **`security@subba.dev`**.
 
 ---
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is open-source software licensed under the [**MIT License**](LICENSE).
 
 ---
 
-## 🌐 Acknowledgements & Links
-
-- **Live Deployment**: [plag.subba.dev](https://plag.subba.dev)
-- **GitHub Repository**: [ScaleSynthAI/Plagiarism-Detector-Pro](https://github.com/ScaleSynthAI/Plagiarism-Detector-Pro)
-- **Issues & Support**: [GitHub Issues](https://github.com/ScaleSynthAI/Plagiarism-Detector-Pro/issues)
-- **Security Inquiries**: [security@subba.dev](mailto:security@subba.dev)
-
+<div align="center">
+  <sub>Engineered by <a href="https://github.com/ScaleSynthAI">ScaleSynthAI</a> • Maintained for Scholars, Students, and Researchers Worldwide.</sub>
+</div>
