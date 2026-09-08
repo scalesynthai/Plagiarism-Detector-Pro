@@ -1,0 +1,37 @@
+# Version Control
+.git
+.github
+.gitignore
+
+# Python Virtual Environments & Cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+.pytest_cache/
+
+# Flask Web Server Assets (Website runs independently)
+templates/
+static/
+core/
+app.py
+wsgi.py
+plag.py
+config.py
+requirements.txt
+pyproject.toml
+Dockerfile
+docker-compose.yml
+Makefile
+sources/
+
+# Testing & Dev
+tests/
+tests_js/
+.dockerignore
+.env.example
+RELEASE_NOTES_v1.0.0.md
+CHANGELOG.md
