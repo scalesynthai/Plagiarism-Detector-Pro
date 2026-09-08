@@ -2,7 +2,7 @@ import logging
 import os
 import io
 from typing import Optional
-from flask import Flask, request, render_template, jsonify, send_file, make_response
+from flask import Flask, request, render_template, jsonify, send_file, make_response, url_for as flask_url_for
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import HTTPException
 
@@ -28,6 +28,32 @@ def create_app(config_class: type = DevelopmentConfig) -> Flask:
     """Application factory for Plagiarism Detector Pro."""
     app = Flask(__name__)
     app.config.from_object(config_class)
+
+    # Cache busting for static assets: automatically appends timestamp query parameter
+    @app.context_processor
+    def inject_asset_version():
+        def dated_url_for(endpoint, **values):
+            if endpoint == 'static':
+                filename = values.get('filename', None)
+                if filename:
+                    file_path = os.path.join(app.root_path, 'static', filename)
+                    if os.path.isfile(file_path):
+                        values['v'] = int(os.stat(file_path).st_mtime)
+            return flask_url_for(endpoint, **values)
+        return dict(url_for=dated_url_for)
+
+    # Cache control headers to prevent stale reverse proxy / CDN / browser caching
+    @app.after_request
+    def set_cache_headers(response):
+        if request.path.startswith('/static/'):
+            # Static assets with ?v= query can be cached with revalidation
+            response.headers['Cache-Control'] = 'public, max-age=3600, must-revalidate'
+        elif request.path == '/' or request.path.endswith('.html'):
+            # Main HTML document should always revalidate so fresh CSS/JS URLs are picked up instantly
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
+        return response
 
     # Ensure sources directory exists
     os.makedirs(app.config["SOURCES_DIR"], exist_ok=True)
