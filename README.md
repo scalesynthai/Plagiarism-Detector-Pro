@@ -154,6 +154,78 @@ make test
 
 ---
 
+## 📦 NPM Package & CLI Usage (`plag`)
+
+Plagiarism Detector Pro is available as an **NPM package** and standalone **command-line tool (CLI)** with built-in Model Context Protocol (MCP) support for AI agents.
+
+### Installation
+```bash
+# Global CLI installation
+npm install -g plagiarism-detector-pro
+
+# Or use without installation via npx
+npx plagiarism-detector-pro --help
+```
+
+### CLI Commands
+```bash
+# 🔍 Scan a manuscript file (.docx, .pdf, .tex, .ipynb, .md, .txt)
+plag scan thesis_draft.md
+
+# 🌐 Scan with live cloud global database (Wikipedia, arXiv, OpenAlex)
+plag scan essay.docx --server https://plag.subba.dev
+
+# ✍️ Paraphrase an uncredited sentence with scholarly attribution
+plag paraphrase "Deep neural networks learn representations from massive text corpora." --source "Vaswani2017"
+
+# 🧑‍🎓 Run the Student Writing & Integrity Coach (Claims, Tone, Thesis)
+plag coach my_paper.docx
+
+# 📚 Auto-generate BibTeX, APA 7th, MLA 9th, and IEEE citations from DOI/arXiv
+plag cite 10.1038/s41586-020-2649-2
+plag cite 1706.03762
+
+# 🔤 Alphabetize & validate messy references
+plag alphabetize my_references.txt
+
+# 📑 Compare Draft 1 vs Draft 2 revision deltas
+plag diff draft_v1.txt draft_v2.txt
+
+# 🤖 Start MCP Server for Claude Desktop & Codex
+plag mcp
+```
+
+---
+
+## 🤖 Claude Desktop & Codex Skill Integration
+
+Plagiarism Detector Pro implements the **Model Context Protocol (MCP)**, allowing Claude Desktop, OpenAI Codex, Antigravity, and Cursor to natively audit originality and restructure citations.
+
+### Claude Desktop Setup (`claude_desktop_config.json`)
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
+
+```json
+{
+  "mcpServers": {
+    "plagiarism-detector-pro": {
+      "command": "npx",
+      "args": ["-y", "plagiarism-detector-pro", "mcp"]
+    }
+  }
+}
+```
+
+### Available MCP Tools for Claude & Codex:
+- `plag_scan_text`: Analyzes text for plagiarism, SafeAssign risk, and AI score.
+- `plag_scan_file`: Analyzes a local manuscript (`.pdf`, `.docx`, `.tex`, `.ipynb`, `.md`, `.txt`).
+- `plag_paraphrase`: 1-click academic restructuring & formal attribution.
+- `plag_academic_coach`: Scans unsupported empirical claims, tone booster, and thesis score.
+- `plag_generate_citation`: Resolves DOI/arXiv to BibTeX, APA, MLA, IEEE.
+- `plag_alphabetize_references`: Alphabetizes and formats bibliography references.
+- `plag_compare_drafts`: Calculates revision delta percentages between two drafts.
+
+---
+
 ## 📡 REST API Reference
 
 | Method | Endpoint | Description |
