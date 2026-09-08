@@ -1125,11 +1125,41 @@ function setupModalsAndActions() {
     const closeCertBtn = document.getElementById('close-cert-modal');
     const cancelCertBtn = document.getElementById('cert-cancel-btn');
     const confirmCertBtn = document.getElementById('cert-confirm-btn');
+    const studentNameInput = document.getElementById('cert-student-name');
+    const paperTitleInput = document.getElementById('cert-paper-title');
 
-    if (openCertBtn) openCertBtn.addEventListener('click', () => certModal.classList.add('active'));
+    if (openCertBtn) {
+        openCertBtn.addEventListener('click', () => {
+            if (certModal) {
+                certModal.classList.add('active');
+                if (paperTitleInput && !paperTitleInput.value.trim()) {
+                    const queryElem = document.getElementById('query-text');
+                    const fileElem = document.getElementById('file-input');
+                    if (fileElem && fileElem.files && fileElem.files[0]) {
+                        paperTitleInput.value = fileElem.files[0].name.replace(/\.[^/.]+$/, "");
+                    } else if (queryElem && queryElem.value.trim()) {
+                        const firstLine = queryElem.value.trim().split('\n')[0].substring(0, 60);
+                        paperTitleInput.value = firstLine || "Academic Manuscript";
+                    }
+                }
+                if (studentNameInput) setTimeout(() => studentNameInput.focus(), 50);
+            }
+        });
+    }
     if (closeCertBtn) closeCertBtn.addEventListener('click', () => certModal.classList.remove('active'));
     if (cancelCertBtn) cancelCertBtn.addEventListener('click', () => certModal.classList.remove('active'));
     if (confirmCertBtn) confirmCertBtn.addEventListener('click', generateCertificate);
+
+    if (studentNameInput) {
+        studentNameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') generateCertificate();
+        });
+    }
+    if (paperTitleInput) {
+        paperTitleInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') generateCertificate();
+        });
+    }
 
     // Admin PIN Modal
     const pinModal = document.getElementById('pin-modal');
@@ -1310,9 +1340,15 @@ async function confirmDeleteWithPin() {
 async function generateCertificate() {
     const studentName = document.getElementById('cert-student-name').value.trim();
     const paperTitle = document.getElementById('cert-paper-title').value.trim();
+    const confirmBtn = document.getElementById('cert-confirm-btn');
 
     if (!studentName || !paperTitle) {
         return alert('Please enter both student name and paper title.');
+    }
+
+    if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<span class="spinner"></span> Generating Certificate...';
     }
 
     try {
@@ -1327,16 +1363,34 @@ async function generateCertificate() {
         });
         const html = await res.text();
         const win = window.open('', '_blank');
-        win.document.write(html);
-        win.document.close();
+        if (win) {
+            win.document.write(html);
+            win.document.close();
+        } else {
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            window.location.href = url;
+        }
         document.getElementById('cert-modal').classList.remove('active');
     } catch (err) {
         alert('Failed to generate certificate: ' + err.message);
+    } finally {
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = '🖨️ Generate & Print Certificate';
+        }
     }
 }
 
 async function exportPrintableReport() {
     if (!currentAnalysisData) return;
+    const pdfBtn = document.getElementById('download-pdf-btn');
+    const origHtml = pdfBtn ? pdfBtn.innerHTML : '';
+    if (pdfBtn) {
+        pdfBtn.disabled = true;
+        pdfBtn.innerHTML = '<span class="spinner"></span> Exporting...';
+    }
+
     try {
         const res = await fetch('/reports/html', {
             method: 'POST',
@@ -1345,10 +1399,21 @@ async function exportPrintableReport() {
         });
         const html = await res.text();
         const win = window.open('', '_blank');
-        win.document.write(html);
-        win.document.close();
+        if (win) {
+            win.document.write(html);
+            win.document.close();
+        } else {
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            window.location.href = url;
+        }
     } catch (err) {
         alert('Failed to generate printable report: ' + err.message);
+    } finally {
+        if (pdfBtn) {
+            pdfBtn.disabled = false;
+            pdfBtn.innerHTML = origHtml;
+        }
     }
 }
 
