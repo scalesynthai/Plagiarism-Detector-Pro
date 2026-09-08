@@ -13,8 +13,6 @@ const PRESETS = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 0. Theme Initialization & Toggle
-    initTheme();
 
     // 1. Tab Navigation
     const tabBtns = document.querySelectorAll('.tab-btn');
@@ -206,38 +204,10 @@ Achiam, J., Adler, S., Agarwal, S., Ahmad, L., Akkaya, I., Aleman, F. L., ... & 
 });
 
 /* ==============================================================================
-   THEME SWITCHER
+   CLAY INITIALIZATION
    ============================================================================== */
 function initTheme() {
-    const themeBtn = document.getElementById('theme-toggle-btn');
-    const themeIcon = document.getElementById('theme-icon');
-    const themeText = document.getElementById('theme-text');
-    const htmlElem = document.documentElement;
-
-    const savedTheme = localStorage.getItem('plag_theme') || 'dark';
-    htmlElem.setAttribute('data-theme', savedTheme);
-    updateThemeUI(savedTheme);
-
-    if (themeBtn) {
-        themeBtn.addEventListener('click', () => {
-            const current = htmlElem.getAttribute('data-theme') || 'dark';
-            const nextTheme = current === 'dark' ? 'light' : 'dark';
-            htmlElem.setAttribute('data-theme', nextTheme);
-            localStorage.setItem('plag_theme', nextTheme);
-            updateThemeUI(nextTheme);
-        });
-    }
-
-    function updateThemeUI(theme) {
-        if (!themeIcon || !themeText) return;
-        if (theme === 'light') {
-            themeIcon.textContent = '🌙';
-            themeText.textContent = 'Dark Mode';
-        } else {
-            themeIcon.textContent = '☀️';
-            themeText.textContent = 'Light Mode';
-        }
-    }
+    // Clay design system uses a persistent warm cream canvas (#fffaf0).
 }
 
 /* ==============================================================================

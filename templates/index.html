@@ -1,35 +1,49 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plagiarism Detector Pro - Student & Enterprise AI Suite</title>
+    <title>Plagiarism Detector Pro - Enterprise Academic Originality & AI Suite</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
 <body>
-    <!-- Full-Bleed WebGL Dot-Matrix Background Field -->
-    <canvas id="webgl-canvas"></canvas>
+    <!-- Clay Top Navigation Bar -->
+    <div class="top-nav-container">
+        <nav class="top-nav">
+            <div class="brand-identity">
+                <div class="brand-logo-icon">🎓</div>
+                <div class="brand-logo-text">Plagiarism Detector Pro</div>
+                <span class="brand-badge-pill">v1.0.3 Pro • Offline Core</span>
+            </div>
+            <div class="top-nav-actions">
+                <span class="chip-item">🛡️ Private Draft Shield</span>
+                <span class="chip-item">⚡ 100% Offline Fast</span>
+            </div>
+        </nav>
+    </div>
 
     <div class="app-wrapper">
-        <!-- Brand Header with Theme Switcher -->
-        <header class="brand-header">
-            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 8px;">
-                <div class="brand-badge">🎓 Student-Safe & Enterprise Academic Originality Suite</div>
-                <div class="theme-toggle-container">
-                    <button id="theme-toggle-btn" class="theme-btn" title="Toggle Light/Dark Academic Theme">
-                        <span id="theme-icon">☀️</span> <span id="theme-text">Light Mode</span>
-                    </button>
-                </div>
+        <!-- Clay Hero Band -->
+        <section class="hero-band">
+            <div class="hero-pill-tag">
+                <span>✨ Academic Intelligence & Originality Suite</span>
             </div>
-            <h1 class="brand-title">Plagiarism Detector Pro</h1>
+            <h1 class="brand-title">Verify Research Originality with Absolute Confidence.</h1>
             <p class="brand-subtitle">
-                Academic originality verification with dual Plagiarism & AI-content scoring, Private Draft Shield, citation coaching, and student honor certificates.
+                Dual Plagiarism & AI-content scoring, Private Draft Shield, citation coaching, and student honor certificates designed for modern researchers, professors, and students.
             </p>
-        </header>
+            <div class="hero-features-chips">
+                <span class="chip-item">🔍 Web & Institutional Corpus Cross-Match</span>
+                <span class="chip-item">🤖 Perplexity & Syntactic Burstiness AI Engine</span>
+                <span class="chip-item">📚 Instant DOI / BibTeX Generator</span>
+                <span class="chip-item">🔬 PhD Conference Anonymity Auditor</span>
+            </div>
+        </section>
 
-        <!-- Navigation Tabs -->
+        <!-- Navigation Tabs (Clay Pill Sub-Nav) -->
         <nav class="tabs-nav">
             <button class="tab-btn active" data-tab="tab-text">
                 ✍️ Direct Text
@@ -845,10 +859,61 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                     </button>
                 </div>
             </div>
-        </div>
     </div>
 
-    <script src="{{ url_for('static', filename='js/webgl-field.js') }}"></script>
+    <!-- Clay Warm Cream Footer -->
+    <div class="footer-container">
+        <footer class="clay-footer">
+            <div class="footer-grid">
+                <div>
+                    <div class="brand-identity" style="margin-bottom: 12px;">
+                        <div class="brand-logo-icon">🎓</div>
+                        <div class="brand-logo-text">Plagiarism Detector Pro</div>
+                    </div>
+                    <p class="footer-desc">
+                        A modern, privacy-first academic originality & AI detection platform built for students, researchers, universities, and conference reviewers.
+                    </p>
+                    <span class="brand-badge-pill">🛡️ 100% Offline-Capable Engine</span>
+                </div>
+
+                <div>
+                    <h4 class="footer-col-title">Core Modules</h4>
+                    <ul class="footer-links">
+                        <li><a href="#tab-text">Direct Text Originality</a></li>
+                        <li><a href="#tab-file">Document Ingestion</a></li>
+                        <li><a href="#tab-compare">Draft Revision Diff (v1/v2)</a></li>
+                        <li><a href="#tab-cite">DOI & BibTeX Formatter</a></li>
+                        <li><a href="#tab-batch">Batch Submission (.zip)</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="footer-col-title">Integrity Standards</h4>
+                    <ul class="footer-links">
+                        <li><a href="javascript:void(0)">Private Draft Shield</a></li>
+                        <li><a href="javascript:void(0)">Double-Blind Anonymity</a></li>
+                        <li><a href="javascript:void(0)">Student Integrity Coach</a></li>
+                        <li><a href="javascript:void(0)">Honor Authorship Certs</a></li>
+                        <li><a href="javascript:void(0)">OpenAlex / arXiv Cross-Match</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="footer-col-title">Academic Disclaimer</h4>
+                    <div class="footer-disclaimer-card">
+                        ⚠️ <strong>Validation & Advisory Notice:</strong>
+                        Pre-submission metrics provide probabilistic similarity & originality diagnostics. Final submission integrity remains subject to institutional honor codes, professors, and LMS policy.
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <div>© 2026 ScaleSynthAI / Plagiarism Detector Pro. Built on the Clay Design Framework.</div>
+                <div>All scans processed locally in memory. Zero external tracking.</div>
+            </div>
+        </footer>
+    </div>
+
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>
