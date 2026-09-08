@@ -111,8 +111,20 @@ CitationGenerator.resolveCitation("1706.03762").then(citeRes => {
     const diffJson = JSON.parse(diffOut);
     assert.strictEqual(diffJson.unchanged_count, 1);
 
+    const auditOut = execSync(`node "${cliPath}" audit "In our previous work, we tested." --json`).toString();
+    const auditJson = JSON.parse(auditOut);
+    assert.strictEqual(auditJson.is_anonymity_compliant, false);
+
+    const certOut = execSync(`node "${cliPath}" certificate "In this paper we examine deep models." --name "Jane Doe" --title "Deep Learning" --json`).toString();
+    const certJson = JSON.parse(certOut);
+    assert.ok(certJson.certificate_id.startsWith("AUTH-"));
+
+    const batchOut = execSync(`node "${cliPath}" batch "${path.join(__dirname, '..', 'sources')}" --json`).toString();
+    const batchJson = JSON.parse(batchOut);
+    assert.ok(batchJson.total_submissions > 0);
+
     console.log("✓ CLI binary execution tests passed.");
-    console.log("\n🎉 ALL JAVASCRIPT & CLI TESTS PASSED SUCCESSFULLY (9/9)!");
+    console.log("\n🎉 ALL JAVASCRIPT & CLI TESTS PASSED SUCCESSFULLY (12/12)!");
 }).catch(err => {
     console.error("Test failure:", err);
     process.exit(1);

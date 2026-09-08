@@ -2,7 +2,7 @@
 
 /**
  * Plagiarism Detector Pro CLI
- * Command-line academic originality scanner, AI detector, and student coach.
+ * 100% Standalone Offline Academic Originality, AI Detector & Student Coach CLI
  */
 
 const fs = require("fs");
@@ -11,9 +11,12 @@ const {
     scan,
     AcademicParaphraser,
     AcademicStudentCoach,
+    PhdResearchAuditor,
     DocumentExtractor,
     CitationGenerator,
-    DraftComparator
+    DraftComparator,
+    CertificateGenerator,
+    BatchProcessor
 } = require("../lib/index");
 
 const args = process.argv.slice(2);
@@ -35,39 +38,49 @@ const colors = {
 function printBanner() {
     console.log(`\n${colors.bold}${colors.cyan}======================================================${colors.reset}`);
     console.log(`${colors.bold}${colors.cyan} 🎓 Plagiarism Detector Pro CLI (v1.0.0)${colors.reset}`);
-    console.log(`${colors.gray} Enterprise Academic Originality, AI Detector & Coach${colors.reset}`);
+    console.log(`${colors.gray} Enterprise Academic Originality, AI Detector & Coach (100% Offline)${colors.reset}`);
     console.log(`${colors.bold}${colors.cyan}======================================================${colors.reset}\n`);
 }
 
 function printHelp() {
     printBanner();
     console.log(`${colors.bold}USAGE:${colors.reset}`);
-    console.log(`  ${colors.green}plag scan <file|text>${colors.reset}       Scan document or text for plagiarism & AI content`);
-    console.log(`  ${colors.green}plag paraphrase <sentence>${colors.reset}  Generate 3 academic restructurings & citations`);
-    console.log(`  ${colors.green}plag coach <file|text>${colors.reset}       Scan unsupported claims, tone booster & thesis`);
-    console.log(`  ${colors.green}plag cite <query>${colors.reset}            Auto-generate BibTeX, APA, MLA, and IEEE`);
-    console.log(`  ${colors.green}plag alphabetize <file|text>${colors.reset} Auto-sort references & validate DOIs/years`);
-    console.log(`  ${colors.green}plag diff <file1> <file2>${colors.reset}   Compare Draft 1 vs Draft 2 deltas`);
-    console.log(`  ${colors.green}plag mcp${colors.reset}                    Launch Model Context Protocol (MCP) server for Claude/Codex`);
+    console.log(`  ${colors.green}plag scan <file|text>${colors.reset}               Scan document or text for plagiarism & AI content`);
+    console.log(`  ${colors.green}plag coach <file|text>${colors.reset}              Unsupported claims, tone booster & thesis score`);
+    console.log(`  ${colors.green}plag audit <file|text>${colors.reset}              PhD & Conference double-blind pre-flight audit`);
+    console.log(`  ${colors.green}plag paraphrase <sentence>${colors.reset}         Generate 3 academic restructurings & citations`);
+    console.log(`  ${colors.green}plag cite <query>${colors.reset}                   Auto-generate BibTeX, APA, MLA, and IEEE`);
+    console.log(`  ${colors.green}plag alphabetize <file|text>${colors.reset}        Auto-sort references & validate DOIs/years`);
+    console.log(`  ${colors.green}plag diff <file1> <file2>${colors.reset}          Compare Draft 1 vs Draft 2 deltas`);
+    console.log(`  ${colors.green}plag batch <dir|file1 file2...>${colors.reset}    Process class batch & print gradebook table`);
+    console.log(`  ${colors.green}plag certificate <file|text>${colors.reset}        Generate verifiable Authorship Certificate`);
+    console.log(`  ${colors.green}plag mcp${colors.reset}                           Launch Model Context Protocol (MCP) server for Claude/Codex`);
     console.log(`\n${colors.bold}OPTIONS:${colors.reset}`);
-    console.log(`  ${colors.yellow}--json${colors.reset}                   Output results in raw JSON`);
-    console.log(`  ${colors.yellow}--server <url>${colors.reset}           Connect to live cloud API (e.g. https://plag.subba.dev)`);
-    console.log(`  ${colors.yellow}--exclude-quotes${colors.reset}         Exclude verified citations from similarity index`);
-    console.log(`  ${colors.yellow}--source <name>${colors.reset}          Source name for paraphrasing/citation attribution`);
+    console.log(`  ${colors.yellow}--json${colors.reset}                          Output results in raw JSON`);
+    console.log(`  ${colors.yellow}--verbose${colors.reset}                       Show side-by-side matching sentence passages`);
+    console.log(`  ${colors.yellow}--name <Student Name>${colors.reset}           Student full name for certificate`);
+    console.log(`  ${colors.yellow}--title <Paper Title>${colors.reset}           Manuscript title for certificate`);
+    console.log(`  ${colors.yellow}--source <name>${colors.reset}                 Source attribution key for paraphrasing`);
     console.log(`\n${colors.bold}EXAMPLES:${colors.reset}`);
     console.log(`  ${colors.gray}$ plag scan essay.docx${colors.reset}`);
-    console.log(`  ${colors.gray}$ plag scan "In this empirical study, we examine..." --json${colors.reset}`);
-    console.log(`  ${colors.gray}$ plag paraphrase "Deep learning models predict continuous outcomes." --source "Smith2024"${colors.reset}`);
-    console.log(`  ${colors.gray}$ plag cite 10.1145/3318464.3389700${colors.reset}`);
+    console.log(`  ${colors.gray}$ plag coach manuscript.tex${colors.reset}`);
+    console.log(`  ${colors.gray}$ plag audit research_paper.pdf${colors.reset}`);
+    console.log(`  ${colors.gray}$ plag batch ./student_submissions/${colors.reset}`);
+    console.log(`  ${colors.gray}$ plag certificate essay.md --name "Jane Doe" --title "Deep Learning Essay"${colors.reset}`);
     console.log(`  ${colors.gray}$ plag mcp${colors.reset}\n`);
+}
+
+function getOption(flag) {
+    const idx = args.indexOf(flag);
+    return idx !== -1 ? args[idx + 1] : null;
 }
 
 async function main() {
     const isJson = args.includes("--json");
-    const serverIdx = args.indexOf("--server");
-    const serverUrl = serverIdx !== -1 ? args[serverIdx + 1] : null;
-    const sourceIdx = args.indexOf("--source");
-    const sourceName = sourceIdx !== -1 ? args[sourceIdx + 1] : null;
+    const isVerbose = args.includes("--verbose");
+    const sourceName = getOption("--source");
+    const studentName = getOption("--name") || "Academic Scholar";
+    const paperTitle = getOption("--title") || "Academic Manuscript";
 
     switch (command.toLowerCase()) {
         case "help":
@@ -90,12 +103,11 @@ async function main() {
 
             if (!isJson) {
                 printBanner();
-                console.log(`${colors.cyan}🔍 Scanning originality and AI content...${colors.reset}\n`);
+                console.log(`${colors.cyan}🔍 Scanning originality, AI content, and academic metrics...${colors.reset}\n`);
             }
 
             try {
                 const res = await scan(text, {
-                    server: serverUrl,
                     excludeQuotes: args.includes("--exclude-quotes")
                 });
 
@@ -115,11 +127,14 @@ async function main() {
                 }
                 console.log(`  • Total Analyzed Words:   ${res.total_words}`);
                 console.log(`  • Matching Words:         ${res.flagged_word_count || 0}`);
+                if (res.readability) {
+                    console.log(`  • Reading Level:          ${res.readability.grade_level} (~${res.readability.reading_time_minutes} min read)`);
+                }
 
                 if (res.sources_breakdown && res.sources_breakdown.length > 0) {
-                    console.log(`\n${colors.bold}📑 MATCHED SOURCES:${colors.reset}`);
+                    console.log(`\n${colors.bold}📑 TOP MATCHED SOURCES:${colors.reset}`);
                     res.sources_breakdown.slice(0, 5).forEach(s => {
-                        console.log(`  - ${colors.yellow}${s.similarity}%${colors.reset} • ${s.filename} (${s.badge || 'Source'})`);
+                        console.log(`  - ${colors.yellow}${s.similarity}%${colors.reset} • ${s.filename} (${s.badge || 'Institutional'})`);
                     });
                 }
 
@@ -129,34 +144,26 @@ async function main() {
                     console.log(`  • Tone Booster Boosts:    ${res.student_coach.tone_suggestions_count}`);
                     console.log(`  • Thesis Strength Score:  ${res.student_coach.thesis_evaluation.score}/100`);
                 }
+
+                if (res.phd_audit) {
+                    console.log(`\n${colors.bold}🔬 PHD & CONFERENCE AUDITOR:${colors.reset}`);
+                    console.log(`  • Double-Blind Status:    ${res.phd_audit.is_anonymity_compliant ? colors.green + "100% Compliant" : colors.red + "Violations Found"}${colors.reset}`);
+                    console.log(`  • Conference Readiness:   ${res.phd_audit.conference_readiness_score}/100`);
+                }
+
+                if (isVerbose && res.highlighted_sentences) {
+                    console.log(`\n${colors.bold}📝 SIDE-BY-SIDE MATCHING PASSAGES:${colors.reset}`);
+                    res.highlighted_sentences.filter(s => s.is_plagiarized).forEach((s, idx) => {
+                        console.log(`\n  [Match #${idx + 1}] Similarity: ${s.similarity}% • Source: ${s.source}`);
+                        console.log(`  ${colors.red}Submission:${colors.reset} "${s.text}"`);
+                        console.log(`  ${colors.green}Reference: ${colors.reset} "${s.matched_source_sentence}"`);
+                    });
+                }
                 console.log("");
             } catch (err) {
                 console.error(`${colors.red}Scan Error: ${err.message}${colors.reset}`);
                 process.exit(1);
             }
-            break;
-        }
-
-        case "paraphrase": {
-            const sentence = args[1];
-            if (!sentence) {
-                console.error(`${colors.red}Error: Please specify sentence to paraphrase.${colors.reset}`);
-                process.exit(1);
-            }
-            const res = AcademicParaphraser.synthesizeSentence(sentence, sourceName, sourceName);
-            if (isJson) {
-                console.log(JSON.stringify(res, null, 2));
-                return;
-            }
-            printBanner();
-            console.log(`${colors.bold}Original Sentence:${colors.reset}\n"${sentence}"\n`);
-            console.log(`${colors.bold}✨ Academic Restructuring Options:${colors.reset}`);
-            res.suggestions.forEach((s, idx) => {
-                console.log(`\n${colors.cyan}[${idx + 1}] ${s.style}:${colors.reset}`);
-                console.log(`  ${colors.green}${s.text}${colors.reset}`);
-                console.log(`  ${colors.gray}${s.description}${colors.reset}`);
-            });
-            console.log("");
             break;
         }
 
@@ -194,6 +201,65 @@ async function main() {
             if (tone.length === 0) console.log(`  ${colors.green}✓ High scholarly formality detected.${colors.reset}`);
             tone.slice(0, 5).forEach((t, idx) => {
                 console.log(`  [${idx + 1}] Replace ${colors.red}'${t.matched_term}'${colors.reset} with: ${colors.green}${t.scholarly_replacements.join(", ")}${colors.reset}`);
+            });
+            console.log("");
+            break;
+        }
+
+        case "audit": {
+            const input = args[1];
+            if (!input) {
+                console.error(`${colors.red}Error: Missing document or text to audit.${colors.reset}`);
+                process.exit(1);
+            }
+            let text = input;
+            if (fs.existsSync(input)) {
+                text = DocumentExtractor.extractFromFile(input);
+            }
+            const audit = PhdResearchAuditor.auditManuscript(text);
+            if (isJson) {
+                console.log(JSON.stringify(audit, null, 2));
+                return;
+            }
+            printBanner();
+            console.log(`${colors.bold}🔬 CONFERENCE PRE-FLIGHT AUDITOR (NeurIPS / ICML / IEEE):${colors.reset}`);
+            console.log(`  • Conference Readiness Score: ${colors.magenta}${audit.conference_readiness_score}/100${colors.reset}`);
+            console.log(`  • Anonymity Compliance:       ${audit.is_anonymity_compliant ? colors.green + "100% Compliant (Double-Blind)" : colors.red + "Violations Found"}${colors.reset}`);
+            console.log(`  • LaTeX Equations Isolated:   ${audit.latex_equations_isolated}`);
+
+            if (audit.anonymity_violations.length > 0) {
+                console.log(`\n${colors.bold}${colors.red}⚠️ Anonymity Violations:${colors.reset}`);
+                audit.anonymity_violations.forEach(v => console.log(`  • ${v}`));
+            }
+
+            if (audit.sections_breakdown.length > 0) {
+                console.log(`\n${colors.bold}📐 Sections Cadence Breakdown:${colors.reset}`);
+                audit.sections_breakdown.forEach(s => {
+                    console.log(`  • ${s.heading.padEnd(20)} ${String(s.word_count).padStart(4)} words | ${s.avg_sentence_len} w/sent | ${s.cadence_profile}`);
+                });
+            }
+            console.log("");
+            break;
+        }
+
+        case "paraphrase": {
+            const sentence = args[1];
+            if (!sentence) {
+                console.error(`${colors.red}Error: Please specify sentence to paraphrase.${colors.reset}`);
+                process.exit(1);
+            }
+            const res = AcademicParaphraser.synthesizeSentence(sentence, sourceName, sourceName);
+            if (isJson) {
+                console.log(JSON.stringify(res, null, 2));
+                return;
+            }
+            printBanner();
+            console.log(`${colors.bold}Original Sentence:${colors.reset}\n"${sentence}"\n`);
+            console.log(`${colors.bold}✨ Academic Restructuring Options:${colors.reset}`);
+            res.suggestions.forEach((s, idx) => {
+                console.log(`\n${colors.cyan}[${idx + 1}] ${s.style}:${colors.reset}`);
+                console.log(`  ${colors.green}${s.text}${colors.reset}`);
+                console.log(`  ${colors.gray}${s.description}${colors.reset}`);
             });
             console.log("");
             break;
@@ -277,8 +343,69 @@ async function main() {
             break;
         }
 
+        case "batch": {
+            const targets = args.slice(1).filter(a => !a.startsWith("-"));
+            if (targets.length === 0) {
+                console.error(`${colors.red}Error: Please provide directory or files to batch process: plag batch <dir|files...>${colors.reset}`);
+                process.exit(1);
+            }
+            const res = BatchProcessor.processBatch(targets);
+            if (isJson) {
+                console.log(JSON.stringify(res, null, 2));
+                return;
+            }
+            printBanner();
+            console.log(`${colors.bold}📦 BATCH SUBMISSION GRADEBOOK:${colors.reset}`);
+            console.log(`  • Submissions Processed:  ${res.total_submissions}`);
+            console.log(`  • Class Average Plag:     ${res.average_plagiarism}%`);
+            console.log(`  • Class Average AI:       ${res.average_ai_probability}%`);
+            console.log(`  • High Risk Papers:       ${res.high_risk_count > 0 ? colors.red : colors.green}${res.high_risk_count}${colors.reset}\n`);
+
+            console.log(`${"Document".padEnd(30)} ${"Words".padStart(8)} ${"Plagiarism".padStart(12)} ${"AI Probability".padStart(16)} ${"Risk Tier".padStart(14)}`);
+            console.log("-".repeat(84));
+            res.gradebook.forEach(row => {
+                const name = row.student_or_filename.slice(0, 28).padEnd(30);
+                const words = String(row.word_count || 0).padStart(8);
+                const plag = `${row.plagiarism_score || 0}%`.padStart(12);
+                const ai = `${row.ai_probability || 0}%`.padStart(16);
+                const risk = (row.safeassign_risk || "Low Risk").padStart(14);
+                console.log(`${name} ${words} ${plag} ${ai} ${risk}`);
+            });
+            console.log("");
+            break;
+        }
+
+        case "certificate": {
+            const input = args[1];
+            if (!input) {
+                console.error(`${colors.red}Error: Missing document or text: plag certificate <file|text> --name "Name" --title "Title"${colors.reset}`);
+                process.exit(1);
+            }
+            let text = input;
+            if (fs.existsSync(input)) {
+                text = DocumentExtractor.extractFromFile(input);
+            }
+            const scanRes = await scan(text);
+            const cert = CertificateGenerator.generate({
+                studentName,
+                paperTitle,
+                plagiarismScore: scanRes.overall_similarity,
+                aiScore: scanRes.ai_analysis ? scanRes.ai_analysis.ai_probability : 0.0,
+                wordCount: scanRes.total_words,
+                safeassignRisk: scanRes.safeassign_risk,
+                text
+            });
+
+            if (isJson) {
+                console.log(JSON.stringify(cert, null, 2));
+                return;
+            }
+            console.log(cert.ascii_certificate);
+            console.log(`\nVerification Hash (SHA-256): ${cert.sha256_hash}\n`);
+            break;
+        }
+
         case "mcp": {
-            // Spawn the MCP server
             require("./mcp-server");
             break;
         }
