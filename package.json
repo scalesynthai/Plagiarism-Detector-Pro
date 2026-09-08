@@ -1,12 +1,13 @@
 {
   "name": "plagiarism-detector-pro",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Enterprise Academic Originality, SafeAssign Plagiarism, AI Content Detector, and Writing Coach CLI & MCP Server",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "bin": {
     "plag": "./bin/plag.js",
     "plagiarism-detector": "./bin/plag.js",
+    "plagiarism-detector-pro": "./bin/plag.js",
     "plag-mcp": "./bin/mcp-server.js"
   },
   "scripts": {
