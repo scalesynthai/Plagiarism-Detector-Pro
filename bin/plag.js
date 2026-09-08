@@ -36,8 +36,9 @@ const colors = {
 };
 
 function printBanner() {
+    const pkg = require("../package.json");
     console.log(`\n${colors.bold}${colors.cyan}======================================================${colors.reset}`);
-    console.log(`${colors.bold}${colors.cyan} 🎓 Plagiarism Detector Pro CLI (v1.0.0)${colors.reset}`);
+    console.log(`${colors.bold}${colors.cyan} 🎓 Plagiarism Detector Pro CLI (v${pkg.version})${colors.reset}`);
     console.log(`${colors.gray} Enterprise Academic Originality, AI Detector & Coach (100% Offline)${colors.reset}`);
     console.log(`${colors.bold}${colors.cyan}======================================================${colors.reset}\n`);
 }
@@ -81,6 +82,12 @@ async function main() {
     const sourceName = getOption("--source");
     const studentName = getOption("--name") || "Academic Scholar";
     const paperTitle = getOption("--title") || "Academic Manuscript";
+
+    if (args.includes("-v") || args.includes("--version") || command === "version" || command === "-v" || command === "--version") {
+        const pkg = require("../package.json");
+        console.log(`plagiarism-detector-pro v${pkg.version}`);
+        return;
+    }
 
     switch (command.toLowerCase()) {
         case "help":
