@@ -497,46 +497,64 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                 </div>
 
                 <!-- Student Pre-Submission Health Checklist -->
-                <div id="student-checklist-card" class="student-checklist-card" style="border: 1px solid var(--card-border); border-radius: 10px; padding: 16px; margin-bottom: 24px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                <div id="student-checklist-card" class="student-checklist-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
                         <span style="font-weight: 700; font-size: 14px; color: var(--text-primary);">🎓 Pre-Submission Integrity Checklist</span>
-                        <span id="checklist-overall-badge" class="pill" style="background: rgba(16,185,129,0.2); color: #34d399; font-weight: 600;">Ready for Canvas/Turnitin Submission</span>
+                        <span id="checklist-overall-badge" class="badge-pill success">🌟 Ready for LMS / Canvas Submission</span>
                     </div>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
-                        <div id="chk-plag" class="checklist-subitem" style="padding: 10px 12px; border-radius: 6px; font-size: 13px; border-left: 3px solid var(--success);">
-                            <div style="font-weight: 600; color: var(--text-primary);" id="chk-plag-title">✅ Plagiarism: Safe (< 15%)</div>
-                            <div style="font-size: 11px; color: var(--text-muted);" id="chk-plag-desc">Minimal matching phrases</div>
+                    <div class="checklist-grid">
+                        <div id="chk-plag" class="checklist-subitem">
+                            <div class="checklist-subitem-header">
+                                <div class="checklist-subitem-title">🔍 Plagiarism Match</div>
+                                <span id="chk-plag-pill" class="badge-pill success">0.0% Low Risk</span>
+                            </div>
+                            <div id="chk-plag-desc" class="checklist-subitem-desc">Minimal matching phrases detected vs database.</div>
                         </div>
-                        <div id="chk-ai" class="checklist-subitem" style="padding: 10px 12px; border-radius: 6px; font-size: 13px; border-left: 3px solid var(--success);">
-                            <div style="font-weight: 600; color: var(--text-primary);" id="chk-ai-title">✅ AI Likelihood: Low</div>
-                            <div style="font-size: 11px; color: var(--text-muted);" id="chk-ai-desc">Organic human syntax variance</div>
+                        <div id="chk-ai" class="checklist-subitem">
+                            <div class="checklist-subitem-header">
+                                <div class="checklist-subitem-title">🤖 AI Content</div>
+                                <span id="chk-ai-pill" class="badge-pill success">Human Authored</span>
+                            </div>
+                            <div id="chk-ai-desc" class="checklist-subitem-desc">Organic human syntactic variance and burstiness.</div>
                         </div>
-                        <div id="chk-cite" class="checklist-subitem" style="padding: 10px 12px; border-radius: 6px; font-size: 13px; border-left: 3px solid var(--primary);">
-                            <div style="font-weight: 600; color: var(--text-primary);" id="chk-cite-title">📚 Citations: Verified</div>
-                            <div style="font-size: 11px; color: var(--text-muted);" id="chk-cite-desc">In-text citations detected</div>
+                        <div id="chk-cite" class="checklist-subitem">
+                            <div class="checklist-subitem-header">
+                                <div class="checklist-subitem-title">📚 Citations</div>
+                                <span id="chk-cite-pill" class="badge-pill info">Verified</span>
+                            </div>
+                            <div id="chk-cite-desc" class="checklist-subitem-desc">In-text citations detected and verified.</div>
                         </div>
-                        <div id="chk-read" class="checklist-subitem" style="padding: 10px 12px; border-radius: 6px; font-size: 13px; border-left: 3px solid #6366f1;">
-                            <div style="font-weight: 600; color: var(--text-primary);" id="chk-read-title">📖 Readability: College Level</div>
-                            <div style="font-size: 11px; color: var(--text-muted);" id="chk-read-desc">Grade 11-12 Academic Standard</div>
+                        <div id="chk-read" class="checklist-subitem">
+                            <div class="checklist-subitem-header">
+                                <div class="checklist-subitem-title">📖 Reading Level</div>
+                                <span id="chk-read-pill" class="badge-pill info">PhD Level</span>
+                            </div>
+                            <div id="chk-read-desc" class="checklist-subitem-desc">College & post-graduate standard readability.</div>
                         </div>
                     </div>
                 </div>
 
                 <!-- PhD Research & Conference Double-Blind Auditor -->
-                <div id="phd-auditor-card" class="phd-auditor-card" style="border: 1px solid rgba(59, 130, 246, 0.35); border-radius: 10px; padding: 16px; margin-bottom: 24px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-                        <span style="font-weight: 700; font-size: 14px; color: #93c5fd;" id="phd-card-title">🔬 PhD & Conference Pre-Flight Auditor (NeurIPS / ICML / ICLR / IEEE)</span>
-                        <span id="phd-readiness-badge" class="pill" style="background: rgba(59, 130, 246, 0.25); color: #60a5fa; font-weight: 600;">100/100 • Conference Ready</span>
+                <div id="phd-auditor-card" class="phd-auditor-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+                        <span style="font-weight: 700; font-size: 14px; color: var(--text-primary);" id="phd-card-title">🔬 PhD & Conference Pre-Flight Auditor (NeurIPS / ICML / IEEE)</span>
+                        <span id="phd-readiness-badge" class="badge-pill success">100/100 • Conference Ready</span>
                     </div>
                     
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; margin-bottom: 8px;">
-                        <div class="phd-subitem" style="padding: 12px; border-radius: 6px; font-size: 13px;">
-                            <div style="font-weight: 600; color: var(--text-primary);" id="phd-anon-status">🔒 Double-Blind Anonymity: Compliant</div>
-                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;" id="phd-anon-desc">Zero self-identifying prior citations or unblinded repository links found.</div>
+                    <div class="phd-grid">
+                        <div class="phd-subitem">
+                            <div class="phd-subitem-header">
+                                <div class="phd-subitem-title">🔒 Double-Blind Anonymity</div>
+                                <span id="phd-anon-pill" class="badge-pill success">100% Compliant</span>
+                            </div>
+                            <div id="phd-anon-desc" class="phd-subitem-desc">Zero self-identifying prior citations or unblinded repository links found.</div>
                         </div>
-                        <div class="phd-subitem" style="padding: 12px; border-radius: 6px; font-size: 13px;">
-                            <div style="font-weight: 600; color: var(--text-primary);" id="phd-format-status">📐 LaTeX & Math Environment Isolation: Active</div>
-                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Formulas and algorithmic syntax protected from false similarity flags.</div>
+                        <div class="phd-subitem">
+                            <div class="phd-subitem-header">
+                                <div class="phd-subitem-title">📐 LaTeX & Math Isolation</div>
+                                <span class="badge-pill success">Active</span>
+                            </div>
+                            <div class="phd-subitem-desc">Formulas and algorithmic syntax protected from false similarity flags.</div>
                         </div>
                     </div>
                 </div>

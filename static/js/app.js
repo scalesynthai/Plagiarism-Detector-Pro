@@ -608,89 +608,123 @@ function renderChecklist(data) {
     const citeData = data.citation_analysis || {};
     const readability = data.readability || {};
 
-    const chkPlagTitle = document.getElementById('chk-plag-title');
+    const chkPlagPill = document.getElementById('chk-plag-pill');
     const chkPlagDesc = document.getElementById('chk-plag-desc');
     const chkPlag = document.getElementById('chk-plag');
-    if (plagScore < 15.0) {
-        chkPlagTitle.textContent = `✅ Plagiarism Safe (${plagScore}%)`;
-        chkPlagDesc.textContent = 'Well within standard academic submission threshold (< 15%).';
-        chkPlag.style.borderLeftColor = 'var(--success)';
-    } else if (plagScore < 40.0) {
-        chkPlagTitle.textContent = `⚠️ Plagiarism Moderate (${plagScore}%)`;
-        chkPlagDesc.textContent = 'Review flagged sentences to ensure all citations are attributed.';
-        chkPlag.style.borderLeftColor = 'var(--warning)';
-    } else {
-        chkPlagTitle.textContent = `❌ Plagiarism High Risk (${plagScore}%)`;
-        chkPlagDesc.textContent = 'Significant verbatim overlap detected. Rewrite uncredited sections.';
-        chkPlag.style.borderLeftColor = 'var(--danger)';
+    if (chkPlagPill) {
+        if (plagScore < 15.0) {
+            chkPlagPill.className = 'badge-pill success';
+            chkPlagPill.textContent = `${plagScore}% Safe (< 15%)`;
+            if (chkPlagDesc) chkPlagDesc.textContent = 'Well within standard academic submission threshold.';
+            if (chkPlag) chkPlag.style.borderLeft = '3px solid var(--success)';
+        } else if (plagScore < 40.0) {
+            chkPlagPill.className = 'badge-pill warning';
+            chkPlagPill.textContent = `${plagScore}% Moderate`;
+            if (chkPlagDesc) chkPlagDesc.textContent = 'Review flagged sentences to ensure all citations are attributed.';
+            if (chkPlag) chkPlag.style.borderLeft = '3px solid var(--warning)';
+        } else {
+            chkPlagPill.className = 'badge-pill danger';
+            chkPlagPill.textContent = `${plagScore}% High Risk`;
+            if (chkPlagDesc) chkPlagDesc.textContent = 'Significant verbatim overlap detected. Rewrite uncredited sections.';
+            if (chkPlag) chkPlag.style.borderLeft = '3px solid var(--danger)';
+        }
     }
 
-    const chkAiTitle = document.getElementById('chk-ai-title');
+    const chkAiPill = document.getElementById('chk-ai-pill');
     const chkAiDesc = document.getElementById('chk-ai-desc');
     const chkAi = document.getElementById('chk-ai');
-    if (aiScore < 25.0) {
-        chkAiTitle.textContent = `✅ AI Content: Human (${aiScore}%)`;
-        chkAiDesc.textContent = 'High burstiness and natural syntactic entropy detected.';
-        chkAi.style.borderLeftColor = 'var(--success)';
-    } else if (aiScore < 65.0) {
-        chkAiTitle.textContent = `🟡 AI Content: Mixed (${aiScore}%)`;
-        chkAiDesc.textContent = 'Portions resemble AI-assisted drafting. Review phrasing.';
-        chkAi.style.borderLeftColor = 'var(--warning)';
-    } else {
-        chkAiTitle.textContent = `🔴 AI Content: Likely AI (${aiScore}%)`;
-        chkAiDesc.textContent = 'Uniform low perplexity and synthetic cadence detected.';
-        chkAi.style.borderLeftColor = 'var(--danger)';
+    if (chkAiPill) {
+        if (aiScore < 25.0) {
+            chkAiPill.className = 'badge-pill success';
+            chkAiPill.textContent = `${aiScore}% Human`;
+            if (chkAiDesc) chkAiDesc.textContent = 'High burstiness and natural syntactic entropy detected.';
+            if (chkAi) chkAi.style.borderLeft = '3px solid var(--success)';
+        } else if (aiScore < 65.0) {
+            chkAiPill.className = 'badge-pill warning';
+            chkAiPill.textContent = `${aiScore}% Mixed AI`;
+            if (chkAiDesc) chkAiDesc.textContent = 'Portions resemble AI-assisted drafting. Review phrasing.';
+            if (chkAi) chkAi.style.borderLeft = '3px solid var(--warning)';
+        } else {
+            chkAiPill.className = 'badge-pill danger';
+            chkAiPill.textContent = `${aiScore}% Likely AI`;
+            if (chkAiDesc) chkAiDesc.textContent = 'Uniform low perplexity and synthetic cadence detected.';
+            if (chkAi) chkAi.style.borderLeft = '3px solid var(--danger)';
+        }
     }
 
-    const chkCiteTitle = document.getElementById('chk-cite-title');
+    const chkCitePill = document.getElementById('chk-cite-pill');
     const chkCiteDesc = document.getElementById('chk-cite-desc');
-    if (citeData.in_text_citations_count > 0) {
-        chkCiteTitle.textContent = `📚 Citations: ${citeData.in_text_citations_count} Verified`;
-        chkCiteDesc.textContent = `Identified formatted references (${citeData.styles_detected ? citeData.styles_detected.join(', ') : 'Standard'}).`;
-    } else {
-        chkCiteTitle.textContent = `💬 In-Text Citations: None`;
-        chkCiteDesc.textContent = 'Consider adding APA/MLA citations for external references.';
+    const chkCite = document.getElementById('chk-cite');
+    if (chkCitePill) {
+        if (citeData.in_text_citations_count > 0) {
+            chkCitePill.className = 'badge-pill info';
+            chkCitePill.textContent = `${citeData.in_text_citations_count} Verified`;
+            if (chkCiteDesc) chkCiteDesc.textContent = `Identified formatted references (${citeData.styles_detected ? citeData.styles_detected.join(', ') : 'Standard'}).`;
+            if (chkCite) chkCite.style.borderLeft = '3px solid #6366f1';
+        } else {
+            chkCitePill.className = 'badge-pill warning';
+            chkCitePill.textContent = `0 Citations`;
+            if (chkCiteDesc) chkCiteDesc.textContent = 'Consider adding APA/MLA in-text citations for cited references.';
+            if (chkCite) chkCite.style.borderLeft = '3px solid var(--warning)';
+        }
     }
 
-    const chkReadTitle = document.getElementById('chk-read-title');
+    const chkReadPill = document.getElementById('chk-read-pill');
     const chkReadDesc = document.getElementById('chk-read-desc');
-    if (readability.grade_level) {
-        chkReadTitle.textContent = `📖 Readability: ${readability.grade_level}`;
-        chkReadDesc.textContent = `${readability.reading_level_desc || 'Academic Standard'} • ~${readability.reading_time_minutes || 1} min read.`;
+    const chkRead = document.getElementById('chk-read');
+    if (chkReadPill && readability.grade_level) {
+        chkReadPill.className = 'badge-pill info';
+        chkReadPill.textContent = `${readability.grade_level}`;
+        if (chkReadDesc) chkReadDesc.textContent = `${readability.reading_level_desc || 'Academic Standard'} • ~${readability.reading_time_minutes || 1} min read.`;
+        if (chkRead) chkRead.style.borderLeft = '3px solid #8b5cf6';
     }
 
     const overallBadge = document.getElementById('checklist-overall-badge');
-    if (plagScore < 15.0 && aiScore < 30.0) {
-        overallBadge.textContent = '🌟 Ready for LMS / Canvas Submission';
-        overallBadge.style.background = 'rgba(16,185,129,0.2)';
-        overallBadge.style.color = '#34d399';
-    } else {
-        overallBadge.textContent = '⚠️ Revision Recommended Prior to Submission';
-        overallBadge.style.background = 'rgba(245,158,11,0.2)';
-        overallBadge.style.color = '#fbbf24';
+    if (overallBadge) {
+        if (plagScore < 15.0 && aiScore < 30.0) {
+            overallBadge.className = 'badge-pill success';
+            overallBadge.textContent = '🌟 Ready for LMS / Canvas Submission';
+            overallBadge.style.background = '';
+            overallBadge.style.color = '';
+        } else {
+            overallBadge.className = 'badge-pill warning';
+            overallBadge.textContent = '⚠️ Revision Recommended Prior to Submission';
+            overallBadge.style.background = '';
+            overallBadge.style.color = '';
+        }
     }
 }
 
 function renderPhdAuditor(data) {
     const phdAudit = data.phd_audit || {};
-    const anonStatus = document.getElementById('phd-anon-status');
+    const anonPill = document.getElementById('phd-anon-pill');
     const anonDesc = document.getElementById('phd-anon-desc');
     const readinessBadge = document.getElementById('phd-readiness-badge');
 
     if (phdAudit.is_anonymity_compliant) {
-        anonStatus.textContent = '🔒 Double-Blind Anonymity: 100% Compliant';
-        anonStatus.style.color = '#34d399';
-        anonDesc.textContent = 'No self-identifying prior citations or unblinded repository links found.';
-        readinessBadge.textContent = '100/100 • Conference Ready';
-        readinessBadge.style.background = 'rgba(16,185,129,0.25)';
-        readinessBadge.style.color = '#34d399';
+        if (anonPill) {
+            anonPill.className = 'badge-pill success';
+            anonPill.textContent = '100% Compliant';
+        }
+        if (anonDesc) anonDesc.textContent = 'Zero self-identifying prior citations or unblinded repository links found.';
+        if (readinessBadge) {
+            readinessBadge.className = 'badge-pill success';
+            readinessBadge.textContent = '100/100 • Conference Ready';
+            readinessBadge.style.background = '';
+            readinessBadge.style.color = '';
+        }
     } else {
-        anonStatus.textContent = `⚠️ Double-Blind Anonymity: ${phdAudit.anonymity_count || 0} Potential Violation(s)`;
-        anonStatus.style.color = '#fbbf24';
-        anonDesc.textContent = (phdAudit.anonymity_violations && phdAudit.anonymity_violations.join(' • ')) || 'Self-referential citations detected.';
-        readinessBadge.textContent = 'Action Required • Unblinded Passages';
-        readinessBadge.style.background = 'rgba(239,68,68,0.25)';
-        readinessBadge.style.color = '#f87171';
+        if (anonPill) {
+            anonPill.className = 'badge-pill danger';
+            anonPill.textContent = `${phdAudit.anonymity_count || 1} Violation(s)`;
+        }
+        if (anonDesc) anonDesc.textContent = (phdAudit.anonymity_violations && phdAudit.anonymity_violations.join(' • ')) || 'Self-referential citations detected.';
+        if (readinessBadge) {
+            readinessBadge.className = 'badge-pill danger';
+            readinessBadge.textContent = 'Action Required • Unblinded Passages';
+            readinessBadge.style.background = '';
+            readinessBadge.style.color = '';
+        }
     }
 
     // Sections Table
