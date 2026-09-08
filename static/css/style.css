@@ -286,48 +286,62 @@ body {
 }
 
 /* ==============================================================================
-   CATEGORY NAVIGATION TABS (Clay Pill Tabs)
+   CATEGORY NAVIGATION TABS (Clay Segmented Sub-Nav)
    ============================================================================== */
 .tabs-nav {
     display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
+    align-items: center;
+    gap: 6px;
     padding: 6px;
     background: var(--surface-soft);
     border: 1px solid var(--hairline);
-    border-radius: var(--rounded-pill);
+    border-radius: var(--rounded-md);
     margin-bottom: var(--space-6);
     overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+.tabs-nav::-webkit-scrollbar {
+    display: none;
 }
 
 .tab-btn {
     background: transparent;
-    border: none;
+    border: 1px solid transparent;
     color: var(--muted);
     font-family: var(--font-body);
     font-size: 14px;
     font-weight: 500;
-    padding: 8px 18px;
-    border-radius: var(--rounded-pill);
+    padding: 9px 18px;
+    border-radius: var(--rounded-sm);
     cursor: pointer;
     transition: all 0.15s ease;
     white-space: nowrap;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
+    outline: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.tab-btn:focus, .tab-btn:focus-visible {
+    outline: none;
+    box-shadow: none;
 }
 
 .tab-btn:hover {
     color: var(--ink);
-    background: rgba(245, 240, 224, 0.6);
+    background: rgba(245, 240, 224, 0.7);
 }
 
 .tab-btn.active {
-    background: var(--surface-card);
+    background: var(--surface-white);
     color: var(--ink);
     font-weight: 600;
-    box-shadow: var(--shadow-subtle);
     border: 1px solid var(--hairline);
+    box-shadow: 0 2px 6px rgba(10, 10, 10, 0.04);
 }
 
 /* Tab Panels */
@@ -1310,6 +1324,65 @@ textarea:focus, input:focus, select:focus {
     font-size: 12px;
     color: var(--body);
     line-height: 1.5;
+}
+
+/* Stats Grid & Gradebook */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+
+.stat-card {
+    background: var(--surface-soft);
+    border: 1px solid var(--hairline);
+    border-radius: var(--rounded-md);
+    padding: var(--space-3) var(--space-4);
+    text-align: center;
+}
+
+.stat-val {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 2px;
+}
+
+.stat-lbl {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+/* Batch Table */
+.batch-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--surface-white);
+    border: 1px solid var(--hairline);
+    border-radius: var(--rounded-md);
+    overflow: hidden;
+}
+
+.batch-table th {
+    background: var(--surface-soft);
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink);
+    border-bottom: 1px solid var(--hairline);
+}
+
+.batch-table td {
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--body);
+    border-bottom: 1px solid var(--hairline);
+}
+
+.batch-table tr:last-child td {
+    border-bottom: none;
 }
 
 .footer-bottom {

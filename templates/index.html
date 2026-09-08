@@ -43,22 +43,22 @@
             </div>
         </section>
 
-        <!-- Navigation Tabs (Clay Pill Sub-Nav) -->
+        <!-- Navigation Tabs (Clay Segmented Sub-Nav) -->
         <nav class="tabs-nav">
             <button class="tab-btn active" data-tab="tab-text">
                 ✍️ Direct Text
             </button>
             <button class="tab-btn" data-tab="tab-file">
-                📁 Upload Document (.docx, .pdf, .tex)
+                📄 Document Upload
             </button>
             <button class="tab-btn" data-tab="tab-compare">
-                📑 Compare Drafts (v1 vs v2)
+                📑 Compare Drafts
             </button>
             <button class="tab-btn" data-tab="tab-cite">
                 📚 Citation & BibTeX
             </button>
             <button class="tab-btn" data-tab="tab-batch">
-                📦 Batch Class (.zip)
+                📦 Batch Scan (.zip)
             </button>
             <button class="tab-btn" data-tab="tab-sources">
                 🏛️ Institutional Corpus (<span id="nav-sources-count">{{ sources_count }}</span>)
@@ -226,7 +226,7 @@
                         </div>
                     </div>
 
-                    <button type="submit" class="btn-primary" style="margin-top: 16px; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">
+                    <button type="submit" class="btn-primary" style="margin-top: 16px;">
                         <span>⚡ Compare Draft Revision Deltas</span>
                     </button>
                 </form>
@@ -339,7 +339,7 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                         </div>
 
                         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                            <button type="submit" class="btn-primary" style="width: auto; padding: 10px 20px; background: linear-gradient(135deg, #059669 0%, #047857 100%);">
+                            <button type="submit" class="btn-primary" style="width: auto; padding: 10px 20px;">
                                 <span>🔤 Alphabetize & Format References</span>
                             </button>
                             <button type="button" id="btn-sample-references" class="btn-secondary" style="padding: 10px 14px; font-size: 13px;">
@@ -353,7 +353,7 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                             <div style="font-size: 13px; font-weight: 600; color: #34d399;">
                                 ✅ <span id="alphabetized-count">0</span> References Sorted & Verified
                             </div>
-                            <button id="btn-copy-alphabetized" class="btn-primary" style="padding: 6px 14px; font-size: 12px; width: auto; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                            <button id="btn-copy-alphabetized" class="btn-primary" style="padding: 6px 14px; font-size: 12px; width: auto;">
                                 📋 Copy Formatted Bibliography
                             </button>
                         </div>
@@ -392,7 +392,7 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                         <button type="button" id="batch-remove-file" class="remove-file-btn" title="Remove file">✕</button>
                     </div>
 
-                    <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%);">
+                    <button type="submit" class="btn-primary">
                         <span>⚡ Process Class Batch Submissions</span>
                     </button>
                 </form>
@@ -467,7 +467,7 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                         <button type="button" id="source-remove-file" class="remove-file-btn" title="Remove file">✕</button>
                     </div>
 
-                    <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                    <button type="submit" class="btn-primary">
                         <span>➕ Add to Institutional Repository</span>
                     </button>
                 </form>
@@ -499,7 +499,7 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                     <h2 class="section-title" style="margin-bottom: 0;">📊 Academic Originality & AI Report</h2>
                     <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                         <span id="scan-sources-meta" class="live-scan-badge">🌐 Global Academic & Web Scan</span>
-                        <button id="download-cert-btn" class="btn-primary" style="padding: 8px 14px; font-size: 13px; background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);">📜 Export Student Certificate</button>
+                        <button id="download-cert-btn" class="btn-primary" style="padding: 8px 16px; font-size: 13px; width: auto;">📜 Export Student Certificate</button>
                         <button id="download-pdf-btn" class="btn-pdf">📄 Export Printable Report</button>
                     </div>
                 </div>
@@ -769,7 +769,7 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
                         <span style="font-weight: 700; font-size: 13px; color: var(--text-primary);">💡 Paraphrase & Attribution Coach</span>
                         <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                            <button id="btn-trigger-paraphrase" class="btn-primary" style="padding: 4px 10px; font-size: 11px; background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%);">✨ AI Paraphrase Suggestions</button>
+                            <button id="btn-trigger-paraphrase" class="btn-primary" style="padding: 5px 12px; font-size: 12px; width: auto;">✨ AI Paraphrase Suggestions</button>
                             <button id="btn-copy-apa" class="btn-pdf" style="padding: 4px 10px; font-size: 11px;">📋 Copy APA 7th</button>
                             <button id="btn-copy-mla" class="btn-pdf" style="padding: 4px 10px; font-size: 11px;">📋 Copy MLA 9th</button>
                             <button id="btn-copy-ieee" class="btn-pdf" style="padding: 4px 10px; font-size: 11px;">📋 Copy IEEE</button>
@@ -822,7 +822,7 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
 
                 <div style="display: flex; justify-content: flex-end; gap: 10px;">
                     <button id="cert-cancel-btn" class="btn-secondary">Cancel</button>
-                    <button id="cert-confirm-btn" class="btn-primary" style="padding: 10px 18px; background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);">
+                    <button id="cert-confirm-btn" class="btn-primary" style="padding: 10px 18px; width: auto;">
                         🖨️ Generate & Print Certificate
                     </button>
                 </div>
@@ -854,7 +854,7 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
 
                 <div style="display: flex; justify-content: flex-end; gap: 10px;">
                     <button id="pin-cancel-btn" class="btn-secondary">Cancel</button>
-                    <button id="pin-confirm-btn" class="btn-primary" style="padding: 10px 18px; background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);">
+                    <button id="pin-confirm-btn" class="btn-primary" style="padding: 10px 18px; width: auto; background: var(--error);">
                         🗑️ Authorize & Delete
                     </button>
                 </div>
