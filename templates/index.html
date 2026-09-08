@@ -8,8 +8,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
 <body>
+    <!-- Full-Bleed WebGL Dot-Matrix Background Field -->
+    <canvas id="webgl-canvas"></canvas>
+
     <div class="app-wrapper">
         <!-- Brand Header with Theme Switcher -->
         <header class="brand-header">
@@ -828,6 +830,7 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
         </div>
     </div>
 
+    <script src="{{ url_for('static', filename='js/webgl-field.js') }}"></script>
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>
