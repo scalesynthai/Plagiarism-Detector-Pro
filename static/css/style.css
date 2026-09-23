@@ -853,6 +853,284 @@ textarea:focus, input:focus, select:focus {
     color: var(--danger);
 }
 
+/* Primary document-upload workspace */
+.upload-workspace {
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 32px;
+}
+
+.upload-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-6);
+    margin-bottom: var(--space-6);
+}
+
+.upload-eyebrow {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.upload-heading h2 {
+    margin-bottom: 6px;
+    color: var(--ink);
+    font-size: 26px;
+    line-height: 1.2;
+    letter-spacing: -0.5px;
+}
+
+.upload-heading p {
+    max-width: 600px;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.privacy-note {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 0 0 auto;
+    padding: 10px 12px;
+    border: 1px solid #bbdccf;
+    border-radius: var(--rounded-md);
+    background: #effaf5;
+    color: #164e3b;
+    font-size: 12px;
+    line-height: 1.25;
+}
+
+.privacy-note > span:first-child {
+    font-size: 18px;
+}
+
+.privacy-note strong,
+.privacy-note small {
+    display: block;
+}
+
+.privacy-note small {
+    margin-top: 2px;
+    color: #37705d;
+}
+
+.upload-dropzone {
+    min-height: 250px;
+    margin-bottom: var(--space-4);
+    padding: 44px 24px;
+    border-color: #c9c5b9;
+    background: #fdfbf6;
+    outline: none;
+}
+
+.upload-dropzone:hover,
+.upload-dropzone.dragover,
+.upload-dropzone:focus-visible {
+    border-color: var(--ink);
+    background: var(--surface-soft);
+    box-shadow: 0 0 0 3px rgba(10, 10, 10, 0.08);
+}
+
+.upload-dropzone.has-file {
+    display: none;
+}
+
+.upload-dropzone .dropzone-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: white;
+    font-size: 28px;
+    font-weight: 400;
+    line-height: 1;
+}
+
+.upload-dropzone .dropzone-title {
+    margin-bottom: 4px;
+    font-size: 19px;
+}
+
+.upload-dropzone .dropzone-desc {
+    margin-bottom: 18px;
+    font-size: 14px;
+}
+
+.browse-link {
+    color: var(--ink);
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.upload-dropzone .pill {
+    padding: 3px 9px;
+    background: transparent;
+    color: var(--muted);
+}
+
+.upload-file-preview {
+    min-height: 92px;
+    padding: 18px 20px;
+    border-color: #afd5c4;
+    background: #f3fbf7;
+}
+
+.selected-file-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #d6f3e5;
+    color: #166534;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.selected-file-name {
+    max-width: 560px;
+    overflow: hidden;
+    color: var(--ink);
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.selected-file-meta {
+    margin-top: 2px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.upload-file-preview .remove-file-btn {
+    padding: 7px 10px;
+    border: 1px solid var(--hairline);
+    border-radius: var(--rounded-sm);
+    background: white;
+    color: var(--body);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.scan-options {
+    margin: var(--space-4) 0;
+    border: 1px solid var(--hairline);
+    border-radius: var(--rounded-md);
+    background: white;
+}
+
+.scan-options summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 13px 16px;
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    list-style: none;
+}
+
+.scan-options summary::-webkit-details-marker {
+    display: none;
+}
+
+.scan-options summary::after {
+    content: '+';
+    color: var(--muted);
+    font-size: 18px;
+    font-weight: 400;
+}
+
+.scan-options[open] summary::after {
+    content: '−';
+}
+
+.settings-summary {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 400;
+}
+
+.scan-options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    padding: 0 16px 16px;
+    border-top: 1px solid var(--hairline-soft);
+}
+
+.option-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 12px 8px 0;
+    color: var(--body);
+    cursor: pointer;
+}
+
+.option-row:nth-child(even) {
+    padding-left: 12px;
+}
+
+.option-row input {
+    width: 17px;
+    height: 17px;
+    margin-top: 2px;
+    accent-color: var(--ink);
+}
+
+.option-row strong,
+.option-row small {
+    display: block;
+}
+
+.option-row strong {
+    color: var(--ink);
+    font-size: 13px;
+}
+
+.option-row small {
+    margin-top: 2px;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.upload-submit {
+    margin-top: var(--space-3);
+}
+
+.btn-primary:disabled {
+    background: var(--primary-disabled);
+    color: #888;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+.upload-help {
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+}
+
 /* ==============================================================================
    BADGES & PILLS
    ============================================================================== */
@@ -1798,5 +2076,31 @@ textarea:focus, input:focus, select:focus {
     }
     .brand-title {
         font-size: 28px;
+    }
+    .upload-workspace {
+        padding: 20px;
+    }
+    .upload-heading {
+        display: block;
+    }
+    .privacy-note {
+        width: fit-content;
+        margin-top: 16px;
+    }
+    .upload-dropzone {
+        min-height: 220px;
+        padding: 34px 16px;
+    }
+    .scan-options-grid {
+        grid-template-columns: 1fr;
+    }
+    .option-row:nth-child(even) {
+        padding-left: 0;
+    }
+    .settings-summary {
+        display: none;
+    }
+    .selected-file-name {
+        max-width: 190px;
     }
 }

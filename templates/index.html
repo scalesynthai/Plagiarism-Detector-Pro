@@ -34,25 +34,19 @@
             <div class="hero-pill-tag">
                 <span>✨ Text Similarity & Academic Diagnostics</span>
             </div>
-            <h1 class="brand-title">Inspect Text Similarity and Academic Attribution.</h1>
+            <h1 class="brand-title">Upload a paper. Review every match.</h1>
             <p class="brand-subtitle">
-                Lexical-overlap scoring, writing-pattern signals, citation coaching, and advisory reports for researchers, professors, and students.
+                Get a clear similarity score, highlighted passages, source links, and practical revision guidance.
             </p>
-            <div class="hero-features-chips">
-                <span class="chip-item">🔍 Web & Institutional Corpus Cross-Match</span>
-                <span class="chip-item">🤖 Perplexity & Syntactic Burstiness AI Engine</span>
-                <span class="chip-item">📚 Instant DOI / BibTeX Generator</span>
-                <span class="chip-item">🔬 PhD Conference Anonymity Auditor</span>
-            </div>
         </section>
 
         <!-- Navigation Tabs (Clay Segmented Sub-Nav) -->
         <nav class="tabs-nav">
-            <button class="tab-btn active" data-tab="tab-text">
-                ✍️ Direct Text
+            <button class="tab-btn active" data-tab="tab-file">
+                📄 Upload Document
             </button>
-            <button class="tab-btn" data-tab="tab-file">
-                📄 Document Upload
+            <button class="tab-btn" data-tab="tab-text">
+                ✍️ Paste Text
             </button>
             <button class="tab-btn" data-tab="tab-compare">
                 📑 Compare Drafts
@@ -69,7 +63,7 @@
         </nav>
 
         <!-- Tab 1: Text Input with Productivity Toolbar & Live Stats -->
-        <div id="tab-text" class="tab-panel active">
+        <div id="tab-text" class="tab-panel">
             <div class="glass-card">
                 <!-- Academic Sample Presets & Quick Actions -->
                 <div class="editor-toolbar">
@@ -91,7 +85,7 @@
                             <span>Input Academic Text or Research Excerpt</span>
                             <span class="hotkey-tip">Tip: Press <strong>Cmd/Ctrl + Enter</strong> to scan</span>
                         </label>
-                        <textarea id="query-text" name="query" placeholder="Type or paste student submission, essay, LaTeX, or research excerpt here..." autofocus>{{ query_text or '' }}</textarea>
+                        <textarea id="query-text" name="query" placeholder="Type or paste student submission, essay, LaTeX, or research excerpt here...">{{ query_text or '' }}</textarea>
                     </div>
 
                     <!-- Live Real-Time Manuscript Metrics Bar -->
@@ -161,58 +155,75 @@
         </div>
 
         <!-- Tab 2: Document Upload -->
-        <div id="tab-file" class="tab-panel">
-            <div class="glass-card">
+        <div id="tab-file" class="tab-panel active">
+            <div class="glass-card upload-workspace">
+                <div class="upload-heading">
+                    <div>
+                        <span class="upload-eyebrow">Document similarity scan</span>
+                        <h2>Choose a document to analyze</h2>
+                        <p>Your document is analyzed for matching text, attribution, citations, writing patterns, and readability.</p>
+                    </div>
+                    <div class="privacy-note" title="Uploaded drafts are not added to the institutional comparison corpus.">
+                        <span aria-hidden="true">🛡️</span>
+                        <span><strong>Private by default</strong><small>Not added to the corpus</small></span>
+                    </div>
+                </div>
                 <form id="file-scan-form">
-                    <label>Select or Drag & Drop Academic Document</label>
-                    <div class="dropzone" id="scan-dropzone">
-                        <span class="dropzone-icon">📄</span>
-                        <div class="dropzone-title">Drag & drop your document here, or click to browse</div>
-                        <div class="dropzone-desc">Supports Word (.docx), Adobe PDF (.pdf), LaTeX (.tex), Jupyter (.ipynb), and Markdown (.md)</div>
+                    <div class="dropzone upload-dropzone" id="scan-dropzone" role="button" tabindex="0" aria-label="Choose a document or drag and drop it here">
+                        <span class="dropzone-icon" aria-hidden="true">↑</span>
+                        <div class="dropzone-title">Drop your paper here</div>
+                        <div class="dropzone-desc">or <span class="browse-link">choose a file</span> from your computer</div>
                         <div class="format-pills">
-                            <span class="pill">.DOCX</span>
-                            <span class="pill">.PDF</span>
-                            <span class="pill">.TEX</span>
-                            <span class="pill">.IPYNB</span>
-                            <span class="pill">.TXT</span>
-                            <span class="pill">.MD</span>
+                            <span class="pill">PDF</span>
+                            <span class="pill">DOCX</span>
+                            <span class="pill">TXT</span>
+                            <span class="pill">MD</span>
+                            <span class="pill">TEX</span>
+                            <span class="pill">IPYNB</span>
                         </div>
                         <input type="file" id="file-input" name="file" accept=".docx,.pdf,.tex,.ipynb,.txt,.md,.rtf,.csv" style="display: none;">
                     </div>
 
-                    <div id="scan-file-preview" class="file-preview">
+                    <div id="scan-file-preview" class="file-preview upload-file-preview" aria-live="polite">
                         <div class="file-info">
-                            <span>📄</span>
+                            <span class="selected-file-icon" aria-hidden="true">✓</span>
                             <div>
-                                <div id="scan-file-name" style="font-weight: 600;">document.docx</div>
-                                <div id="scan-file-size" style="font-size: 12px; color: var(--text-muted);">0 KB</div>
+                                <div id="scan-file-name" class="selected-file-name">document.docx</div>
+                                <div id="scan-file-size" class="selected-file-meta">0 KB</div>
                             </div>
                         </div>
-                        <button type="button" id="scan-remove-file" class="remove-file-btn" title="Remove file">✕</button>
+                        <button type="button" id="scan-remove-file" class="remove-file-btn" title="Remove selected file">Remove</button>
                     </div>
 
-                    <div class="toggle-container">
-                        <label class="switch-label" style="margin-bottom: 8px;">
-                            <input type="checkbox" id="file-private-draft" checked>
-                            <span class="toggle-text">🛡️ <strong>Student Private Draft Shield</strong> (Never stored into institutional database)</span>
-                        </label>
-                        <label class="switch-label" style="margin-bottom: 8px;">
-                            <input type="checkbox" id="file-live-search" checked>
-                            <span class="toggle-text">🌐 <strong>Real-Time Global Database Search</strong> (Wikipedia, arXiv, OpenAlex, CrossRef, Web)</span>
-                        </label>
-                        <label class="switch-label">
-                            <input type="checkbox" id="file-exclude-quotes">
-                            <span class="toggle-text">💬 <strong>Exclude Quoted Text Only</strong></span>
-                        </label>
-                        <label class="switch-label">
-                            <input type="checkbox" id="file-exclude-bibliography">
-                            <span class="toggle-text"><strong>Exclude References Section</strong></span>
-                        </label>
-                    </div>
+                    <details class="scan-options">
+                        <summary>
+                            <span>Scan settings</span>
+                            <span class="settings-summary">Web search on · Full document</span>
+                        </summary>
+                        <div class="scan-options-grid">
+                            <label class="option-row">
+                                <input type="checkbox" id="file-private-draft" checked>
+                                <span><strong>Private draft</strong><small>Do not add this document to the institutional corpus.</small></span>
+                            </label>
+                            <label class="option-row">
+                                <input type="checkbox" id="file-live-search" checked>
+                                <span><strong>Search external sources</strong><small>Compare with Wikipedia, arXiv, OpenAlex, Crossref, and the web.</small></span>
+                            </label>
+                            <label class="option-row">
+                                <input type="checkbox" id="file-exclude-quotes">
+                                <span><strong>Exclude quoted text</strong><small>Remove text inside recognized quotation marks from the score.</small></span>
+                            </label>
+                            <label class="option-row">
+                                <input type="checkbox" id="file-exclude-bibliography">
+                                <span><strong>Exclude references</strong><small>Remove the detected bibliography section from the score.</small></span>
+                            </label>
+                        </div>
+                    </details>
 
-                    <button type="submit" class="btn-primary" data-original-text="Upload & Scan Document">
-                        <span>🚀 Upload & Scan Document</span>
+                    <button type="submit" id="scan-document-btn" class="btn-primary upload-submit" data-original-text="Scan Document" disabled>
+                        <span>Scan document</span>
                     </button>
+                    <p class="upload-help">Select one document to begin. Results will show the percentage, matched passages, and recommended next steps.</p>
                 </form>
             </div>
         </div>

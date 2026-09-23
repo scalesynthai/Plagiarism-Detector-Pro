@@ -35,6 +35,21 @@ document.addEventListener('DOMContentLoaded', () => {
     setupDropzone('batch-dropzone', 'batch-file-input', 'batch-file-preview', 'batch-file-name', 'batch-file-size', 'batch-remove-file');
     setupDropzone('source-dropzone', 'source-file-input', 'source-file-preview', 'source-file-name', 'source-file-size', 'source-remove-file');
 
+    const fileSettingIds = ['file-private-draft', 'file-live-search', 'file-exclude-quotes', 'file-exclude-bibliography'];
+    const updateFileSettingsSummary = () => {
+        const summary = document.querySelector('.scan-options .settings-summary');
+        if (!summary) return;
+        const privateDraft = document.getElementById('file-private-draft')?.checked;
+        const webSearch = document.getElementById('file-live-search')?.checked;
+        const excludeQuotes = document.getElementById('file-exclude-quotes')?.checked;
+        const excludeReferences = document.getElementById('file-exclude-bibliography')?.checked;
+        const exclusions = [excludeQuotes && 'quotes', excludeReferences && 'references'].filter(Boolean);
+        const coverage = exclusions.length ? `Exclude ${exclusions.join(' + ')}` : 'Full document';
+        summary.textContent = `${privateDraft ? 'Private' : 'Standard'} · ${webSearch ? 'External sources on' : 'Local corpus only'} · ${coverage}`;
+    };
+    fileSettingIds.forEach(id => document.getElementById(id)?.addEventListener('change', updateFileSettingsSummary));
+    updateFileSettingsSummary();
+
     // 3. Live Editor Stats, Presets & Hotkeys
     initEditorTools();
 
@@ -1651,10 +1666,19 @@ function setupDropzone(zoneId, inputId, previewId, nameId, sizeId, removeId) {
     const nameElem = document.getElementById(nameId);
     const sizeElem = document.getElementById(sizeId);
     const removeBtn = document.getElementById(removeId);
+    const submitBtn = zone?.closest('form')?.querySelector('button[type="submit"]');
+    const controlsSubmit = submitBtn?.id === 'scan-document-btn';
 
     if (!zone || !input) return;
 
     zone.addEventListener('click', () => input.click());
+
+    zone.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            input.click();
+        }
+    });
 
     zone.addEventListener('dragover', (e) => {
         e.preventDefault();
@@ -1682,6 +1706,8 @@ function setupDropzone(zoneId, inputId, previewId, nameId, sizeId, removeId) {
             if (nameElem) nameElem.textContent = input.files.length > 1 ? `${input.files.length} files selected` : f.name;
             if (sizeElem) sizeElem.textContent = input.files.length > 1 ? 'Multiple documents' : formatBytes(f.size);
             if (preview) preview.style.display = 'flex';
+            zone.classList.add('has-file');
+            if (controlsSubmit) submitBtn.disabled = false;
         }
     }
 
@@ -1690,6 +1716,9 @@ function setupDropzone(zoneId, inputId, previewId, nameId, sizeId, removeId) {
             e.stopPropagation();
             input.value = '';
             if (preview) preview.style.display = 'none';
+            zone.classList.remove('has-file');
+            if (controlsSubmit) submitBtn.disabled = true;
+            zone.focus();
         });
     }
 }
