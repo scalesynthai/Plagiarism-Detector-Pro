@@ -10,7 +10,7 @@ class CitationValidator:
 
     # In-text citation regex patterns
     PATTERNS = {
-        "apa_parenthetical": r'\(([A-Z][a-zA-Z\s]+(?:,\s*(?:et\s+al\.|&\s*[A-Z][a-zA-Z\s]+))?,\s*\d{4}(?:,\s*p{1,2}\.?\s*\d+)?)\)',
+        "apa_parenthetical": r"(?:\(|;\s*)([A-Z][\w'’–-]+(?:\s+(?:et\s+al\.|&\s*[A-Z][\w'’–-]+))?,\s*(?:19|20)\d{2}[a-z]?(?:,\s*p{1,2}\.?\s*\d+(?:[-–]\d+)?)?)(?=\s*[;)])",
         "apa_narrative": r'\b([A-Z][a-zA-Z]+(?:\s+(?:et\s+al\.|and\s+[A-Z][a-zA-Z]+))?)\s*\((19\d{2}|20\d{2})\)',
         "ieee_numeric": r'\[(\d+(?:\s*[-–,]\s*\d+)*)\]',
         "mla_author_page": r'\(([A-Z][a-zA-Z]+)\s+(\d{1,4})\)',
@@ -121,10 +121,18 @@ class CitationValidator:
         for c in citations:
             raw = c["raw"]
             content = c["content"]
-            # Extract key author surname or number
-            key = re.sub(r'[,.\d\(\)\[\]]', '', content).split()[0] if not content.isdigit() else content
-            
-            is_in_bib = any(key.lower() in b.lower() for b in bib_entries) if bib_entries else True
+            if c["style"] == "IEEE":
+                numbers = re.findall(r"\d+", content)
+                is_in_bib = bool(bib_entries) and all(
+                    any(re.match(r"^\[?" + re.escape(number) + r"(?:\]|\.)", entry) for entry in bib_entries)
+                    for number in numbers)
+            else:
+                surname = re.search(r"[A-Z][\w’'-]+", content)
+                year = re.search(r"(?:19|20)\d{2}[a-z]?", raw)
+                is_in_bib = bool(surname) and any(
+                    re.search(r"\b" + re.escape(surname.group()) + r"\b", entry, re.I) and
+                    (not year or year.group() in entry) for entry in bib_entries)
+
             if is_in_bib:
                 matched_citations.append(c)
             else:
@@ -138,6 +146,6 @@ class CitationValidator:
             "citations": citations,
             "bibliography_entries": bib_entries[:10],
             "body_text": body_text,
-            "has_unlinked_citations": len(unmatched_citations) > 0 and has_bib,
-            "unlinked_citations_count": len(unmatched_citations) if has_bib else 0,
+            "has_unlinked_citations": len(unmatched_citations) > 0,
+            "unlinked_citations_count": len(unmatched_citations),
         }

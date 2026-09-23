@@ -9,7 +9,8 @@ const {
     AcademicStudentCoach,
     DocumentExtractor,
     CitationGenerator,
-    DraftComparator
+    DraftComparator,
+    CertificateGenerator
 } = require("../lib/index");
 
 console.log("🧪 Starting Plagiarism Detector Pro JavaScript & CLI Test Suite...\n");
@@ -117,7 +118,11 @@ CitationGenerator.resolveCitation("1706.03762").then(citeRes => {
 
     const certOut = execSync(`node "${cliPath}" certificate "In this paper we examine deep models." --name "Jane Doe" --title "Deep Learning" --json`).toString();
     const certJson = JSON.parse(certOut);
-    assert.ok(certJson.certificate_id.startsWith("AUTH-"));
+    assert.ok(certJson.certificate_id.startsWith("ANALYSIS-"));
+    const certInput = { studentName: 'Jane Doe', paperTitle: 'Deep Learning', plagiarismScore: 12,
+        aiScore: 8, wordCount: 7, text: 'In this paper we examine deep models.' };
+    assert.strictEqual(CertificateGenerator.generate(certInput).sha256_hash,
+        CertificateGenerator.generate(certInput).sha256_hash);
 
     const batchOut = execSync(`node "${cliPath}" batch "${path.join(__dirname, '..', 'sources')}" --json`).toString();
     const batchJson = JSON.parse(batchOut);

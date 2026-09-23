@@ -1,0 +1,38 @@
+const assert = require('node:assert/strict');
+const { PlagiarismChecker, AcademicStudentCoach, PhdResearchAuditor } = require('../lib');
+const { citations } = require('../lib/diagnostics');
+const { spawnSync } = require('node:child_process');
+const path = require('node:path');
+const cases = require('../benchmarks/cases.json').cases;
+for (const c of cases.filter(c => c.split !== 'challenge')) {
+    const checker = Object.create(PlagiarismChecker.prototype);
+    checker.sources = c.sources;
+    const result = checker.analyze(c.text, { excludeQuotes:c.options.exclude_quotes, excludeBibliography:c.options.exclude_bibliography });
+    assert.equal(result.overall_similarity, c.expected_score, c.id);
+    const ids = [...new Set(result.matched_spans.flatMap(s=>Array.from({length:s.token_end-s.token_start},(_,i)=>s.token_start+i)))].sort((a,b)=>a-b);
+    assert.deepEqual(ids,c.expected_positive_tokens,c.id);
+}
+const repeatedChecker = Object.create(PlagiarismChecker.prototype);
+repeatedChecker.sources = [{filename:'repeated.txt', text:'Old blue crystals absorb ultraviolet radiation poorly. Novel blue crystals absorb ultraviolet radiation accurately.', source_type:'web', badge:'Web', url:'https://example.test/source'}];
+const repeated = repeatedChecker.analyze('Novel blue crystals absorb ultraviolet radiation accurately.');
+assert.equal(repeated.flagged_word_count,7);
+assert.equal(repeated.overall_similarity,100);
+assert.equal(repeated.matched_spans[0].text,'Novel blue crystals absorb ultraviolet radiation accurately');
+assert.equal(repeated.sources_breakdown[0].url,'https://example.test/source');
+assert.equal(repeated.diff_matches[0].badge,'Web');
+assert.equal(citations('Evidence (Barocas et al., 2023). Data (n = 442; Efron et al., 2004). Code (Pedregosa et al., 2011).').length,3);
+assert.deepEqual(AcademicStudentCoach.scanUnsupportedClaims('Studies show that restored wetlands reduce flooding (Smith et al., 2024).'),[]);
+const intro='Title\n\nBy Jane Doe\nUniversity of Example\n\nIntroduction\nThis paper argues for a hypothesis using a dataset. Its significance is practical.\n\nMethods\nEXCLUDED';
+const thesis=AcademicStudentCoach.evaluateThesisAbstract(intro);
+assert.equal(thesis.score,100);
+assert.ok(!thesis.evaluated_text.includes('EXCLUDED'));
+assert.ok(!thesis.evaluated_text.includes('Jane Doe'));
+assert.equal(AcademicStudentCoach.evaluateThesisAbstract('Title only').score,0);
+assert.equal(PhdResearchAuditor.auditManuscript(intro).is_anonymity_compliant,false);
+assert.equal(PhdResearchAuditor.auditManuscript('').is_anonymity_compliant,null);
+const cli=spawnSync(process.execPath,[path.join(__dirname,'../bin/plag.js'),'scan','"Supervised learning models predict continuous outcomes via linear regression."','--json','--exclude-quotes'],{encoding:'utf8',timeout:10000});
+assert.equal(cli.status,0,cli.stderr);
+const result=JSON.parse(cli.stdout);
+assert.equal(result.scored_word_count,0);
+assert.equal(result.scoring.exclude_quotes,true);
+console.log('Accuracy fixtures, diagnostics, and CLI exclusion checks passed.');

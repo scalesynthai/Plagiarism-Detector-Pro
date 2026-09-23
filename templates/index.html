@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plagiarism Detector Pro - Enterprise Academic Originality & AI Suite</title>
+    <title>Plagiarism Detector Pro - Text Similarity & Academic Diagnostics</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -32,11 +32,11 @@
         <!-- Clay Hero Band -->
         <section class="hero-band">
             <div class="hero-pill-tag">
-                <span>✨ Academic Intelligence & Originality Suite</span>
+                <span>✨ Text Similarity & Academic Diagnostics</span>
             </div>
-            <h1 class="brand-title">Verify Research Originality with Absolute Confidence.</h1>
+            <h1 class="brand-title">Inspect Text Similarity and Academic Attribution.</h1>
             <p class="brand-subtitle">
-                Dual Plagiarism & AI-content scoring, Private Draft Shield, citation coaching, and student honor certificates designed for modern researchers, professors, and students.
+                Lexical-overlap scoring, writing-pattern signals, citation coaching, and advisory reports for researchers, professors, and students.
             </p>
             <div class="hero-features-chips">
                 <span class="chip-item">🔍 Web & Institutional Corpus Cross-Match</span>
@@ -137,7 +137,7 @@
                     <div class="toggle-container">
                         <label class="switch-label" style="margin-bottom: 8px;">
                             <input type="checkbox" id="text-private-draft" checked>
-                            <span class="toggle-text">🛡️ <strong>Student Private Draft Shield</strong> (Guarantees zero database storage — safe against future Canvas/Turnitin self-plagiarism flags)</span>
+                            <span class="toggle-text">🛡️ <strong>Student Private Draft Shield</strong> (Not added to the local corpus; web search sends queries externally)</span>
                         </label>
                         <label class="switch-label" style="margin-bottom: 8px;">
                             <input type="checkbox" id="text-live-search" checked>
@@ -145,7 +145,11 @@
                         </label>
                         <label class="switch-label">
                             <input type="checkbox" id="text-exclude-quotes">
-                            <span class="toggle-text">💬 <strong>Exclude Quotations & Verified Citations</strong></span>
+                            <span class="toggle-text">💬 <strong>Exclude Quoted Text Only</strong></span>
+                        </label>
+                        <label class="switch-label">
+                            <input type="checkbox" id="text-exclude-bibliography">
+                            <span class="toggle-text"><strong>Exclude References Section</strong></span>
                         </label>
                     </div>
 
@@ -198,7 +202,11 @@
                         </label>
                         <label class="switch-label">
                             <input type="checkbox" id="file-exclude-quotes">
-                            <span class="toggle-text">💬 <strong>Exclude Quotations & Verified Citations</strong></span>
+                            <span class="toggle-text">💬 <strong>Exclude Quoted Text Only</strong></span>
+                        </label>
+                        <label class="switch-label">
+                            <input type="checkbox" id="file-exclude-bibliography">
+                            <span class="toggle-text"><strong>Exclude References Section</strong></span>
                         </label>
                     </div>
 
@@ -354,7 +362,7 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                     <div id="alphabetize-results-container" style="display: none; margin-top: 20px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
                             <div style="font-size: 13px; font-weight: 600; color: #34d399;">
-                                ✅ <span id="alphabetized-count">0</span> References Sorted & Verified
+                                ✅ <span id="alphabetized-count">0</span> References Sorted & Checked
                             </div>
                             <button id="btn-copy-alphabetized" class="btn-primary" style="padding: 6px 14px; font-size: 12px; width: auto;">
                                 📋 Copy Formatted Bibliography
@@ -430,8 +438,8 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                                 <th>Student / Document</th>
                                 <th>Word Count</th>
                                 <th>Plagiarism Index</th>
-                                <th>AI Probability</th>
-                                <th>SafeAssign Risk</th>
+                                <th>Pattern Score</th>
+                                <th>Similarity Tier</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -499,10 +507,10 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
             <div class="glass-card">
                 <!-- Header Actions -->
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px;">
-                    <h2 class="section-title" style="margin-bottom: 0;">📊 Academic Originality & AI Report</h2>
+                    <h2 class="section-title" style="margin-bottom: 0;">📊 Text Similarity & Writing-Pattern Report</h2>
                     <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                        <span id="scan-sources-meta" class="live-scan-badge">🌐 Global Academic & Web Scan</span>
-                        <button id="download-cert-btn" class="btn-primary" style="padding: 8px 16px; font-size: 13px; width: auto;">📜 Export Student Certificate</button>
+                        <span id="scan-sources-meta" class="live-scan-badge">Source coverage pending</span>
+                        <button id="download-cert-btn" class="btn-primary" style="padding: 8px 16px; font-size: 13px; width: auto;">📜 Export Advisory Summary</button>
                         <button id="download-pdf-btn" class="btn-pdf">📄 Export Printable Report</button>
                     </div>
                 </div>
@@ -517,7 +525,7 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                 <div id="student-checklist-card" class="student-checklist-card">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
                         <span style="font-weight: 700; font-size: 14px; color: var(--text-primary);">🎓 Pre-Submission Integrity Checklist</span>
-                        <span id="checklist-overall-badge" class="badge-pill success">🌟 Ready for LMS / Canvas Submission</span>
+                        <span id="checklist-overall-badge" class="badge-pill info">Analysis pending</span>
                     </div>
                     <div class="checklist-grid">
                         <div id="chk-plag" class="checklist-subitem">
@@ -529,7 +537,7 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                         </div>
                         <div id="chk-ai" class="checklist-subitem">
                             <div class="checklist-subitem-header">
-                                <div class="checklist-subitem-title">🤖 AI Content</div>
+                                <div class="checklist-subitem-title">🤖 Writing Patterns</div>
                                 <span id="chk-ai-pill" class="badge-pill success">Human Authored</span>
                             </div>
                             <div id="chk-ai-desc" class="checklist-subitem-desc">Organic human syntactic variance and burstiness.</div>
@@ -537,9 +545,9 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                         <div id="chk-cite" class="checklist-subitem">
                             <div class="checklist-subitem-header">
                                 <div class="checklist-subitem-title">📚 Citations</div>
-                                <span id="chk-cite-pill" class="badge-pill info">Verified</span>
+                                <span id="chk-cite-pill" class="badge-pill info">Not assessed</span>
                             </div>
-                            <div id="chk-cite-desc" class="checklist-subitem-desc">In-text citations detected and verified.</div>
+                            <div id="chk-cite-desc" class="checklist-subitem-desc">Citation syntax has not been assessed.</div>
                         </div>
                         <div id="chk-read" class="checklist-subitem">
                             <div class="checklist-subitem-header">
@@ -555,16 +563,16 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                 <div id="phd-auditor-card" class="phd-auditor-card">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
                         <span style="font-weight: 700; font-size: 14px; color: var(--text-primary);" id="phd-card-title">🔬 PhD & Conference Pre-Flight Auditor (NeurIPS / ICML / IEEE)</span>
-                        <span id="phd-readiness-badge" class="badge-pill success">100/100 • Conference Ready</span>
+                        <span id="phd-readiness-badge" class="badge-pill success">Screening pending</span>
                     </div>
                     
                     <div class="phd-grid">
                         <div class="phd-subitem">
                             <div class="phd-subitem-header">
                                 <div class="phd-subitem-title">🔒 Double-Blind Anonymity</div>
-                                <span id="phd-anon-pill" class="badge-pill success">100% Compliant</span>
+                                <span id="phd-anon-pill" class="badge-pill success">Not assessed</span>
                             </div>
-                            <div id="phd-anon-desc" class="phd-subitem-desc">Zero self-identifying prior citations or unblinded repository links found.</div>
+                            <div id="phd-anon-desc" class="phd-subitem-desc">Pattern-based screening; manual anonymity review is still required.</div>
                         </div>
                         <div class="phd-subitem">
                             <div class="phd-subitem-header">
@@ -576,6 +584,8 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                     </div>
                 </div>
 
+                <div id="similarity-details" role="status" style="margin:16px 0; padding:16px; background:var(--surface); border:1px solid var(--border-color); border-radius:12px;"></div>
+
                 <!-- Student Academic Writing & Integrity Coach Card -->
                 <div id="student-coach-card" class="student-coach-card">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
@@ -583,7 +593,7 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                             <span style="font-size: 22px;">🧑‍🎓</span>
                             <div>
                                 <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: var(--ink);">Student Academic Writing & Integrity Coach</h3>
-                                <div style="font-size: 13px; color: var(--muted);">Automated claim citation verification, tone enhancement, and thesis strength evaluation</div>
+                                <div style="font-size: 13px; color: var(--muted);">Automated citation-syntax checks, tone suggestions, and thesis-structure evaluation</div>
                             </div>
                         </div>
                         <span id="coach-overall-badge" class="badge-pill success">🌟 Well-Supported Writing</span>
@@ -638,7 +648,7 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                         <span style="font-size: 16px;">⚖️</span>
                         <div>
                             <strong>Institutional Academic Disclaimer:</strong>
-                            This thesis diagnostic, writing coach feedback, and originality score are provided for advisory and formative pre-submission validation purposes only. Institutional integrity evaluations, final grades, and official submission approvals are governed strictly by your university's honor code and faculty review.
+                            These structural diagnostics, writing suggestions, and similarity scores support pre-submission review. Institutional integrity evaluations and submission decisions remain with instructors and institutions.
                         </div>
                     </div>
                 </div>
@@ -652,13 +662,13 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                         </div>
                         <div id="score-circle-ai" class="score-circle ai-purple">
                             <div id="score-number-ai" class="score-number">0.0%</div>
-                            <div class="score-label">AI Content</div>
+                            <div class="score-label">AI-Pattern Heuristic</div>
                         </div>
                     </div>
 
                     <div class="verdict-info">
                         <div id="verdict-badge" class="verdict-badge success">Low Risk</div>
-                        <div id="verdict-title" class="verdict-title">Original Academic Work</div>
+                        <div id="verdict-title" class="verdict-title">No scan results yet</div>
                         <div id="verdict-desc" class="verdict-desc">Content appears original with organic syntax.</div>
                     </div>
                 </div>
@@ -683,7 +693,7 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                     </div>
                     <div class="stat-card">
                         <div id="stat-sources-searched" class="stat-val">0</div>
-                        <div class="stat-lbl">Databases Searched</div>
+                        <div class="stat-lbl">Sources Compared</div>
                     </div>
                 </div>
 
@@ -695,10 +705,10 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                             <div style="font-size: 12px; color: var(--text-muted);">Click any sentence to inspect side-by-side diff matches, copy citations, and get 1-click paraphrase advice.</div>
                         </div>
                         <div class="inspector-legend">
-                            <span class="legend-tag orig">🟢 Original</span>
+                            <span class="legend-tag orig">🟢 No match found</span>
                             <span class="legend-tag flag">🔴 Matched Passage</span>
                             <span class="legend-tag cite">🔵 Cited Source</span>
-                            <span class="legend-tag ai">🟣 AI Likelihood</span>
+                            <span class="legend-tag ai">🟣 Writing-Pattern Flag</span>
                         </div>
                     </div>
                     <div id="manuscript-viewer" class="manuscript-body-text">
@@ -736,7 +746,7 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                     <span style="font-size: 16px;">⚖️</span>
                     <div>
                         <strong style="color: var(--text-secondary);">Institutional Academic Advisory & Validation Disclaimer:</strong>
-                        This originality assessment, thesis diagnostic, and AI forensics are provided for pre-submission validation and developmental coaching purposes only. Official academic integrity determinations, final course grades, and submission clearances are governed strictly by your university's honor code and faculty review.
+                        These similarity, thesis, and writing-pattern diagnostics support developmental review. They do not determine authorship, academic integrity, grades, or submission clearance.
                     </div>
                 </div>
             </div>
@@ -798,13 +808,13 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
             </div>
         </div>
 
-        <!-- Student Certificate Input Modal -->
+        <!-- Advisory analysis summary input modal -->
         <div id="cert-modal" class="diff-modal">
             <div class="diff-box" style="max-width: 500px;">
                 <div class="diff-header">
                     <div>
-                        <h3 style="font-size: 18px; font-weight: 700;">📜 Export Student Authorship Certificate</h3>
-                        <span style="font-size: 12px; color: var(--text-muted);">Generate a verifiable academic honor certificate</span>
+                        <h3 style="font-size: 18px; font-weight: 700;">📜 Export Advisory Analysis Summary</h3>
+                        <span style="font-size: 12px; color: var(--text-muted);">Generate an advisory pre-submission analysis summary</span>
                     </div>
                     <button id="close-cert-modal" class="remove-file-btn" style="font-size: 24px;">✕</button>
                 </div>
@@ -819,14 +829,14 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                         <input type="text" id="cert-paper-title" placeholder="e.g., Deep Learning in Healthcare Essay" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 6px; color: var(--text-primary);">
                     </div>
                     <div style="padding: 8px 10px; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 6px; font-size: 11px; color: var(--text-muted); line-height: 1.4;">
-                        ℹ️ <em>Advisory Note:</em> Certificates validate independent pre-submission originality and are subject to institutional honor codes.
+                        ℹ️ <em>Advisory Note:</em> This unsigned summary reports automated heuristics and does not validate authorship or originality.
                     </div>
                 </div>
 
                 <div style="display: flex; justify-content: flex-end; gap: 10px;">
                     <button id="cert-cancel-btn" class="btn-secondary">Cancel</button>
                     <button id="cert-confirm-btn" class="btn-primary" style="padding: 10px 18px; width: auto;">
-                        🖨️ Generate & Print Certificate
+                        🖨️ Generate & Print Summary
                     </button>
                 </div>
             </div>
@@ -877,7 +887,7 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                         <div class="brand-logo-text">Plagiarism Detector Pro</div>
                     </div>
                     <p class="footer-desc">
-                        A modern, privacy-first academic originality & AI detection platform built for students, researchers, universities, and conference reviewers.
+                        A privacy-aware text-similarity and academic-diagnostics platform for students, researchers, universities, and conference reviewers.
                     </p>
                     <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-start;">
                         <span class="brand-badge-pill">🛡️ 100% Offline-Capable Engine</span>
@@ -890,7 +900,7 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                 <div>
                     <h4 class="footer-col-title">Core Modules</h4>
                     <ul class="footer-links">
-                        <li><a href="javascript:void(0)" class="footer-action-link" data-tab="tab-text">Direct Text Originality</a></li>
+                        <li><a href="javascript:void(0)" class="footer-action-link" data-tab="tab-text">Direct Text Similarity</a></li>
                         <li><a href="javascript:void(0)" class="footer-action-link" data-tab="tab-file">Document Ingestion</a></li>
                         <li><a href="javascript:void(0)" class="footer-action-link" data-tab="tab-compare">Draft Revision Diff (v1/v2)</a></li>
                         <li><a href="javascript:void(0)" class="footer-action-link" data-tab="tab-cite">DOI & BibTeX Formatter</a></li>
@@ -904,7 +914,7 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                         <li><a href="javascript:void(0)" class="footer-action-link" data-action="integrity-draft-shield">🛡️ Private Draft Shield</a></li>
                         <li><a href="javascript:void(0)" class="footer-action-link" data-action="integrity-double-blind">🔬 Double-Blind Anonymity</a></li>
                         <li><a href="javascript:void(0)" class="footer-action-link" data-action="integrity-student-coach">🧑‍🎓 Student Integrity Coach</a></li>
-                        <li><a href="javascript:void(0)" class="footer-action-link" data-action="integrity-authorship-cert">📜 Honor Authorship Certs</a></li>
+                        <li><a href="javascript:void(0)" class="footer-action-link" data-action="integrity-authorship-cert">📜 Advisory Analysis Summaries</a></li>
                         <li><a href="javascript:void(0)" class="footer-action-link" data-action="integrity-openalex-arxiv">🌐 OpenAlex / arXiv Cross-Match</a></li>
                     </ul>
                 </div>
@@ -913,7 +923,7 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                     <h4 class="footer-col-title">Academic Disclaimer</h4>
                     <div class="footer-disclaimer-card">
                         ⚠️ <strong>Validation & Advisory Notice:</strong>
-                        Pre-submission metrics provide probabilistic similarity & originality diagnostics. Final submission integrity remains subject to institutional honor codes, professors, and LMS policy.
+                        Pre-submission metrics report overlap against searched sources and uncalibrated writing-pattern signals. Final integrity decisions remain with instructors and institutions.
                     </div>
                 </div>
             </div>

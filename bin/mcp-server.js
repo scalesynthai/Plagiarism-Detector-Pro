@@ -19,12 +19,13 @@ const {
 const TOOLS = [
     {
         name: "plag_scan_text",
-        description: "Scans raw academic text or research excerpts for plagiarism similarity, SafeAssign risk tier, and statistical AI-content likelihood.",
+        description: "Measures lexical overlap against configured sources and reports an uncalibrated writing-pattern score.",
         inputSchema: {
             type: "object",
             properties: {
                 text: { type: "string", description: "The academic text or essay to scan." },
-                exclude_quotes: { type: "boolean", description: "Whether to exclude verified in-text citations from plagiarism scoring." },
+                exclude_bibliography: { type: "boolean", description: "Exclude the References section from scoring." },
+                exclude_quotes: { type: "boolean", description: "Exclude only quoted text from similarity scoring; citations remain included." },
                 server: { type: "string", description: "Optional remote server endpoint (e.g. https://plag.subba.dev)." }
             },
             required: ["text"]
@@ -32,12 +33,13 @@ const TOOLS = [
     },
     {
         name: "plag_scan_file",
-        description: "Scans a local document file (.tex, .ipynb, .md, .txt) for originality and AI likelihood.",
+        description: "Scans a local document file (.tex, .ipynb, .md, .txt) for lexical overlap and writing-pattern signals.",
         inputSchema: {
             type: "object",
             properties: {
                 file_path: { type: "string", description: "Absolute or relative path to the manuscript file." },
-                exclude_quotes: { type: "boolean", description: "Whether to exclude verified citations." }
+                exclude_bibliography: { type: "boolean", description: "Exclude the References section from scoring." },
+                exclude_quotes: { type: "boolean", description: "Exclude only quoted text." }
             },
             required: ["file_path"]
         }
@@ -67,7 +69,7 @@ const TOOLS = [
     },
     {
         name: "plag_generate_citation",
-        description: "Auto-generates clean, verified BibTeX, APA 7th, MLA 9th, and IEEE citations from a DOI, arXiv ID, or paper title.",
+        description: "Generates BibTeX, APA 7th, MLA 9th, and IEEE citations from available DOI, arXiv, or title metadata; unresolved templates require review.",
         inputSchema: {
             type: "object",
             properties: {
@@ -171,12 +173,13 @@ async function handleToolCall(name, args) {
         case "plag_scan_text":
             return await scan(args.text, {
                 excludeQuotes: args.exclude_quotes,
+                excludeBibliography: args.exclude_bibliography,
                 server: args.server
             });
 
         case "plag_scan_file": {
             const text = DocumentExtractor.extractFromFile(args.file_path);
-            return await scan(text, { excludeQuotes: args.exclude_quotes });
+            return await scan(text, { excludeQuotes: args.exclude_quotes, excludeBibliography: args.exclude_bibliography });
         }
 
         case "plag_paraphrase":

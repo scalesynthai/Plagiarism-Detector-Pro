@@ -1,0 +1,912 @@
+{
+  "version": 1,
+  "description": "Synthetic English fixture set; evaluation/challenge cases are not threshold-tuning data. Character annotations and token labels are fixed ground truth for this fixture set, not evidence of authorship.",
+  "cases": [
+    {
+      "id": "dev-exact",
+      "split": "development",
+      "category": "verbatim",
+      "text": "Copper wires transmit electrical signals efficiently.",
+      "sources": [
+        {
+          "filename": "source_0.txt",
+          "text": "Copper wires transmit electrical signals efficiently."
+        }
+      ],
+      "expected_spans": [
+        [
+          0,
+          52
+        ]
+      ],
+      "expected_positive_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "expected_scored_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "options": {},
+      "expected_score": 100.0
+    },
+    {
+      "id": "dev-partial",
+      "split": "development",
+      "category": "verbatim",
+      "text": "Our experiment confirms copper wires transmit electrical signals while ceramic samples remain inert.",
+      "sources": [
+        {
+          "filename": "source_0.txt",
+          "text": "Copper wires transmit electrical signals efficiently."
+        }
+      ],
+      "expected_spans": [
+        [
+          24,
+          64
+        ]
+      ],
+      "expected_positive_tokens": [
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "expected_scored_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "options": {},
+      "expected_score": 38.46
+    },
+    {
+      "id": "dev-negative",
+      "split": "development",
+      "category": "original",
+      "text": "Ceramic vessels preserve archaeological evidence.",
+      "sources": [
+        {
+          "filename": "source_0.txt",
+          "text": "Neural networks transform numerical features."
+        }
+      ],
+      "expected_spans": [],
+      "expected_positive_tokens": [],
+      "expected_scored_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "options": {},
+      "expected_score": 0.0
+    },
+    {
+      "id": "eval-exact",
+      "split": "evaluation",
+      "category": "verbatim",
+      "text": "Coastal wetlands buffer storm surges and shelter juvenile fish.",
+      "sources": [
+        {
+          "filename": "source_0.txt",
+          "text": "Coastal wetlands buffer storm surges and shelter juvenile fish."
+        }
+      ],
+      "expected_spans": [
+        [
+          0,
+          62
+        ]
+      ],
+      "expected_positive_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "expected_scored_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "options": {},
+      "expected_score": 100.0
+    },
+    {
+      "id": "eval-middle",
+      "split": "evaluation",
+      "category": "verbatim",
+      "text": "During winter we observed coastal wetlands buffer storm surges before tidal patterns changed.",
+      "sources": [
+        {
+          "filename": "source_0.txt",
+          "text": "Coastal wetlands buffer storm surges and shelter juvenile fish."
+        }
+      ],
+      "expected_spans": [
+        [
+          26,
+          62
+        ]
+      ],
+      "expected_positive_tokens": [
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "expected_scored_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "options": {},
+      "expected_score": 38.46
+    },
+    {
+      "id": "eval-duplicate-sources",
+      "split": "evaluation",
+      "category": "verbatim",
+      "text": "Solar panels convert sunlight into electrical energy.",
+      "sources": [
+        {
+          "filename": "source_0.txt",
+          "text": "Solar panels convert sunlight into electrical energy."
+        },
+        {
+          "filename": "source_1.txt",
+          "text": "Solar panels convert sunlight into electrical energy."
+        }
+      ],
+      "expected_spans": [
+        [
+          0,
+          52
+        ]
+      ],
+      "expected_positive_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "expected_scored_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "options": {},
+      "expected_score": 100.0
+    },
+    {
+      "id": "eval-overlap",
+      "split": "evaluation",
+      "category": "verbatim",
+      "text": "Urban gardens support pollinating insects throughout summer months.",
+      "sources": [
+        {
+          "filename": "source_0.txt",
+          "text": "Urban gardens support pollinating insects."
+        },
+        {
+          "filename": "source_1.txt",
+          "text": "Support pollinating insects throughout summer months."
+        }
+      ],
+      "expected_spans": [
+        [
+          0,
+          66
+        ]
+      ],
+      "expected_positive_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "expected_scored_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "options": {},
+      "expected_score": 100.0
+    },
+    {
+      "id": "eval-multiple-sources",
+      "split": "evaluation",
+      "category": "verbatim",
+      "text": "Alpine glaciers preserve ancient atmospheric records whereas coral reefs host diverse marine organisms.",
+      "sources": [
+        {
+          "filename": "source_0.txt",
+          "text": "Alpine glaciers preserve ancient atmospheric records."
+        },
+        {
+          "filename": "source_1.txt",
+          "text": "Coral reefs host diverse marine organisms."
+        }
+      ],
+      "expected_spans": [
+        [
+          0,
+          52
+        ],
+        [
+          61,
+          102
+        ]
+      ],
+      "expected_positive_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "expected_scored_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "options": {},
+      "expected_score": 92.31
+    },
+    {
+      "id": "eval-repeated",
+      "split": "evaluation",
+      "category": "verbatim",
+      "text": "Amber crystals preserve ancient insects. Amber crystals preserve ancient insects.",
+      "sources": [
+        {
+          "filename": "source_0.txt",
+          "text": "Amber crystals preserve ancient insects."
+        }
+      ],
+      "expected_spans": [
+        [
+          0,
+          80
+        ]
+      ],
+      "expected_positive_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "expected_scored_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "options": {},
+      "expected_score": 100.0
+    },
+    {
+      "id": "eval-punctuation",
+      "split": "evaluation",
+      "category": "verbatim",
+      "text": "SPECTRAL filters\u2014remove unwanted wavelengths; before measurement.",
+      "sources": [
+        {
+          "filename": "source_0.txt",
+          "text": "Spectral filters remove unwanted wavelengths before measurement."
+        }
+      ],
+      "expected_spans": [
+        [
+          0,
+          64
+        ]
+      ],
+      "expected_positive_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "expected_scored_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "options": {},
+      "expected_score": 100.0
+    },
+    {
+      "id": "eval-cited",
+      "split": "evaluation",
+      "category": "citation",
+      "text": "Wetland restoration reduces seasonal flooding (Rivera et al., 2022).",
+      "sources": [
+        {
+          "filename": "source_0.txt",
+          "text": "Wetland restoration reduces seasonal flooding."
+        }
+      ],
+      "expected_spans": [
+        [
+          0,
+          45
+        ]
+      ],
+      "expected_positive_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "expected_scored_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "options": {
+        "exclude_quotes": true
+      },
+      "expected_score": 55.56
+    },
+    {
+      "id": "eval-quote-partial",
+      "split": "evaluation",
+      "category": "quote",
+      "text": "We note \"wetland restoration reduces seasonal flooding\" while urban gardens support pollinating insects.",
+      "sources": [
+        {
+          "filename": "source_0.txt",
+          "text": "Wetland restoration reduces seasonal flooding."
+        },
+        {
+          "filename": "source_1.txt",
+          "text": "Urban gardens support pollinating insects."
+        }
+      ],
+      "expected_spans": [
+        [
+          62,
+          103
+        ]
+      ],
+      "expected_positive_tokens": [
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "expected_scored_tokens": [
+        0,
+        1,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "options": {
+        "exclude_quotes": true
+      },
+      "expected_score": 62.5
+    },
+    {
+      "id": "eval-quote-retained",
+      "split": "evaluation",
+      "category": "quote",
+      "text": "We note \u201cwetland restoration reduces seasonal flooding\u201d in spring.",
+      "sources": [
+        {
+          "filename": "source_0.txt",
+          "text": "Wetland restoration reduces seasonal flooding."
+        }
+      ],
+      "expected_spans": [
+        [
+          9,
+          54
+        ]
+      ],
+      "expected_positive_tokens": [
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "expected_scored_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "options": {},
+      "expected_score": 55.56
+    },
+    {
+      "id": "eval-bibliography-excluded",
+      "split": "evaluation",
+      "category": "bibliography",
+      "text": "Our independent synthesis discusses ancient trade.\n\nReferences\nRivera describes coastal sediment transport mechanisms.",
+      "sources": [
+        {
+          "filename": "source_0.txt",
+          "text": "Rivera describes coastal sediment transport mechanisms."
+        }
+      ],
+      "expected_spans": [],
+      "expected_positive_tokens": [],
+      "expected_scored_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "options": {
+        "exclude_bibliography": true
+      },
+      "expected_score": 0.0
+    },
+    {
+      "id": "eval-bibliography-included",
+      "split": "evaluation",
+      "category": "bibliography",
+      "text": "Our independent synthesis discusses ancient trade.\n\nReferences\nRivera describes coastal sediment transport mechanisms.",
+      "sources": [
+        {
+          "filename": "source_0.txt",
+          "text": "Rivera describes coastal sediment transport mechanisms."
+        }
+      ],
+      "expected_spans": [
+        [
+          63,
+          117
+        ]
+      ],
+      "expected_positive_tokens": [
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "expected_scored_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "options": {},
+      "expected_score": 46.15
+    },
+    {
+      "id": "eval-domain-vocabulary",
+      "split": "evaluation",
+      "category": "original",
+      "text": "Regression estimates vary with sampling noise and predictors.",
+      "sources": [
+        {
+          "filename": "source_0.txt",
+          "text": "The predictors determine regression errors under noisy sampling."
+        }
+      ],
+      "expected_spans": [],
+      "expected_positive_tokens": [],
+      "expected_scored_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "options": {},
+      "expected_score": 0.0
+    },
+    {
+      "id": "eval-unrelated",
+      "split": "evaluation",
+      "category": "original",
+      "text": "Orchids attract nocturnal moths through chemical signals.",
+      "sources": [
+        {
+          "filename": "source_0.txt",
+          "text": "Storage engines compress binary records using dictionaries."
+        }
+      ],
+      "expected_spans": [],
+      "expected_positive_tokens": [],
+      "expected_scored_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "options": {},
+      "expected_score": 0.0
+    },
+    {
+      "id": "eval-common-function-words",
+      "split": "evaluation",
+      "category": "common_phrase",
+      "text": "This is the way of the world.",
+      "sources": [
+        {
+          "filename": "source_0.txt",
+          "text": "That is the way of the system."
+        }
+      ],
+      "expected_spans": [],
+      "expected_positive_tokens": [],
+      "expected_scored_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "options": {},
+      "expected_score": 0.0
+    },
+    {
+      "id": "eval-short-paragraphs",
+      "split": "evaluation",
+      "category": "verbatim",
+      "text": "We disagree.\n\nTropical forests regulate regional water cycles.\n\nWhy?",
+      "sources": [
+        {
+          "filename": "source_0.txt",
+          "text": "Tropical forests regulate regional water cycles."
+        }
+      ],
+      "expected_spans": [
+        [
+          14,
+          61
+        ]
+      ],
+      "expected_positive_tokens": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "expected_scored_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "options": {},
+      "expected_score": 66.67
+    },
+    {
+      "id": "eval-reordered",
+      "split": "evaluation",
+      "category": "reordered",
+      "text": "Detectors record faint cosmic radiation. Mirrors focus distant stellar light.",
+      "sources": [
+        {
+          "filename": "source_0.txt",
+          "text": "Mirrors focus distant stellar light. Detectors record faint cosmic radiation."
+        }
+      ],
+      "expected_spans": [
+        [
+          0,
+          76
+        ]
+      ],
+      "expected_positive_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "expected_scored_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "options": {},
+      "expected_score": 100.0
+    },
+    {
+      "id": "eval-empty",
+      "split": "evaluation",
+      "category": "empty",
+      "text": "",
+      "sources": [
+        {
+          "filename": "source_0.txt",
+          "text": "Rivers transport nutrients across broad floodplains."
+        }
+      ],
+      "expected_spans": [],
+      "expected_positive_tokens": [],
+      "expected_scored_tokens": [],
+      "options": {},
+      "expected_score": 0
+    },
+    {
+      "id": "challenge-synonyms",
+      "split": "challenge",
+      "category": "semantic_paraphrase",
+      "text": "Restored marshes diminish recurring inundation.",
+      "sources": [
+        {
+          "filename": "source_0.txt",
+          "text": "Wetland restoration reduces seasonal flooding."
+        }
+      ],
+      "expected_spans": [
+        [
+          0,
+          46
+        ]
+      ],
+      "expected_positive_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "expected_scored_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "options": {},
+      "expected_score": 100.0
+    },
+    {
+      "id": "challenge-short-copy",
+      "split": "challenge",
+      "category": "short_copy",
+      "text": "Our topic concerns photosynthetic carbon fixation today.",
+      "sources": [
+        {
+          "filename": "source_0.txt",
+          "text": "Photosynthetic carbon fixation."
+        }
+      ],
+      "expected_spans": [
+        [
+          19,
+          49
+        ]
+      ],
+      "expected_positive_tokens": [
+        3,
+        4,
+        5
+      ],
+      "expected_scored_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "options": {},
+      "expected_score": 42.86
+    },
+    {
+      "id": "challenge-common-technical",
+      "split": "challenge",
+      "category": "common_phrase",
+      "text": "The experiments were conducted using standard laboratory equipment.",
+      "sources": [
+        {
+          "filename": "source_0.txt",
+          "text": "The experiments were conducted using standard laboratory equipment."
+        }
+      ],
+      "expected_spans": [],
+      "expected_positive_tokens": [],
+      "expected_scored_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "options": {},
+      "expected_score": 0.0
+    },
+    {
+      "id": "challenge-source-missing",
+      "split": "challenge",
+      "category": "retrieval_gap",
+      "text": "Polar ice traps ancient atmospheric gases.",
+      "sources": [
+        {
+          "filename": "source_0.txt",
+          "text": "Unrelated source about volcanology."
+        }
+      ],
+      "expected_spans": [
+        [
+          0,
+          41
+        ]
+      ],
+      "expected_positive_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "expected_scored_tokens": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "options": {},
+      "expected_score": 100.0
+    }
+  ]
+}

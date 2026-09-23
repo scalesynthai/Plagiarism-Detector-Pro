@@ -1,4 +1,7 @@
 import re
+from core.sections import select_opening
+from core.citation_validator import CitationValidator
+from core.matching import sentence_ranges
 from typing import Dict, List, Any, Tuple
 
 
@@ -50,11 +53,11 @@ class AcademicStudentCoach:
         """
         Flags empirical, factual, or statistical assertions that lack parenthetical or numeric citations.
         """
-        sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+|\n+', text) if len(s.strip()) > 20]
+        sentences = [text[a:b].strip() for a,b in sentence_ranges(text) if len(text[a:b].strip()) > 20]
         unsupported = []
 
         for s in sentences:
-            has_cite = bool(cls.CITATION_PATTERN.search(s))
+            has_cite = CitationValidator().has_in_text_citation(s)[0]
             if has_cite:
                 continue
 
@@ -144,15 +147,15 @@ class AcademicStudentCoach:
         """
         Evaluates the opening abstract/thesis for scientific completeness.
         """
-        first_para = text.strip().split('\n\n')[0] if '\n\n' in text else text[:1000]
+        first_para, selection, start = select_opening(text)
         words = first_para.split()
         word_count = len(words)
 
-        has_hypothesis = bool(re.search(r'\b(hypothesize|argue|propose|demonstrate|investigate|examine|aims to|objective)\b', first_para, re.I))
+        has_hypothesis = bool(re.search(r'\b(hypothesi[sz](?:e|es)|argu(?:e|es)|propos(?:e|es)|demonstrat(?:e|es)|investigat(?:e|es)|examin(?:e|es)|aims? to|objective|central claim|research question)\b', first_para, re.I))
         has_method = bool(re.search(r'\b(using|method|methodology|dataset|experiment|analyzed|evaluated|simulation|framework)\b', first_para, re.I))
         has_significance = bool(re.search(r'\b(crucial|significance|implication|contributes|advance|fundamental|impact)\b', first_para, re.I))
 
-        score = 40
+        score = 40 if first_para else 0
         if has_hypothesis: score += 25
         if has_method: score += 20
         if has_significance: score += 15
@@ -167,6 +170,10 @@ class AcademicStudentCoach:
 
         return {
             "score": min(100, score),
+            "evaluated_text": first_para,
+            "selection": selection,
+            "start": start,
+            "assessment_type": "keyword-based structural check",
             "word_count": word_count,
             "has_hypothesis": has_hypothesis,
             "has_method": has_method,

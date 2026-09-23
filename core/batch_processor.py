@@ -9,7 +9,7 @@ from core.extractor import extract_text_from_file, is_allowed_file
 class BatchProcessor:
     """
     Processes multi-file and ZIP archive submissions for class assignments,
-    generating an aggregated SafeAssign & AI originality gradebook.
+    generating an aggregated similarity and writing-pattern gradebook.
     """
 
     MAX_FILES = 100
@@ -19,7 +19,7 @@ class BatchProcessor:
     def __init__(self, checker):
         self.checker = checker
 
-    def process_zip_archive(self, zip_stream_or_path, include_web: bool = True, exclude_quotes: bool = False) -> Dict[str, Any]:
+    def process_zip_archive(self, zip_stream_or_path, include_web: bool = True, exclude_quotes: bool = False, exclude_bibliography: bool = False) -> Dict[str, Any]:
         """
         Unpacks a ZIP archive and analyzes all contained documents.
         """
@@ -56,9 +56,9 @@ class BatchProcessor:
                     file_bytes = zf.read(info)
                     submissions.append((fname, io.BytesIO(file_bytes)))
 
-        return self.process_multiple_files(submissions, include_web=include_web, exclude_quotes=exclude_quotes)
+        return self.process_multiple_files(submissions, include_web=include_web, exclude_quotes=exclude_quotes, exclude_bibliography=exclude_bibliography)
 
-    def process_multiple_files(self, file_tuples: List[tuple], include_web: bool = True, exclude_quotes: bool = False) -> Dict[str, Any]:
+    def process_multiple_files(self, file_tuples: List[tuple], include_web: bool = True, exclude_quotes: bool = False, exclude_bibliography: bool = False) -> Dict[str, Any]:
         """
         Processes a list of (filename, file_stream_or_path) concurrently.
         """
@@ -76,7 +76,7 @@ class BatchProcessor:
                         "error": "Empty document",
                     }
 
-                analysis = self.checker.analyze(text, include_web_sources=include_web, exclude_quotes=exclude_quotes)
+                analysis = self.checker.analyze(text, include_web_sources=include_web, exclude_quotes=exclude_quotes, exclude_bibliography=exclude_bibliography)
                 return {
                     "filename": name,
                     "status": "success",

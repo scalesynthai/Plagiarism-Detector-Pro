@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const privateDraft = document.getElementById('text-private-draft') ? document.getElementById('text-private-draft').checked : true;
             const includeWeb = document.getElementById('text-live-search') ? document.getElementById('text-live-search').checked : true;
             const excludeQuotes = document.getElementById('text-exclude-quotes') ? document.getElementById('text-exclude-quotes').checked : false;
-            await runScan({ query: text, include_web: includeWeb, exclude_quotes: excludeQuotes, private_draft: privateDraft });
+            await runScan({ query: text, include_web: includeWeb, exclude_quotes: excludeQuotes, exclude_bibliography: document.getElementById("text-exclude-bibliography").checked, private_draft: privateDraft });
         });
     }
 
@@ -69,6 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
             formData.append('file', fileInput.files[0]);
             formData.append('include_web', includeWeb);
             formData.append('exclude_quotes', excludeQuotes);
+            formData.append('exclude_bibliography', document.getElementById('file-exclude-bibliography').checked);
             formData.append('private_draft', privateDraft);
             await runScan(formData, true);
         });
@@ -385,7 +386,7 @@ async function runScan(payload, isFormData = false) {
     const originalHtml = submitBtn.innerHTML;
 
     submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span class="spinner"></span> Analyzing Originality & AI Likelihood...';
+    submitBtn.innerHTML = '<span class="spinner"></span> Analyzing Similarity & Writing Patterns...';
 
     try {
         const fetchOptions = {
@@ -418,7 +419,38 @@ async function runScan(payload, isFormData = false) {
     }
 }
 
+// Highlight only the union of matched character spans; never a whole sentence by inference.
+function appendMatchedText(container, sentence, scoring) {
+    const chars = scoring && scoring.offset_unit === 'unicode_code_points' ? Array.from(sentence.text) : sentence.text.split('');
+    const ranges = (sentence.matched_spans || []).map(p => [Math.max(0, p.start - sentence.start), Math.min(chars.length, p.end - sentence.start)])
+        .filter(([a,b]) => b > a).sort((a,b) => a[0]-b[0]);
+    const merged = [];
+    for (const [a,b] of ranges) {
+        if (merged.length && a <= merged[merged.length-1][1]) merged[merged.length-1][1] = Math.max(b, merged[merged.length-1][1]);
+        else merged.push([a,b]);
+    }
+    let position = 0;
+    for (const [a,b] of merged) {
+        container.appendChild(document.createTextNode(chars.slice(position,a).join('')));
+        const mark = document.createElement('mark');
+        mark.textContent = chars.slice(a,b).join('');
+        mark.style.background = '#fecaca'; mark.style.color = '#7f1d1d';
+        container.appendChild(mark); position=b;
+    }
+    container.appendChild(document.createTextNode(chars.slice(position).join('') + ' '));
+}
+
 function renderResults(data) {
+    const details = document.getElementById('similarity-details');
+    if (details && data.scoring) {
+        details.textContent = `Selected score: ${data.overall_similarity}% (${data.flagged_word_count}/${data.scored_word_count} eligible words). ` +
+            `All text: ${data.raw_similarity}%. Body: ${data.body_similarity}%. References: ${data.bibliography_similarity}% (${data.bibliography_word_count} words). ` +
+            `Quotations: ${data.quotation_similarity}% (${data.quotation_word_count} words). ` +
+            `Quoted text excluded: ${data.scoring.exclude_quotes ? 'yes' : 'no'}; references excluded: ${data.scoring.exclude_bibliography ? 'yes' : 'no'}. ` +
+            `Citations remain included. Source percentages may overlap. Scores measure lexical overlap in searched sources, not proof of plagiarism.`;
+    }
+    const scope = document.getElementById('scan-sources-meta');
+    if (scope) scope.textContent = `${data.total_corpus_searched || 0} sources compared • ${data.live_sources_queried || 0} online results`;
     // 1. Obfuscation Alert Banner
     const obfAlert = document.getElementById('obfuscation-alert');
     const obfDesc = document.getElementById('obfuscation-desc');
@@ -461,21 +493,22 @@ function renderResults(data) {
     const verdictDesc = document.getElementById('verdict-desc');
 
     verdictBadge.className = `verdict-badge ${data.status_class}`;
-    verdictBadge.textContent = `${data.safeassign_risk} • ${aiData.ai_risk_level || 'Human-Written'}`;
+    verdictBadge.textContent = `${data.safeassign_risk} • AI-pattern heuristic ${aiScore.toFixed(1)}%`;
 
     if (data.highest_matching_source) {
-        const urlAttr = data.highest_matching_url ? ` <a href="${escapeHtml(data.highest_matching_url)}" target="_blank" rel="noopener noreferrer" style="color: var(--primary); font-size: 13px;">[Open Reference ↗]</a>` : '';
+        const safeUrl = safeHttpUrl(data.highest_matching_url);
+        const urlAttr = safeUrl ? ` <a href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener noreferrer" style="color: var(--primary); font-size: 13px;">[Open Reference ↗]</a>` : '';
         verdictTitle.innerHTML = `Top Match: ${escapeHtml(data.highest_matching_source)}${urlAttr}`;
         verdictDesc.textContent = data.verdict_description || `Highest single source similarity is ${data.highest_similarity}%.`;
     } else {
-        verdictTitle.textContent = 'Original Academic Work';
-        verdictDesc.textContent = 'No significant matching sequences found across scanned global databases.';
+        verdictTitle.textContent = 'No Matching Passages Found';
+        verdictDesc.textContent = 'No qualifying lexical overlap found in the sources searched. This does not establish originality.';
     }
 
     // Stats Grid
     const citationData = data.citation_analysis || {};
     document.getElementById('stat-total-words').textContent = data.total_words;
-    document.getElementById('stat-flagged-words').textContent = `${data.flagged_word_count || 0} (${Math.round(((data.flagged_word_count || 0) / Math.max(data.total_words, 1)) * 100)}%)`;
+    document.getElementById('stat-flagged-words').textContent = `${data.flagged_word_count || 0} (${Math.round(((data.flagged_word_count || 0) / Math.max(data.scored_word_count ?? data.total_words, 1)) * 100)}%)`;
     document.getElementById('stat-ai-burstiness').textContent = `${aiData.burstiness || 50.0}`;
     document.getElementById('stat-citations-count').textContent = citationData.in_text_citations_count || 0;
     document.getElementById('stat-sources-searched').textContent = `${data.total_corpus_searched || data.sources_breakdown.length} (${data.live_sources_queried || 0} Online)`;
@@ -491,8 +524,9 @@ function renderResults(data) {
         data.sources_breakdown.forEach(s => {
             const tr = document.createElement('tr');
             const barClass = s.similarity >= 40 ? 'high' : (s.similarity >= 15 ? 'med' : 'low');
-            const nameHtml = s.url 
-                ? `<a href="${escapeHtml(s.url)}" target="_blank" rel="noopener noreferrer" class="source-link">🔗 ${escapeHtml(s.filename)}</a>`
+            const safeUrl = safeHttpUrl(s.url);
+            const nameHtml = safeUrl
+                ? `<a href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener noreferrer" class="source-link">🔗 ${escapeHtml(s.filename)}</a>`
                 : `<strong>🏛️ ${escapeHtml(s.filename)}</strong>`;
 
             tr.innerHTML = `
@@ -521,8 +555,8 @@ function renderResults(data) {
     if (data.highlighted_sentences && data.highlighted_sentences.length > 0) {
         data.highlighted_sentences.forEach(s => {
             const span = document.createElement('span');
-            span.className = `sentence-chunk ${s.is_plagiarized ? 'plagiarized' : ''}`;
-            span.textContent = s.text + ' ';
+            span.className = 'sentence-chunk';
+            appendMatchedText(span, s, data.scoring);
 
             if (s.is_plagiarized) {
                 span.title = `Click to inspect Side-by-Side Match & Coaching Tips (${s.similarity}%):\n"${s.matched_source_sentence || ''}"`;
@@ -554,23 +588,16 @@ function renderManuscriptInspector(data) {
         const span = document.createElement('span');
         span.className = 'sent-span';
 
-        if (s.is_plagiarized) {
-            if (s.similarity >= 70) span.classList.add('flag-high');
-            else span.classList.add('flag-med');
-        } else {
-            span.classList.add('orig');
-        }
-
         if (s.has_citation) span.classList.add('has-cite');
+        appendMatchedText(span, s, data.scoring);
 
-        span.textContent = s.text + ' ';
-        span.title = `Sentence #${idx + 1} • Similarity: ${s.similarity}%${s.source ? ' • ' + s.source : ' • Original'}`;
+        span.title = `Sentence #${idx + 1} • Similarity: ${s.similarity}%${s.source ? ' • ' + s.source : ' • No match found'}`;
 
         span.addEventListener('click', () => {
             if (s.is_plagiarized) {
                 openDiffModal(s);
             } else {
-                alert(`Sentence #${idx + 1} is 100% Original Academic Prose.\nNo overlapping passages found.`);
+                alert(`Sentence #${idx + 1} has no detected matching passages in the searched sources.`);
             }
         });
 
@@ -590,8 +617,8 @@ function renderChecklist(data) {
     if (chkPlagPill) {
         if (plagScore < 15.0) {
             chkPlagPill.className = 'badge-pill success';
-            chkPlagPill.textContent = `${plagScore}% Safe (< 15%)`;
-            if (chkPlagDesc) chkPlagDesc.textContent = 'Well within standard academic submission threshold.';
+            chkPlagPill.textContent = `${plagScore}% Low observed similarity`;
+            if (chkPlagDesc) chkPlagDesc.textContent = 'Below the local low-score band; still review source coverage and attribution.';
             if (chkPlag) chkPlag.style.borderLeft = '3px solid var(--success)';
         } else if (plagScore < 40.0) {
             chkPlagPill.className = 'badge-pill warning';
@@ -612,18 +639,18 @@ function renderChecklist(data) {
     if (chkAiPill) {
         if (aiScore < 25.0) {
             chkAiPill.className = 'badge-pill success';
-            chkAiPill.textContent = `${aiScore}% Human`;
-            if (chkAiDesc) chkAiDesc.textContent = 'High burstiness and natural syntactic entropy detected.';
+            chkAiPill.textContent = `${aiScore}% Low pattern score`;
+            if (chkAiDesc) chkAiDesc.textContent = 'Few configured AI-writing markers detected; this does not verify authorship.';
             if (chkAi) chkAi.style.borderLeft = '3px solid var(--success)';
         } else if (aiScore < 65.0) {
             chkAiPill.className = 'badge-pill warning';
-            chkAiPill.textContent = `${aiScore}% Mixed AI`;
-            if (chkAiDesc) chkAiDesc.textContent = 'Portions resemble AI-assisted drafting. Review phrasing.';
+            chkAiPill.textContent = `${aiScore}% Medium pattern score`;
+            if (chkAiDesc) chkAiDesc.textContent = 'Some configured writing-pattern markers were detected. Review manually.';
             if (chkAi) chkAi.style.borderLeft = '3px solid var(--warning)';
         } else {
             chkAiPill.className = 'badge-pill danger';
-            chkAiPill.textContent = `${aiScore}% Likely AI`;
-            if (chkAiDesc) chkAiDesc.textContent = 'Uniform low perplexity and synthetic cadence detected.';
+            chkAiPill.textContent = `${aiScore}% High pattern score`;
+            if (chkAiDesc) chkAiDesc.textContent = 'Many configured writing-pattern markers were detected; this is not proof of AI use.';
             if (chkAi) chkAi.style.borderLeft = '3px solid var(--danger)';
         }
     }
@@ -634,8 +661,8 @@ function renderChecklist(data) {
     if (chkCitePill) {
         if (citeData.in_text_citations_count > 0) {
             chkCitePill.className = 'badge-pill info';
-            chkCitePill.textContent = `${citeData.in_text_citations_count} Verified`;
-            if (chkCiteDesc) chkCiteDesc.textContent = `Identified formatted references (${citeData.styles_detected ? citeData.styles_detected.join(', ') : 'Standard'}).`;
+            chkCitePill.textContent = `${citeData.in_text_citations_count} Detected`;
+            if (chkCiteDesc) chkCiteDesc.textContent = `${citeData.unlinked_citations_count || 0} citation(s) not linked to a bibliography entry. Detection does not verify the source.`;
             if (chkCite) chkCite.style.borderLeft = '3px solid #6366f1';
         } else {
             chkCitePill.className = 'badge-pill warning';
@@ -659,7 +686,7 @@ function renderChecklist(data) {
     if (overallBadge) {
         if (plagScore < 15.0 && aiScore < 30.0) {
             overallBadge.className = 'badge-pill success';
-            overallBadge.textContent = '🌟 Ready for LMS / Canvas Submission';
+            overallBadge.textContent = 'Low heuristic scores • Review required';
             overallBadge.style.background = '';
             overallBadge.style.color = '';
         } else {
@@ -677,24 +704,34 @@ function renderPhdAuditor(data) {
     const anonDesc = document.getElementById('phd-anon-desc');
     const readinessBadge = document.getElementById('phd-readiness-badge');
 
-    if (phdAudit.is_anonymity_compliant) {
+    if (phdAudit.is_anonymity_compliant === null || phdAudit.is_anonymity_compliant === undefined) {
+        if (anonPill) {
+            anonPill.className = 'badge-pill warning';
+            anonPill.textContent = 'Not assessed';
+        }
+        if (anonDesc) anonDesc.textContent = 'Insufficient text for pattern-based anonymity screening.';
+        if (readinessBadge) {
+            readinessBadge.className = 'badge-pill warning';
+            readinessBadge.textContent = 'Screening unavailable';
+        }
+    } else if (phdAudit.is_anonymity_compliant) {
         if (anonPill) {
             anonPill.className = 'badge-pill success';
-            anonPill.textContent = '100% Compliant';
+            anonPill.textContent = 'No identifiers detected';
         }
-        if (anonDesc) anonDesc.textContent = 'Zero self-identifying prior citations or unblinded repository links found.';
+        if (anonDesc) anonDesc.textContent = 'No configured identifier patterns found. This does not certify anonymity.';
         if (readinessBadge) {
             readinessBadge.className = 'badge-pill success';
-            readinessBadge.textContent = '100/100 • Conference Ready';
+            readinessBadge.textContent = 'Screening complete • Manual review required';
             readinessBadge.style.background = '';
             readinessBadge.style.color = '';
         }
     } else {
         if (anonPill) {
             anonPill.className = 'badge-pill danger';
-            anonPill.textContent = `${phdAudit.anonymity_count || 1} Violation(s)`;
+            anonPill.textContent = `${phdAudit.anonymity_count || 0} Potential identifier(s)`;
         }
-        if (anonDesc) anonDesc.textContent = (phdAudit.anonymity_violations && phdAudit.anonymity_violations.join(' • ')) || 'Self-referential citations detected.';
+        if (anonDesc) anonDesc.textContent = (phdAudit.anonymity_issues || []).map(issue => `${issue.type}: ${issue.matched_text}`).join(' • ') || (phdAudit.anonymity_violations || []).join(' • ') || 'Insufficient text for assessment.';
         if (readinessBadge) {
             readinessBadge.className = 'badge-pill danger';
             readinessBadge.textContent = 'Action Required • Unblinded Passages';
@@ -817,7 +854,7 @@ function renderStudentCoach(data) {
     const thesisContent = document.getElementById('coach-thesis-content');
     if (thesisScoreBadge) {
         const score = thesis.score || 0;
-        thesisScoreBadge.textContent = `Score: ${score}/100`;
+        thesisScoreBadge.textContent = `Structural check: ${score}/100`;
         thesisScoreBadge.style.background = '';
         thesisScoreBadge.style.color = '';
         if (score >= 70) thesisScoreBadge.className = 'badge-pill success';
@@ -877,7 +914,7 @@ async function runAlphabetizeReferences(rawRefs) {
                     <span class="ref-text">${escapeHtml(ref)}</span>
                     <div class="ref-entry-meta">
                         ${year ? `<span class="ref-badge year">📅 Year: ${year}</span>` : '<span class="ref-badge" style="background: rgba(239,68,68,0.2); color: #f87171;">⚠️ No Year</span>'}
-                        ${hasDoi ? '<span class="ref-badge doi">🔗 DOI / Link Verified</span>' : '<span class="ref-badge" style="background: rgba(245,158,11,0.2); color: #fbbf24;">ℹ️ No DOI detected</span>'}
+                        ${hasDoi ? '<span class="ref-badge doi">🔗 DOI / Link Present</span>' : '<span class="ref-badge" style="background: rgba(245,158,11,0.2); color: #fbbf24;">ℹ️ No DOI detected</span>'}
                     </div>
                 `;
                 outputList.appendChild(entry);
@@ -1006,8 +1043,9 @@ function openDiffModal(sentenceObj) {
     document.getElementById('diff-modal-meta').textContent = `Match Confidence: ${sentenceObj.similarity}% • Type: ${sentenceObj.badge || '🏛️ Institutional'}`;
 
     const linkElem = document.getElementById('diff-source-link');
-    if (sentenceObj.url) {
-        linkElem.href = sentenceObj.url;
+    const safeUrl = safeHttpUrl(sentenceObj.url);
+    if (safeUrl) {
+        linkElem.href = safeUrl;
         linkElem.style.display = 'inline';
     } else {
         linkElem.style.display = 'none';
@@ -1341,7 +1379,7 @@ async function confirmDeleteWithPin() {
 }
 
 /* ==============================================================================
-   REPORTS & CERTIFICATES
+   REPORTS & ADVISORY SUMMARIES
    ============================================================================== */
 async function generateCertificate() {
     const studentName = document.getElementById('cert-student-name').value.trim();
@@ -1354,7 +1392,7 @@ async function generateCertificate() {
 
     if (confirmBtn) {
         confirmBtn.disabled = true;
-        confirmBtn.innerHTML = '<span class="spinner"></span> Generating Certificate...';
+        confirmBtn.innerHTML = '<span class="spinner"></span> Generating Summary...';
     }
 
     try {
@@ -1379,11 +1417,11 @@ async function generateCertificate() {
         }
         document.getElementById('cert-modal').classList.remove('active');
     } catch (err) {
-        alert('Failed to generate certificate: ' + err.message);
+        alert('Failed to generate analysis summary: ' + err.message);
     } finally {
         if (confirmBtn) {
             confirmBtn.disabled = false;
-            confirmBtn.innerHTML = '🖨️ Generate & Print Certificate';
+            confirmBtn.innerHTML = '🖨️ Generate & Print Summary';
         }
     }
 }
@@ -1569,6 +1607,16 @@ function escapeHtml(str) {
     }[tag] || tag));
 }
 
+function safeHttpUrl(value) {
+    if (typeof value !== 'string' || !value.trim()) return null;
+    try {
+        const parsed = new URL(value);
+        return parsed.protocol === 'https:' || parsed.protocol === 'http:' ? parsed.href : null;
+    } catch {
+        return null;
+    }
+}
+
 /* ==============================================================================
    FOOTER ACTIONS & INTEGRITY STANDARDS QUICK-JUMPS
    ============================================================================== */
@@ -1689,4 +1737,3 @@ function showClayToast(message, duration = 3500) {
         setTimeout(() => toast.remove(), 250);
     }, duration);
 }
-

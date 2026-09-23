@@ -51,7 +51,14 @@ class LiveWebSearcher:
                 seen.add(normalized)
                 unique_queries.append(q)
 
-        return unique_queries[:max_queries]
+        if max_queries <= 0:
+            return []
+        if len(unique_queries) <= max_queries:
+            return unique_queries
+        if max_queries == 1:
+            return [unique_queries[len(unique_queries) // 2]]
+        return [unique_queries[round(i * (len(unique_queries)-1) / (max_queries-1))]
+                for i in range(max_queries)]
 
     def fetch_wikipedia_sources(self, query: str) -> List[Dict[str, Any]]:
         """Searches Wikipedia API and retrieves lead articles and full text extracts."""

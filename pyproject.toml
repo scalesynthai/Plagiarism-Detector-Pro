@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "plagiarism-detector-pro"
 version = "2.1.0"
-description = "Enterprise & University-Grade Academic Originality, SafeAssign Plagiarism, and AI-Content Detection Platform."
+description = "Academic text-similarity, citation, and writing-pattern analysis platform."
 readme = "README.md"
 authors = [{ name = "ScaleSynthAI", email = "scalesynthai@users.noreply.github.com" }]
 license = { text = "MIT" }

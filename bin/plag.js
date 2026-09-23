@@ -2,7 +2,7 @@
 
 /**
  * Plagiarism Detector Pro CLI
- * 100% Standalone Offline Academic Originality, AI Detector & Student Coach CLI
+ * Standalone offline text-similarity, writing-pattern, and student-coach CLI
  */
 
 const fs = require("fs");
@@ -39,14 +39,14 @@ function printBanner() {
     const pkg = require("../package.json");
     console.log(`\n${colors.bold}${colors.cyan}======================================================${colors.reset}`);
     console.log(`${colors.bold}${colors.cyan} 🎓 Plagiarism Detector Pro CLI (v${pkg.version})${colors.reset}`);
-    console.log(`${colors.gray} Enterprise Academic Originality, AI Detector & Coach (100% Offline)${colors.reset}`);
+    console.log(`${colors.gray} Text Similarity, Writing Patterns & Student Coach (100% Offline)${colors.reset}`);
     console.log(`${colors.bold}${colors.cyan}======================================================${colors.reset}\n`);
 }
 
 function printHelp() {
     printBanner();
     console.log(`${colors.bold}USAGE:${colors.reset}`);
-    console.log(`  ${colors.green}plag scan <file|text>${colors.reset}               Scan document or text for plagiarism & AI content`);
+    console.log(`  ${colors.green}plag scan <file|text>${colors.reset}               Scan lexical overlap and writing-pattern signals`);
     console.log(`  ${colors.green}plag coach <file|text>${colors.reset}              Unsupported claims, tone booster & thesis score`);
     console.log(`  ${colors.green}plag audit <file|text>${colors.reset}              PhD & Conference double-blind pre-flight audit`);
     console.log(`  ${colors.green}plag paraphrase <sentence>${colors.reset}         Generate 3 academic restructurings & citations`);
@@ -54,7 +54,7 @@ function printHelp() {
     console.log(`  ${colors.green}plag alphabetize <file|text>${colors.reset}        Auto-sort references & validate DOIs/years`);
     console.log(`  ${colors.green}plag diff <file1> <file2>${colors.reset}          Compare Draft 1 vs Draft 2 deltas`);
     console.log(`  ${colors.green}plag batch <dir|file1 file2...>${colors.reset}    Process class batch & print gradebook table`);
-    console.log(`  ${colors.green}plag certificate <file|text>${colors.reset}        Generate verifiable Authorship Certificate`);
+    console.log(`  ${colors.green}plag certificate <file|text>${colors.reset}        Generate an advisory analysis summary`);
     console.log(`  ${colors.green}plag mcp${colors.reset}                           Launch Model Context Protocol (MCP) server for Claude/Codex`);
     console.log(`\n${colors.bold}OPTIONS:${colors.reset}`);
     console.log(`  ${colors.yellow}--json${colors.reset}                          Output results in raw JSON`);
@@ -79,7 +79,7 @@ function getOption(flag) {
 function printDisclaimer() {
     console.log(`${colors.gray}--------------------------------------------------------------------------------${colors.reset}`);
     console.log(`${colors.gray}⚖️  ACADEMIC ADVISORY DISCLAIMER:${colors.reset}`);
-    console.log(`${colors.gray}This originality assessment and thesis diagnostic are provided for advisory and${colors.reset}`);
+    console.log(`${colors.gray}These similarity and writing diagnostics are provided for advisory and${colors.reset}`);
     console.log(`${colors.gray}formative validation purposes only. Institutional integrity evaluations, final${colors.reset}`);
     console.log(`${colors.gray}grades, and official approvals are governed strictly by your university's honor${colors.reset}`);
     console.log(`${colors.gray}code, academic syllabus, and faculty review.${colors.reset}`);
@@ -119,26 +119,27 @@ async function main() {
             }
 
             if (isJson) {
-                const res = await scan(text);
+                const res = await scan(text, { excludeQuotes: args.includes("--exclude-quotes"), excludeBibliography: args.includes("--exclude-bibliography") });
                 console.log(JSON.stringify(res, null, 2));
                 return;
             }
 
             printBanner();
-            console.log(`🔍 Scanning originality, AI content, and academic metrics...\n`);
+            console.log(`🔍 Scanning lexical overlap, writing patterns, and academic metrics...\n`);
 
             try {
                 const res = await scan(text, {
-                    excludeQuotes: args.includes("--exclude-quotes")
+                    excludeQuotes: args.includes("--exclude-quotes"),
+                    excludeBibliography: args.includes("--exclude-bibliography")
                 });
 
                 const riskColor = res.overall_similarity > 25 ? colors.red : res.overall_similarity > 15 ? colors.yellow : colors.green;
                 const aiColor = res.ai_analysis && res.ai_analysis.ai_probability > 40 ? colors.magenta : colors.green;
 
-                console.log(`${colors.bold}📊 ORIGINALITY & SAFEASSIGN METRICS:${colors.reset}`);
-                console.log(`  • Plagiarism Similarity:  ${riskColor}${res.overall_similarity}% (${res.safeassign_risk})${colors.reset}`);
+                console.log(`${colors.bold}📊 TEXT-SIMILARITY METRICS:${colors.reset}`);
+                console.log(`  • Selected Similarity:    ${riskColor}${res.overall_similarity}% (${res.safeassign_risk})${colors.reset}`);
                 if (res.ai_analysis) {
-                    console.log(`  • AI-Generated Content:   ${aiColor}${res.ai_analysis.ai_probability}% (${res.ai_analysis.ai_risk_level})${colors.reset}`);
+                    console.log(`  • AI-Pattern Heuristic:   ${aiColor}${res.ai_analysis.ai_probability}% (${res.ai_analysis.ai_risk_level})${colors.reset}`);
                     console.log(`  • Syntax Burstiness:      ${res.ai_analysis.burstiness}`);
                 }
                 console.log(`  • Total Analyzed Words:   ${res.total_words}`);
@@ -163,8 +164,10 @@ async function main() {
 
                 if (res.phd_audit) {
                     console.log(`\n${colors.bold}🔬 PHD & CONFERENCE AUDITOR:${colors.reset}`);
-                    console.log(`  • Double-Blind Status:    ${res.phd_audit.is_anonymity_compliant ? colors.green + "100% Compliant" : colors.red + "Violations Found"}${colors.reset}`);
-                    console.log(`  • Conference Readiness:   ${res.phd_audit.conference_readiness_score}/100`);
+                    const anonymity = res.phd_audit.is_anonymity_compliant === null ? colors.yellow + "Not assessed" :
+                        res.phd_audit.is_anonymity_compliant ? colors.green + "No identifiers detected" : colors.red + "Potential identifiers found";
+                    console.log(`  • Anonymity Screening:    ${anonymity}${colors.reset}`);
+                    console.log(`  • Structural Score:       ${res.phd_audit.conference_readiness_score}/100 (manual review required)`);
                 }
 
                 if (isVerbose && res.highlighted_sentences) {
@@ -241,8 +244,10 @@ async function main() {
             }
             printBanner();
             console.log(`${colors.bold}🔬 CONFERENCE PRE-FLIGHT AUDITOR (NeurIPS / ICML / IEEE):${colors.reset}`);
-            console.log(`  • Conference Readiness Score: ${colors.magenta}${audit.conference_readiness_score}/100${colors.reset}`);
-            console.log(`  • Anonymity Compliance:       ${audit.is_anonymity_compliant ? colors.green + "100% Compliant (Double-Blind)" : colors.red + "Violations Found"}${colors.reset}`);
+            console.log(`  • Structural Screening Score: ${colors.magenta}${audit.conference_readiness_score}/100${colors.reset}`);
+            const anonymity = audit.is_anonymity_compliant === null ? colors.yellow + "Not assessed" :
+                audit.is_anonymity_compliant ? colors.green + "No identifiers detected" : colors.red + "Potential identifiers found";
+            console.log(`  • Anonymity Screening:        ${anonymity}${colors.reset}`);
             console.log(`  • LaTeX Equations Isolated:   ${audit.latex_equations_isolated}`);
 
             if (audit.anonymity_violations.length > 0) {
@@ -375,11 +380,11 @@ async function main() {
             printBanner();
             console.log(`${colors.bold}📦 BATCH SUBMISSION GRADEBOOK:${colors.reset}`);
             console.log(`  • Submissions Processed:  ${res.total_submissions}`);
-            console.log(`  • Class Average Plag:     ${res.average_plagiarism}%`);
-            console.log(`  • Class Average AI:       ${res.average_ai_probability}%`);
+            console.log(`  • Average Similarity:     ${res.average_plagiarism}%`);
+            console.log(`  • Average Pattern Score:  ${res.average_ai_probability}%`);
             console.log(`  • High Risk Papers:       ${res.high_risk_count > 0 ? colors.red : colors.green}${res.high_risk_count}${colors.reset}\n`);
 
-            console.log(`${"Document".padEnd(30)} ${"Words".padStart(8)} ${"Plagiarism".padStart(12)} ${"AI Probability".padStart(16)} ${"Risk Tier".padStart(14)}`);
+            console.log(`${"Document".padEnd(30)} ${"Words".padStart(8)} ${"Similarity".padStart(12)} ${"Pattern Score".padStart(16)} ${"Risk Tier".padStart(14)}`);
             console.log("-".repeat(84));
             res.gradebook.forEach(row => {
                 const name = row.student_or_filename.slice(0, 28).padEnd(30);
@@ -419,7 +424,7 @@ async function main() {
                 return;
             }
             console.log(cert.ascii_certificate);
-            console.log(`\nVerification Hash (SHA-256): ${cert.sha256_hash}\n`);
+            console.log(`\nAnalysis Reference (SHA-256): ${cert.sha256_hash}\n`);
             break;
         }
 

@@ -176,7 +176,7 @@ class EnterpriseAcademicOriginalityTestSuite(unittest.TestCase):
         }
         res = self.client.post("/reports/html", json=sample_payload)
         self.assertEqual(res.status_code, 200)
-        self.assertIn(b"ScaleSynthAI SafeAssign Originality Report", res.data)
+        self.assertIn(b"ScaleSynthAI Text Similarity Report", res.data)
 
     def test_student_certificate_endpoint(self):
         sample_payload = {
@@ -192,7 +192,7 @@ class EnterpriseAcademicOriginalityTestSuite(unittest.TestCase):
         }
         res = self.client.post("/reports/certificate", json=sample_payload)
         self.assertEqual(res.status_code, 200)
-        self.assertIn(b"Certificate of Academic Authorship", res.data)
+        self.assertIn(b"Pre-Submission Analysis Summary", res.data)
         self.assertIn(b"Jane Doe", res.data)
         self.assertIn(b"Ethics in Artificial Intelligence", res.data)
 
@@ -412,6 +412,5 @@ class EnterpriseAcademicOriginalityTestSuite(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
 
 

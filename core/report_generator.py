@@ -1,5 +1,7 @@
 import datetime
+import hashlib
 import html
+import json
 import math
 from typing import Dict, Any
 
@@ -15,16 +17,49 @@ def _safe_data(value):
     return value
 
 
+def sentence_markup(sentence):
+    text = sentence.get("text", "")
+    if not isinstance(text, str):
+        raise ValueError("Sentence text must be a string.")
+    start = sentence.get("start", 0)
+    ranges = []
+    for span in sentence.get("matched_spans", []):
+        a, b = max(0, span["start"]-start), min(len(text), span["end"]-start)
+        if b > a:
+            ranges.append((a, b))
+    merged = []
+    for a, b in sorted(ranges):
+        if merged and a <= merged[-1][1]:
+            merged[-1][1] = max(b, merged[-1][1])
+        else:
+            merged.append([a, b])
+    result, position = [], 0
+    for a, b in merged:
+        result.append(html.escape(text[position:a]))
+        result.append('<span class="highlight-plag">' + html.escape(text[a:b]) + '</span>')
+        position = b
+    result.append(html.escape(text[position:]) + ' ')
+    return ''.join(result)
+
+
 def validate_report(data):
     if not isinstance(data, dict):
         raise ValueError("Report data must be an object.")
-    for key in ("ai_analysis", "citation_analysis", "readability"):
+    for key in ("ai_analysis", "citation_analysis", "readability", "scoring"):
         if key in data and not isinstance(data[key], dict):
             raise ValueError(f"{key} must be an object.")
     for key in ("highlighted_sentences", "sources_breakdown"):
         if key in data and (not isinstance(data[key], list) or
                             any(not isinstance(item, dict) for item in data[key])):
             raise ValueError(f"{key} must be an array of objects.")
+    for sentence in data.get("highlighted_sentences", []):
+        if not isinstance(sentence.get("text", ""), str) or type(sentence.get("start", 0)) is not int:
+            raise ValueError("Invalid sentence text or offset.")
+        spans = sentence.get("matched_spans", [])
+        if not isinstance(spans, list) or any(not isinstance(span, dict) or
+                type(span.get("start")) is not int or type(span.get("end")) is not int
+                for span in spans):
+            raise ValueError("Invalid matched spans.")
     for value in (data.get("overall_similarity", 0), data.get("ai_analysis", {}).get("ai_probability", 0)):
         if type(value) not in (int, float) or not math.isfinite(value) or not 0 <= value <= 100:
             raise ValueError("Scores must be finite numbers between 0 and 100.")
@@ -32,32 +67,17 @@ def validate_report(data):
 
 class ReportGenerator:
     """
-    Generates printable academic PDF/HTML originality reports
-    and Student Certificates of Originality & Authorship.
+    Generates printable similarity reports and advisory analysis summaries.
     """
 
     @staticmethod
-    def generate_html_report(data: Dict[str, Any], title: str = "Academic Originality Report") -> str:
+    def generate_html_report(data: Dict[str, Any], title: str = "Academic Text Similarity Report") -> str:
         validate_report(data)
+        manuscript_html = "".join(sentence_markup(row) for row in data.get("highlighted_sentences", []))
         data = _safe_data(data)
-        date_str = datetime.datetime.now().strftime("%B %d, %Y - %H:%M UTC")
+        date_str = datetime.datetime.now(datetime.timezone.utc).strftime("%B %d, %Y - %H:%M UTC")
         
         title = html.escape(title, quote=True)
-        # Build sentences HTML
-        sentences_html = []
-        for s in data.get("highlighted_sentences", []):
-            is_plag = s.get("is_plagiarized", False)
-            text = s.get("text", "")
-            if is_plag:
-                src = s.get("source", "Unknown Source")
-                sim = s.get("similarity", 0)
-                span = f'<span class="highlight-plag" title="Match: {sim}% with {src}">{text} </span>'
-            else:
-                span = f'<span>{text} </span>'
-            sentences_html.append(span)
-
-        manuscript_html = "".join(sentences_html)
-
         # Build sources rows
         sources_rows = []
         for s in data.get("sources_breakdown", [])[:10]:
@@ -86,7 +106,7 @@ class ReportGenerator:
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>{title} - ScaleSynthAI SafeAssign</title>
+    <title>{title} - ScaleSynthAI</title>
     <style>
         @page {{ size: A4; margin: 20mm; }}
         body {{
@@ -143,8 +163,8 @@ class ReportGenerator:
 <body>
     <div class="header">
         <div>
-            <div class="brand-title">ScaleSynthAI SafeAssign Originality Report</div>
-            <div class="brand-sub">Academic Integrity & Plagiarism Assessment</div>
+            <div class="brand-title">ScaleSynthAI Text Similarity Report</div>
+            <div class="brand-sub">Lexical-overlap and writing-pattern screening</div>
         </div>
         <div style="text-align: right; font-size: 12px; color: #64748b;">
             <div><strong>Generated:</strong> {date_str}</div>
@@ -156,11 +176,11 @@ class ReportGenerator:
     <div class="scores-grid">
         <div class="score-box">
             <div class="score-num {data.get('status_class', 'success')}">{data.get('overall_similarity', 0)}%</div>
-            <div class="score-lbl">Plagiarism Index ({data.get('safeassign_risk', 'Low Risk')})</div>
+            <div class="score-lbl">Selected Similarity ({data.get('safeassign_risk', 'Low Risk')})</div>
         </div>
         <div class="score-box">
             <div class="score-num {ai_data.get('status_class', 'success')}">{ai_data.get('ai_probability', 0)}%</div>
-            <div class="score-lbl">AI Likelihood ({ai_data.get('ai_risk_level', 'Human-Written')})</div>
+            <div class="score-lbl">AI-Pattern Heuristic (not authorship proof)</div>
         </div>
         <div class="score-box">
             <div class="score-num" style="color: #4f46e5;">{citation_data.get('in_text_citations_count', 0)}</div>
@@ -168,6 +188,12 @@ class ReportGenerator:
         </div>
     </div>
 
+    <p>Scored words: {data.get('scored_word_count', data.get('total_words', 0))}; matched words: {data.get('flagged_word_count', 0)}.
+    All-text similarity: {data.get('raw_similarity', data.get('overall_similarity', 0))}%; body: {data.get('body_similarity', 0)}%;
+    bibliography: {data.get('bibliography_similarity', 0)}%; quotations: {data.get('quotation_similarity', 0)}%.
+    Exclude quotations: {data.get('scoring', {}).get('exclude_quotes', False)};
+    exclude bibliography: {data.get('scoring', {}).get('exclude_bibliography', False)}.
+    Citations remain included. Source percentages may overlap. Similarity is not proof of plagiarism.</p>
     <!-- Manuscript -->
     <div class="section-hdr">1. Color-Annotated Manuscript</div>
     <div class="manuscript">
@@ -191,22 +217,21 @@ class ReportGenerator:
     </table>
 
     <div class="footer">
-        <div>Report generated by ScaleSynthAI Plagiarism Detector Pro. Verified across global academic repositories (Wikipedia, arXiv, CrossRef, OpenAlex) and institutional archives.</div>
-        <div style="margin-top: 6px; font-size: 10px; color: #94a3b8;"><strong>Academic Advisory Disclaimer:</strong> This report is intended for formative originality verification and pre-submission validation. Institutional integrity assessments, official grades, and submission clearances are governed strictly by your university's honor code and faculty review.</div>
+        <div>Generated after comparing {data.get('total_corpus_searched', len(data.get('sources_breakdown', [])))} retrieved or configured sources. Sources not retrieved were not assessed.</div>
+        <div style="margin-top: 6px; font-size: 10px; color: #94a3b8;"><strong>Academic Advisory Disclaimer:</strong> This report measures lexical overlap in the compared sources. It does not prove plagiarism, originality, AI authorship, or institutional compliance.</div>
     </div>
 </body>
 </html>'''
 
     @staticmethod
     def generate_student_certificate(data: Dict[str, Any], student_name: str = "Student", paper_title: str = "Academic Manuscript") -> str:
-        """
-        Generates a formal, verifiable Student Certificate of Academic Originality & Authorship
-        suitable for attaching to LMS submissions or Honor Board reviews.
-        """
+        """Generate an advisory, unsigned summary of supplied analysis results."""
         validate_report(data)
         data = _safe_data(data)
         date_str = datetime.datetime.now().strftime("%B %d, %Y")
-        cert_id = f"CERT-{abs(hash(student_name + paper_title + str(data.get('overall_similarity', 0)))) % 10000000:07d}"
+        digest_input = json.dumps({"student_name": student_name, "paper_title": paper_title,
+                                   "analysis": data}, sort_keys=True, ensure_ascii=False, default=str)
+        cert_id = "ANALYSIS-" + hashlib.sha256(digest_input.encode("utf-8")).hexdigest()[:12].upper()
         
         student_name = html.escape(student_name, quote=True)
         paper_title = html.escape(paper_title, quote=True)
@@ -235,7 +260,7 @@ class ReportGenerator:
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Certificate of Originality - {student_name}</title>
+    <title>Advisory Analysis Summary - {student_name}</title>
     <style>
         @page {{ size: landscape A4; margin: 10mm; }}
         body {{
@@ -381,13 +406,13 @@ class ReportGenerator:
 </head>
 <body>
     <div class="cert-border">
-        <div class="cert-header">ScaleSynthAI • Academic Integrity & Originality</div>
-        <h1 class="cert-title">Certificate of Academic Authorship</h1>
-        <div class="cert-sub">This document certifies independent pre-submission originality analysis</div>
+        <div class="cert-header">ScaleSynthAI • Advisory Text Analysis</div>
+        <h1 class="cert-title">Pre-Submission Analysis Summary</h1>
+        <div class="cert-sub">Unsigned summary of automated lexical and writing-pattern diagnostics</div>
 
         <div class="student-name">{student_name}</div>
         <div class="cert-body">
-            Has submitted the academic manuscript entitled <span class="paper-title">"{paper_title}"</span> ({words_count} words) for multi-dimensional SafeAssign similarity index verification, AI-generated content forensics, and in-text citation validation.
+            Requested analysis of <span class="paper-title">"{paper_title}"</span> ({words_count} words). The results below describe configured heuristics and detected citation syntax; they do not verify authorship or academic integrity.
         </div>
 
         <div class="status-ribbon">
@@ -397,15 +422,15 @@ class ReportGenerator:
         <div class="metrics-grid">
             <div class="metric-card">
                 <div class="metric-val" style="color: {status_color};">{plag_sim}%</div>
-                <div class="metric-lbl">Plagiarism Index</div>
+                <div class="metric-lbl">Selected Similarity</div>
             </div>
             <div class="metric-card">
                 <div class="metric-val" style="color: #7c3aed;">{ai_prob}%</div>
-                <div class="metric-lbl">AI Likelihood</div>
+                <div class="metric-lbl">AI-Pattern Heuristic</div>
             </div>
             <div class="metric-card">
                 <div class="metric-val" style="color: #2563eb;">{citations_count}</div>
-                <div class="metric-lbl">Validated Citations</div>
+                <div class="metric-lbl">Citations Detected</div>
             </div>
             <div class="metric-card">
                 <div class="metric-val" style="color: #0f172a;">{fk_grade}</div>
@@ -414,14 +439,14 @@ class ReportGenerator:
         </div>
 
         <div class="cert-disclaimer">
-            <strong>Institutional Academic Advisory:</strong> This certificate and originality assessment are generated for formative pre-submission validation. Official originality determinations and academic standing remain subject to your institution's specific honor code and faculty assessment.
+            <strong>Advisory only:</strong> This unsigned summary does not certify originality, authorship, citation validity, conference readiness, or institutional compliance. Review the matched passages and source coverage manually.
         </div>
 
         <div class="cert-footer">
             <div style="text-align: left;">
-                <div><strong>Certificate ID:</strong> {cert_id}</div>
+                <div><strong>Analysis ID:</strong> {cert_id}</div>
                 <div><strong>Issue Date:</strong> {date_str}</div>
-                <div class="hash-code">Verified via ScaleSynthAI Dual Engine</div>
+                <div class="hash-code">Generated by ScaleSynthAI diagnostics</div>
             </div>
             
             <div class="signature-line">
@@ -429,9 +454,9 @@ class ReportGenerator:
             </div>
 
             <div style="text-align: right;">
-                <div><strong>Engine:</strong> SafeAssign Pro 2.1</div>
-                <div><strong>Status:</strong> Private Draft (Protected)</div>
-                <div class="hash-code">SHA-256 Authenticated</div>
+                <div><strong>Method:</strong> Lexical overlap + advisory heuristics</div>
+                <div><strong>Corpus storage:</strong> Not added by this scanner</div>
+                <div class="hash-code">SHA-256 analysis reference prefix</div>
             </div>
         </div>
     </div>

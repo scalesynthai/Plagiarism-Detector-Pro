@@ -50,7 +50,7 @@ def create_app(config_class: type = Config) -> Flask:
                         validate_text(data[field])
                     except ValueError as e:
                         raise BadRequest(str(e))
-            for field in ("include_web", "exclude_quotes", "private_draft"):
+            for field in ("include_web", "exclude_quotes", "private_draft", "exclude_bibliography"):
                 if field in data and not isinstance(data[field], bool):
                     raise BadRequest(f"{field} must be a boolean.")
         if request.path == "/sources/upload" or (request.method == "DELETE" and request.path.startswith("/sources/")):
@@ -145,6 +145,7 @@ def create_app(config_class: type = Config) -> Flask:
         include_web = True
         exclude_quotes = False
         private_draft = True
+        exclude_bibliography = False
 
         if "file" in request.files and request.files["file"].filename:
             file_obj = request.files["file"]
@@ -160,17 +161,20 @@ def create_app(config_class: type = Config) -> Flask:
             include_web = request.form.get("include_web", "true").lower() in ("true", "1", "yes")
             exclude_quotes = request.form.get("exclude_quotes", "false").lower() in ("true", "1", "yes")
             private_draft = request.form.get("private_draft", "true").lower() in ("true", "1", "yes")
+            exclude_bibliography = request.form.get("exclude_bibliography", "false").lower() in ("true", "1", "yes")
         elif request.is_json:
             data = request.get_json() or {}
             query_text = data.get("query", "")
             include_web = bool(data.get("include_web", True))
             exclude_quotes = bool(data.get("exclude_quotes", False))
             private_draft = bool(data.get("private_draft", True))
+            exclude_bibliography = data.get("exclude_bibliography", False)
         else:
             query_text = request.form.get("query", "")
             include_web = request.form.get("include_web", "true").lower() in ("true", "1", "yes")
             exclude_quotes = request.form.get("exclude_quotes", "false").lower() in ("true", "1", "yes")
             private_draft = request.form.get("private_draft", "true").lower() in ("true", "1", "yes")
+            exclude_bibliography = request.form.get("exclude_bibliography", "false").lower() in ("true", "1", "yes")
 
         if not query_text or not query_text.strip():
             return jsonify({"error": "No text or document provided for analysis."}), 400
@@ -182,7 +186,8 @@ def create_app(config_class: type = Config) -> Flask:
                 query_text,
                 include_web_sources=include_web,
                 exclude_quotes=exclude_quotes,
-                private_draft=private_draft
+                private_draft=private_draft,
+                exclude_bibliography=exclude_bibliography
             )
 
             # Add Student Writing & Academic Integrity Coach Insights
@@ -212,6 +217,8 @@ def create_app(config_class: type = Config) -> Flask:
         include_web = request.form.get("include_web", "true").lower() in ("true", "1", "yes")
         exclude_quotes = request.form.get("exclude_quotes", "false").lower() in ("true", "1", "yes")
 
+        exclude_bibliography = request.form.get("exclude_bibliography", "false").lower() in ("true", "1", "yes")
+
         uploaded_files = request.files.getlist("files") or request.files.getlist("file")
         if not uploaded_files or not uploaded_files[0].filename:
             return jsonify({"error": "No files or ZIP archive provided."}), 400
@@ -220,7 +227,7 @@ def create_app(config_class: type = Config) -> Flask:
         if first_file.filename.lower().endswith('.zip'):
             try:
                 batch_result = batch_processor.process_zip_archive(
-                    first_file.stream, include_web=include_web, exclude_quotes=exclude_quotes
+                    first_file.stream, include_web=include_web, exclude_quotes=exclude_quotes, exclude_bibliography=exclude_bibliography
                 )
                 return jsonify(batch_result), 200
             except (ValueError, zipfile.BadZipFile) as e:
@@ -240,7 +247,7 @@ def create_app(config_class: type = Config) -> Flask:
 
         try:
             batch_result = batch_processor.process_multiple_files(
-                file_tuples, include_web=include_web, exclude_quotes=exclude_quotes
+                file_tuples, include_web=include_web, exclude_quotes=exclude_quotes, exclude_bibliography=exclude_bibliography
             )
             return jsonify(batch_result), 200
         except ValueError as e:
@@ -263,7 +270,7 @@ def create_app(config_class: type = Config) -> Flask:
 
     @app.route("/reports/certificate", methods=["POST"])
     def generate_certificate():
-        """Generates a formal Student Certificate of Academic Originality & Authorship."""
+        """Generates an unsigned advisory summary of supplied analysis data."""
         payload = request.get_json() or {}
         data = payload.get("data", payload)
         student_name = payload.get("student_name", "Student / Author")
@@ -286,7 +293,7 @@ def create_app(config_class: type = Config) -> Flask:
             "info": {
                 "title": "Plagiarism Detector Pro API",
                 "version": "2.1.0",
-                "description": "Enterprise & University-Grade Academic Originality, SafeAssign Plagiarism, and AI Content Forensics REST API."
+                "description": "Academic text-similarity, citation, and writing-pattern analysis REST API."
             },
             "servers": [
                 {"url": "https://plag.subba.dev", "description": "Production Server"},
@@ -295,7 +302,7 @@ def create_app(config_class: type = Config) -> Flask:
             "paths": {
                 "/check": {
                     "post": {
-                        "summary": "Scan text or uploaded document for plagiarism & AI",
+                        "summary": "Scan text or an uploaded document for lexical overlap and writing-pattern signals",
                         "responses": {"200": {"description": "Analysis result."}}
                     }
                 },
@@ -313,8 +320,8 @@ def create_app(config_class: type = Config) -> Flask:
                 },
                 "/reports/certificate": {
                     "post": {
-                        "summary": "Generate Student Certificate of Academic Originality",
-                        "responses": {"200": {"description": "Certificate HTML."}}
+                        "summary": "Generate an unsigned advisory analysis summary",
+                        "responses": {"200": {"description": "Advisory summary HTML."}}
                     }
                 },
                 "/sources": {

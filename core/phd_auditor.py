@@ -1,4 +1,5 @@
 import re
+from core.sections import front_matter
 from typing import Dict, List, Any
 
 
@@ -7,7 +8,7 @@ class PhdResearchAuditor:
     Specialized pre-flight auditor for AI PhD researchers and conference authors (NeurIPS, ICML, ICLR, ACL, CVPR).
     Features:
     - Double-Blind Anonymity Violation Detection
-    - Section-by-Section AI Likelihood & Perplexity Profiling
+    - Section-by-section writing-pattern and cadence profiling
     - Math & Code Block Integrity Verification
     - Publication Readiness Score
     """
@@ -39,9 +40,10 @@ class PhdResearchAuditor:
         if not text or not text.strip():
             return {
                 "anonymity_issues": [],
-                "is_anonymity_compliant": True,
+                "is_anonymity_compliant": None,
+                "anonymity_status": "insufficient_text",
                 "section_profiling": [],
-                "readiness_score": 100,
+                "readiness_score": 0,
                 "readiness_verdict": "Empty text"
             }
 
@@ -54,6 +56,16 @@ class PhdResearchAuditor:
                     "matched_text": match.group(0),
                     "position": match.start()
                 })
+
+        front = front_matter(text)
+        front_patterns = [
+            (r'\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b', "Author email in front matter"),
+            (r'\b(?:Department of|University of|School of|College of|Institute of)\b[^\n.!?]{0,120}', "Possible author affiliation in front matter"),
+            (r'(?m)^\s*(?:By\s+|Author:\s*)[A-Z][a-z]+(?:[ \t]+[A-Z][a-z]+){1,3}\s*$', "Author byline in front matter"),
+        ]
+        for pattern, label in front_patterns:
+            for match in re.finditer(pattern, front):
+                anonymity_issues.append({"type": label, "matched_text": match.group(), "position": match.start()})
 
         is_anonymity_compliant = len(anonymity_issues) == 0
 
@@ -72,7 +84,7 @@ class PhdResearchAuditor:
         readiness_score = max(20, 100 - deductions)
 
         if readiness_score >= 85:
-            verdict = "Conference / Journal Ready (Double-Blind & Originality Verified)"
+            verdict = "No configured warning patterns found; manual review required"
             badge_class = "success"
         elif readiness_score >= 60:
             verdict = "Revisions Advised (Resolve Anonymity or AI Phrasing Flags)"
@@ -85,6 +97,8 @@ class PhdResearchAuditor:
             "anonymity_issues": anonymity_issues,
             "is_anonymity_compliant": is_anonymity_compliant,
             "anonymity_count": len(anonymity_issues),
+            "anonymity_status": "potential_identifiers_found" if anonymity_issues else "no_identifiers_detected",
+            "assessment_scope": "Pattern-based screening; does not certify anonymity, originality, or conference readiness.",
             "section_profiling": section_profiling,
             "readiness_score": readiness_score,
             "readiness_verdict": verdict,

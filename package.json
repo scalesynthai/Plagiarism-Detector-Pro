@@ -1,7 +1,7 @@
 {
   "name": "plagiarism-detector-pro",
   "version": "1.0.4",
-  "description": "Enterprise Academic Originality, SafeAssign Plagiarism, AI Content Detector, and Writing Coach CLI & MCP Server",
+  "description": "Academic text-similarity, citation, writing-pattern, and coaching CLI and MCP server",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "bin": {
@@ -11,9 +11,10 @@
     "plag-mcp": "./bin/mcp-server.js"
   },
   "scripts": {
-    "test": "node tests_js/cli.test.js && node tests_js/hardening.test.js",
+    "test": "node tests_js/cli.test.js && node tests_js/hardening.test.js && node tests_js/accuracy.test.js",
     "start": "node bin/plag.js",
-    "mcp": "node bin/mcp-server.js"
+    "mcp": "node bin/mcp-server.js",
+    "benchmark": "python3 benchmarks/run.py"
   },
   "repository": {
     "type": "git",

@@ -1,5 +1,14 @@
 export interface PlagiarismResult {
     overall_similarity: number;
+    raw_similarity: number;
+    body_similarity: number;
+    bibliography_similarity: number;
+    quotation_similarity: number;
+    scored_word_count: number;
+    excluded_word_count: number;
+    normalized_text: string;
+    matched_spans: Array<{start: number; end: number; token_start: number; token_end: number; source_name: string; matched_text: string}>;
+    scoring: {method: string; minimum_match_words: number; exclude_quotes: boolean; exclude_bibliography: boolean; citations_excluded: boolean; source_percentages_overlap: boolean; offset_unit: string; limitations: string};
     safeassign_risk: "Low Risk" | "Medium Risk" | "High Risk";
     status_class: string;
     total_words: number;
@@ -56,6 +65,7 @@ export function scan(textOrFilePath: string, options?: {
     sourcesDir?: string;
     includeWeb?: boolean;
     excludeQuotes?: boolean;
+    excludeBibliography?: boolean;
     privateDraft?: boolean;
 }): Promise<PlagiarismResult>;
 

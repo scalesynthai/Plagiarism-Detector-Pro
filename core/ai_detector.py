@@ -5,7 +5,7 @@ from typing import Dict, List, Any
 
 class AIDetector:
     """
-    Statistical AI Content & LLM Likelihood Engine.
+    Uncalibrated writing-pattern heuristic.
     Analyzes text across:
       - Burstiness (Sentence length & syntactic variance)
       - Perplexity / Transition smoothness approximation
@@ -94,7 +94,8 @@ class AIDetector:
 
     def analyze(self, text: str) -> Dict[str, Any]:
         """
-        Performs comprehensive AI content and LLM likelihood assessment.
+        Computes a review signal from surface writing patterns. It cannot identify
+        authorship and the legacy ``ai_probability`` field is not a probability.
         """
         words = self.tokenize_words(text)
         sentences = self.split_sentences(text)
@@ -103,13 +104,14 @@ class AIDetector:
             return {
                 "ai_probability": 0.0,
                 "human_probability": 100.0,
-                "ai_risk_level": "Human-Written",
-                "status_class": "success",
+                "ai_risk_level": "Insufficient Text",
+                "status_class": "warning",
                 "burstiness": 50.0,
                 "lexical_diversity": 50.0,
                 "entropy": 50.0,
                 "ai_marker_count": 0,
                 "flagged_ai_sentences": [],
+                "assessment_scope": "Uncalibrated writing-pattern heuristic; not evidence of AI or human authorship.",
             }
 
         burstiness = self.compute_burstiness(sentences)
@@ -131,19 +133,19 @@ class AIDetector:
         ai_probability = min(98.0, max(2.0, round(raw_ai_score, 1)))
         human_probability = round(100.0 - ai_probability, 1)
 
-        # Classification
+        # Review bands. These are not authorship classifications.
         if ai_probability < 25.0:
-            ai_risk_level = "Human-Written Content"
+            ai_risk_level = "Low Pattern Score"
             status_class = "success"
-            verdict_desc = "Natural sentence length variance and organic syntax typical of human authorship."
+            verdict_desc = "Few configured uniformity or boilerplate markers were detected."
         elif ai_probability < 65.0:
-            ai_risk_level = "Mixed / AI-Assisted Content"
+            ai_risk_level = "Elevated Pattern Score"
             status_class = "warning"
-            verdict_desc = "Moderate structural uniformity detected. Text may contain AI-assisted editing or generation."
+            verdict_desc = "Some configured uniformity or boilerplate markers were detected; review the text manually."
         else:
-            ai_risk_level = "Likely AI-Generated"
+            ai_risk_level = "High Pattern Score"
             status_class = "danger"
-            verdict_desc = "High structural uniformity, low burstiness, and repetitive syntactic patterns typical of LLMs."
+            verdict_desc = "Many configured writing-pattern markers were detected; this does not establish authorship."
 
         # Sentence-level AI inspection
         flagged_sentences = []
@@ -177,4 +179,6 @@ class AIDetector:
             "total_sentences": len(sentences),
             "flagged_ai_sentences_count": sum(1 for f in flagged_sentences if f["is_ai_typical"]),
             "flagged_sentences": flagged_sentences,
+            "assessment_scope": "Uncalibrated writing-pattern heuristic; not evidence of AI or human authorship.",
+            "legacy_field_note": "ai_probability and human_probability are retained API names for complementary heuristic scores.",
         }

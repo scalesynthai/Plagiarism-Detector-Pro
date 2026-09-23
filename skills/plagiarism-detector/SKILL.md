@@ -1,18 +1,18 @@
 ---
 name: plagiarism-detector
-description: Enterprise Academic Originality, SafeAssign Plagiarism, AI Content Detector, Citation Generator, and Student Writing Coach. Use to audit documents, detect uncredited overlap, rephrase overlapping sentences with citations, evaluate thesis statements, and auto-format bibliographies.
+description: Academic text-similarity, citation, writing-pattern, and student-coaching tools. Use to audit documents, detect uncredited overlap against configured or retrieved sources, rephrase overlapping sentences with citations, evaluate thesis statements, and auto-format bibliographies.
 ---
 
 # Plagiarism Detector Pro (Claude & Codex Skill)
 
-This skill provides direct access to the **ScaleSynthAI Plagiarism Detector Pro** engine for verifying academic originality, detecting AI-generated prose, checking for unverified empirical claims, generating citations, and restructuring text with academic integrity.
+This skill provides direct access to the **ScaleSynthAI Plagiarism Detector Pro** engine for measuring lexical overlap against available sources, flagging writing-pattern signals, checking empirical claims for citation syntax, generating citations, and restructuring text with academic integrity.
 
 ## Available MCP & CLI Tools
 
 ### 1. `plag_scan_text` / `plag scan <text>`
 Scans an essay, manuscript, or paragraph for:
-- SafeAssign Similarity Index (%)
-- Statistical AI-content likelihood (%)
+- Selected lexical-similarity score (%)
+- Uncalibrated writing-pattern heuristic (%)
 - Syntax burstiness & perplexity variance
 - Contiguous matched phrases vs. institutional and global repositories
 
@@ -102,4 +102,3 @@ plag alphabetize my_bibliography.txt
 ## ⚖️ Institutional Academic Advisory & Disclaimer
 
 This skill and its associated tools are designed for **pre-submission validation and academic coaching**. Final academic integrity determinations and evaluations are governed exclusively by your educational institution's honor code and instructor review.
-

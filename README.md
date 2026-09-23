@@ -2,7 +2,7 @@
 
 # ⚡ Plagiarism Detector Pro
 
-**The Open-Source Enterprise Academic Originality, SafeAssign Plagiarism, AI-Content Detector & Student Writing Coach.**
+**An open-source lexical-similarity scanner, writing-pattern heuristic, and student writing coach.**
 
 *Available as an Interactive Web Dashboard, 100% Offline CLI, NPM Package, and Native Claude/Codex MCP Server.*
 
@@ -25,7 +25,7 @@
 
 Most open-source plagiarism checkers rely on basic string searching or single-word keyword matching, causing massive **false-positive keyword collisions** (e.g. flagging common nouns like *"diamonds"*, *"seaborn"*, or *"price"*). 
 
-**Plagiarism Detector Pro** solves this by implementing **Longest Common Subsequence (LCS) contiguous passage matching** alongside **Statistical AI Perplexity & Burstiness Forensics** to deliver true university-grade parity with **Blackboard SafeAssign** and **Turnitin**.
+**Plagiarism Detector Pro** finds contiguous lexical overlap in the sources it can retrieve and adds statistical writing-pattern diagnostics. It does not reproduce the private corpora or scoring methods used by Blackboard SafeAssign or Turnitin.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────┐
@@ -57,7 +57,7 @@ npx plagiarism-detector-pro --help
 ### 2. CLI Command Suite
 
 ```bash
-# 🔍 1. Scan a document for SafeAssign Plagiarism & AI Content
+# 🔍 1. Scan a document for text similarity and AI-pattern signals
 plag scan thesis_draft.md
 plag scan essay.docx --verbose   # Shows side-by-side matching passages
 plag scan paper.tex --json       # Outputs machine-readable JSON
@@ -91,8 +91,8 @@ plag diff draft_v1.txt draft_v2.txt
 # Ingests an entire folder of student assignments and prints an aggregated gradebook table
 plag batch ./student_submissions/
 
-# 📜 9. Verifiable Student Authorship Certificate
-# Generates a cryptographic SHA-256 verified academic honor certificate
+# 📜 9. Advisory Pre-Submission Analysis Summary
+# Generates an unsigned advisory summary with a SHA-256 analysis reference
 plag certificate essay.md --name "Jane Doe" --title "Deep Learning Study"
 
 # 🤖 10. Start Model Context Protocol (MCP) Server for Claude & Codex
@@ -103,7 +103,7 @@ plag mcp
 
 ## 🤖 Claude Desktop, Claude Code & Codex MCP Integration
 
-Plagiarism Detector Pro implements the **Model Context Protocol (MCP)**, allowing **Claude Desktop**, **Claude Code**, **OpenAI Codex**, **Antigravity**, and **Cursor** to natively audit originality, verify citations, and restructure text.
+Plagiarism Detector Pro implements the **Model Context Protocol (MCP)**, allowing **Claude Desktop**, **Claude Code**, **OpenAI Codex**, **Antigravity**, and **Cursor** to inspect lexical overlap, check citation syntax, and restructure text.
 
 ### Claude Desktop Setup
 
@@ -131,8 +131,8 @@ claude mcp add plagiarism-detector-pro npx -y plagiarism-detector-pro mcp
 
 | Tool Name | Parameters | Purpose |
 | :--- | :--- | :--- |
-| `plag_scan_text` | `text`, `exclude_quotes` | Scans text for plagiarism %, SafeAssign risk tier, and AI probability |
-| `plag_scan_file` | `file_path`, `exclude_quotes` | Ingests `.docx`, `.pdf`, `.tex`, `.ipynb`, `.md`, or `.txt` from disk |
+| `plag_scan_text` | `text`, `exclude_quotes`, `exclude_bibliography` | Measures lexical overlap and reports advisory writing-pattern diagnostics |
+| `plag_scan_file` | `file_path`, `exclude_quotes`, `exclude_bibliography` | Ingests `.docx`, `.pdf`, `.tex`, `.ipynb`, `.md`, or `.txt` from disk |
 | `plag_academic_coach` | `text` | Scans unsupported claims, tone booster formal synonyms, and thesis score |
 | `plag_paraphrase` | `sentence`, `source_title` | Restructures overlapping text into 3 scholarly formulations with attribution |
 | `plag_generate_citation`| `query` | Resolves DOI / arXiv / Paper Title to BibTeX, APA, MLA, and IEEE |
@@ -199,11 +199,8 @@ MAX_CONTENT_LENGTH=33554432 # 32 MB request limit; each document is limited to 8
 ### 4. ↔️ Interactive Side-by-Side Split Diff Comparison
 - Clicking any highlighted sentence opens a split-screen viewer comparing the student submission on the left with the verbatim original source on the right.
 
-### 5. 🤖 AI-Generated Content & LLM Detection Layer
-- Computes **Syntactic Burstiness** and **Lexical Entropy** to classify:
-  - 🟢 **Human-Written** ($< 25\%$)
-  - 🟡 **Mixed / AI-Assisted** ($25\% - 65\%$)
-  - 🔴 **Likely AI-Generated** ($> 65\%$)
+### 5. 🤖 Writing-Pattern Heuristic
+- Computes syntactic burstiness and lexical entropy as review signals. These scores do not identify authorship or prove AI use.
 
 ### 6. 📦 Whole-Class Batch Submissions Gradebook
 - Upload a `.zip` archive or multiple files to scan all submissions concurrently and produce an aggregated **Instructor Gradebook Table**.
@@ -214,7 +211,7 @@ MAX_CONTENT_LENGTH=33554432 # 32 MB request limit; each document is limited to 8
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| `POST` | `/check` | Scan text (`query`) or document (`file`) for originality and AI content |
+| `POST` | `/check` | Scan text (`query`) or document (`file`) for lexical overlap and writing-pattern signals |
 | `POST` | `/check/batch` | Scan whole-class `.zip` archive or multiple files |
 | `POST` | `/check/compare-drafts` | Compare Draft v1 vs Draft v2 revision deltas |
 | `POST` | `/api/paraphrase` | Generate 3 academic restructurings for a sentence |
@@ -222,7 +219,7 @@ MAX_CONTENT_LENGTH=33554432 # 32 MB request limit; each document is limited to 8
 | `POST` | `/api/student-coach/tone-and-claims` | Scan unsupported claims and formal tone boosts |
 | `POST` | `/api/student-coach/alphabetize-references` | Alphabetize and validate reference list |
 | `POST` | `/api/student-coach/evaluate-thesis` | Evaluate opening abstract / thesis statement |
-| `POST` | `/reports/certificate` | Generate verifiable Student Certificate of Academic Authorship |
+| `POST` | `/reports/certificate` | Generate an unsigned advisory analysis summary |
 | `GET` | `/sources` | List institutional repository documents |
 | `POST` | `/sources/upload` | Add new document to institutional repository |
 | `DELETE` | `/sources/<filename>` | Delete document from institutional repository (Requires Admin PIN) |
@@ -251,7 +248,7 @@ make test
 ## ⚖️ Institutional Academic Advisory & Disclaimer
 
 > [!IMPORTANT]
-> **Advisory & Formative Validation Purpose**: The originality metrics, AI content detection probabilities, thesis strength scores, and writing coach diagnostics provided by Plagiarism Detector Pro (CLI, Web Application, and MCP Integration) are designed strictly for **pre-submission validation, developmental self-review, and academic coaching**.
+> **Advisory & Formative Purpose**: Similarity metrics, uncalibrated writing-pattern scores, thesis-structure scores, and writing-coach diagnostics are intended for **pre-submission review and academic coaching**. They do not establish plagiarism, authorship, or AI use.
 > 
 > Official academic integrity determinations, final course grades, and institutional submission clearances are governed exclusively by your university's specific **Honor Code, academic policies, course syllabus, and faculty review**. No automated scoring tool constitutes a final institutional endorsement.
 
@@ -283,3 +280,13 @@ See [HARDENING.md](HARDENING.md) for verified fixes, supported limits, and remai
 Corpus uploads and deletions require `X-Admin-PIN`. Without a configured `ADMIN_PIN`, corpus mutations are disabled. Uploads reject empty or malformed documents and existing filenames; delete an existing source explicitly before replacing it. Configure both `SECRET_KEY` and `ADMIN_PIN` before starting Docker Compose.
 
 Run `python -m unittest discover tests -v` and `npm test` before release. CI runs both language suites; automated deployment runs only after successful push CI.
+
+### Passage scoring and accuracy checks
+
+The Python API and Node engine now use `exact-word-spans-v1`: four-word contiguous seeds (at least two non-function words) extend through identical neighboring words. Unique matched query words determine coverage; overlapping sources cannot inflate the overall score. Semantic paraphrases and very short fragments may be missed. A citation identifies attribution and does not automatically erase similarity.
+
+`exclude_quotes` / Node `excludeQuotes` excludes only quoted word spans. `exclude_bibliography` / Node `excludeBibliography` excludes a standalone References/Bibliography section. Excluded words leave both numerator and denominator. Responses include the selected score, raw whole-document score, body-only score, bibliography and quotation scores, matched spans, and the eligible word count. Body-only means excluding the bibliography, not automatically removing the title page. Bibliography/quotation scores are within their own sections and do not sum to the overall score. Source percentages can overlap. Offsets reference `normalized_text` (Python Unicode code points; Node UTF-16 code units).
+
+CLI JSON and human-readable scans accept `--exclude-quotes` and `--exclude-bibliography`. The browser provides both switches. Citation, thesis, and anonymity diagnostics are structural screening aids, not verification of sources, writing quality, or conference acceptance.
+
+See [benchmark documentation](benchmarks/README.md) and [machine-readable baseline](benchmarks/results.json). Run `python benchmarks/run.py` in the checkout to compare Python and Node against fixed labels without network requests.

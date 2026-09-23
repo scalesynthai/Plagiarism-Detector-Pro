@@ -118,7 +118,7 @@ def _extract_latex(stream: io.BytesIO) -> str:
     Intelligently parses academic LaTeX documents (.tex):
     - Strips comments and unrendered TeX boilerplate
     - Isolates mathematical environments from triggering plagiarism false alarms
-    - Transforms citation keys (\\cite{...}) into verifiable academic parentheticals
+    - Transforms citation keys (\\cite{...}) into academic parentheticals
     """
     raw = _extract_plain_text(stream)
     

@@ -6,6 +6,7 @@ import tempfile
 import threading
 from typing import Dict, List, Tuple, Any, Optional, Set
 from core.limits import validate_text
+from core.matching import match_document
 from core.extractor import extract_text_from_file, is_allowed_file
 from core.web_searcher import LiveWebSearcher
 from core.ai_detector import AIDetector
@@ -16,16 +17,7 @@ from core.phd_auditor import PhdResearchAuditor
 
 
 class PlagiarismChecker:
-    """
-    Enterprise & University-grade Academic Originality Platform.
-    Integrates:
-      - SafeAssign & Turnitin Multi-Layer Plagiarism Engine (LCS, Shingling, TF-IDF Cosine)
-      - Statistical AI-Generated Content & LLM Likelihood Detection
-      - Citation & Bibliography Integrity Validator
-      - Semantic Vector Indexing
-      - Global Internet & Academic Database Crawler (Wikipedia, arXiv, CrossRef, OpenAlex)
-      - Side-by-Side Synchronized Diff Alignment
-    """
+    """Lexical-overlap analysis plus advisory writing diagnostics."""
 
     STOPWORDS = {
         'a', 'about', 'above', 'after', 'again', 'against', 'all', 'am', 'an', 'and', 'any', 'are', 'as', 'at',
@@ -262,45 +254,8 @@ class PlagiarismChecker:
         return (dot_product / (mag1 * mag2)) * 100.0
 
     def compute_sentence_similarity(self, s1: str, s2: str) -> float:
-        s1_clean = re.sub(r'[^\w\s]', '', s1.lower()).strip()
-        s2_clean = re.sub(r'[^\w\s]', '', s2.lower()).strip()
-        
-        # Exact match fast path
-        if s1_clean and s2_clean and s1_clean == s2_clean:
-            return 100.0
-
-        w1 = self.tokenize(s1)
-        w2 = self.tokenize(s2)
-        if not w1 or not w2:
-            return 0.0
-
-        # Substring exact containment (for phrases of at least 4 words)
-        if len(w1) >= 4 and (s1_clean in s2_clean or s2_clean in s1_clean):
-            return 100.0
-
-        # Shingling: 3-grams and 4-grams require sequential phrase matching
-        shingles1_3 = self.get_shingles(w1, 3)
-        shingles2_3 = self.get_shingles(w2, 3)
-        shingle_score_3 = (len(shingles1_3.intersection(shingles2_3)) / max(min(len(shingles1_3), len(shingles2_3)), 1) * 100.0) if (shingles1_3 and shingles2_3) else 0.0
-
-        shingles1_4 = self.get_shingles(w1, 4)
-        shingles2_4 = self.get_shingles(w2, 4)
-        shingle_score_4 = (len(shingles1_4.intersection(shingles2_4)) / max(min(len(shingles1_4), len(shingles2_4)), 1) * 100.0) if (shingles1_4 and shingles2_4) else 0.0
-
-        lcs_len = self.longest_common_subsequence(w1, w2)
-        lcs_score = (lcs_len / max(min(len(w1), len(w2)), 1)) * 100.0
-
-        # Sequential structural overlap must be present to consider text matching.
-        # If there are no contiguous 3-grams and LCS is under 4 words, this is domain vocabulary, not plagiarism.
-        if shingle_score_3 == 0.0 and lcs_len < 4:
-            return 0.0
-
-        cosine = self.compute_cosine_similarity(w1, w2)
-
-        # Composite score heavily weighting sequential phrase preservation
-        composite = (shingle_score_3 * 0.40) + (shingle_score_4 * 0.20) + (lcs_score * 0.25) + (cosine * 0.15)
-        
-        return min(100.0, max(composite, shingle_score_3, shingle_score_4, lcs_score))
+        result = match_document(s1, {"reference": {"filename": "reference", "text": s2}})
+        return result["overall_similarity"]
 
     @staticmethod
     def generate_smart_citations(source_name: str, source_url: Optional[str] = None) -> Dict[str, str]:
@@ -340,10 +295,9 @@ class PlagiarismChecker:
         else:
             return "Moderate terminology overlap. If keeping specialized phrasing, place quotation marks or cite the source authority."
 
-    def analyze(self, query_text: str, include_web_sources: bool = True, exclude_quotes: bool = False, private_draft: bool = False) -> Dict[str, Any]:
+    def analyze(self, query_text: str, include_web_sources: bool = True, exclude_quotes: bool = False, private_draft: bool = False, exclude_bibliography: bool = False) -> Dict[str, Any]:
         """
-        Executes complete academic plagiarism, AI content, obfuscation defense, and citation analysis.
-        Strictly enforces continuous passage verification and proportional SafeAssign overlap scoring.
+        Analyze exact lexical overlap and attach advisory writing diagnostics.
         """
         validate_text(query_text)
         # 0. Adversarial Obfuscation & Readability Pre-Check
@@ -360,41 +314,11 @@ class PlagiarismChecker:
         # 1. Run Citation and Bibliography Validator
         citation_analysis = self.citation_validator.validate_citations(cleaned_text)
         
-        # 2. Run AI-Generated Content & LLM Detector
+        # 2. Run the uncalibrated writing-pattern heuristic
         ai_analysis = self.ai_detector.analyze(cleaned_text)
 
         # 3. Run PhD Conference & Double-Blind Anonymity Auditor
         phd_audit = PhdResearchAuditor.audit_manuscript(cleaned_text)
-
-        query_words = self.tokenize(cleaned_text)
-        query_sentences = self.split_into_sentences(cleaned_text)
-        extracted_quotes = self.extract_quotations(cleaned_text)
-
-        if not query_words:
-            return {
-                "overall_similarity": 0.0,
-                "safeassign_risk": "Low Risk",
-                "verdict": "Empty or Invalid Input",
-                "status_class": "success",
-                "highest_matching_source": None,
-                "highest_similarity": 0.0,
-                "sources_breakdown": [],
-                "highlighted_sentences": [],
-                "diff_matches": [],
-                "total_words": 0,
-                "total_sentences": 0,
-                "plagiarized_sentences_count": 0,
-                "flagged_word_count": 0,
-                "quotes_count": 0,
-                "live_sources_queried": 0,
-                "total_corpus_searched": 0,
-                "ai_analysis": ai_analysis,
-                "citation_analysis": citation_analysis,
-                "readability": readability,
-                "obfuscation_info": obfuscation_info,
-                "phd_audit": phd_audit,
-                "is_private_draft": private_draft,
-            }
 
         # Build candidate pool: Local Institutional Corpus + Real-Time Global Repositories
         self.refresh_sources()
@@ -422,164 +346,41 @@ class PlagiarismChecker:
                     "url": live_s.get("url"),
                 }
 
-        # 1. Sentence-Level Deep Matching & Side-by-Side Diff Assembly
-        highlighted_sentences = []
-        diff_matches = []
-        plagiarized_count = 0
-        flagged_word_count = 0
-        
-        # Track word-level matches per source to compute true proportional overlap
-        source_matched_words: Dict[str, int] = {}
-        source_max_similarity: Dict[str, float] = {}
-        source_match_sentences: Dict[str, int] = {}
+        matching = match_document(cleaned_text, {key: dict(value) for key, value in active_pool.items()},
+                                  exclude_quotes, exclude_bibliography)
+        for row in matching["sources_breakdown"]:
+            row["smart_citations"] = self.generate_smart_citations(row["filename"], row.get("url"))
+        for row in matching["highlighted_sentences"]:
+            row["smart_citations"] = self.generate_smart_citations(row["source"], row.get("url")) if row["source"] else None
+            row["paraphrase_advice"] = self.generate_paraphrase_advice(row["text"], row["similarity"]) if row["is_plagiarized"] else None
+        for row in matching["diff_matches"]:
+            row["smart_citations"] = self.generate_smart_citations(row["source_name"], row.get("source_url"))
+            row["paraphrase_advice"] = self.generate_paraphrase_advice(row["student_sentence"], row["similarity"])
+        overall_sim = matching["overall_similarity"]
 
-        total_words_count = max(len(query_words), 1)
-
-        for s in query_sentences:
-            s_words = self.tokenize(s)
-            s_len = len(s_words)
-            is_quoted = any(s in q or q in s for q in extracted_quotes)
-            has_citation, citation_str = self.citation_validator.has_in_text_citation(s)
-
-            best_match_score = 0.0
-            best_match_src = None
-            best_match_url = None
-            best_match_badge = None
-            best_match_src_sentence = None
-            best_source_key = None
-
-            for key, sdata in active_pool.items():
-                for src_s in sdata["sentences"]:
-                    score = self.compute_sentence_similarity(s, src_s)
-                    if score > best_match_score:
-                        best_match_score = score
-                        best_match_src = sdata["filename"]
-                        best_match_url = sdata.get("url")
-                        best_match_badge = sdata.get("badge")
-                        best_match_src_sentence = src_s
-                        best_source_key = key
-
-            # Academic threshold: 52% similarity with sequential match indicates overlapping material
-            is_plagiarized = (best_match_score >= 52.0) and not (exclude_quotes and (is_quoted or has_citation))
-
-            smart_cite = self.generate_smart_citations(best_match_src or "Reference Source", best_match_url) if best_match_src else None
-            paraphrase_tip = self.generate_paraphrase_advice(s, best_match_score) if is_plagiarized else None
-
-            if is_plagiarized and best_source_key:
-                plagiarized_count += 1
-                flagged_word_count += s_len
-                
-                source_matched_words[best_source_key] = source_matched_words.get(best_source_key, 0) + s_len
-                source_match_sentences[best_source_key] = source_match_sentences.get(best_source_key, 0) + 1
-                source_max_similarity[best_source_key] = max(source_max_similarity.get(best_source_key, 0.0), best_match_score)
-
-                # Append to side-by-side diff matches
-                diff_matches.append({
-                    "student_sentence": s,
-                    "matched_sentence": best_match_src_sentence,
-                    "source_name": best_match_src,
-                    "source_url": best_match_url,
-                    "badge": best_match_badge,
-                    "similarity": round(best_match_score, 1),
-                    "is_quoted": is_quoted,
-                    "has_citation": has_citation,
-                    "citation": citation_str,
-                    "smart_citations": smart_cite,
-                    "paraphrase_advice": paraphrase_tip,
-                })
-
-            highlighted_sentences.append({
-                "text": s,
-                "is_plagiarized": is_plagiarized,
-                "is_quoted": is_quoted,
-                "has_citation": has_citation,
-                "similarity": round(best_match_score, 1),
-                "source": best_match_src if is_plagiarized else None,
-                "url": best_match_url if is_plagiarized else None,
-                "badge": best_match_badge if is_plagiarized else None,
-                "matched_source_sentence": best_match_src_sentence if is_plagiarized else None,
-                "smart_citations": smart_cite,
-                "paraphrase_advice": paraphrase_tip,
-            })
-
-        # 2. Build Sources Breakdown
-        # Only sources that have actual verified sentence matches appear with positive percentages
-        sources_breakdown = []
-        highest_similarity = 0.0
-        highest_matching_source = None
-        highest_matching_url = None
-
-        for key, sdata in active_pool.items():
-            matched_w = source_matched_words.get(key, 0)
-            
-            # If it's a web/global source with 0 matched sentences, completely discard to prevent false positives
-            if key.startswith("global_") and matched_w == 0:
-                continue
-
-            # Proportional SafeAssign similarity: percentage of the submission's words matched in this source
-            prop_sim = min(100.0, (matched_w / total_words_count) * 100.0)
-            
-            smart_cite = self.generate_smart_citations(sdata["filename"], sdata.get("url"))
-
-            source_entry = {
-                "filename": sdata["filename"],
-                "similarity": round(prop_sim, 2),
-                "max_passage_similarity": round(source_max_similarity.get(key, 0.0), 1),
-                "matched_sentences_count": source_match_sentences.get(key, 0),
-                "common_words_count": matched_w,
-                "source_word_count": sdata["word_count"],
-                "badge": sdata.get("badge", "🏛️ Institutional"),
-                "source_type": sdata.get("source_type", "institutional"),
-                "url": sdata.get("url"),
-                "smart_citations": smart_cite,
-            }
-            sources_breakdown.append(source_entry)
-
-            if prop_sim > highest_similarity:
-                highest_similarity = prop_sim
-                highest_matching_source = sdata["filename"]
-                highest_matching_url = sdata.get("url")
-
-        sources_breakdown.sort(key=lambda x: x["similarity"], reverse=True)
-
-        # 3. SafeAssign Overall Overlap Ratio
-        # Overall similarity is strictly the ratio of flagged passage words to total submission words
-        overall_sim = min(100.0, (flagged_word_count / total_words_count) * 100.0)
-
-        # 4. SafeAssign Risk Level
+        # 4. Advisory similarity tier
         if overall_sim < 15.0:
             safeassign_risk = "Low Risk"
-            verdict = "Low / Unique Content (Acceptable)"
+            verdict = "Low Observed Similarity"
             status_class = "success"
-            verdict_description = "The submission contains minimal common phrasing typical of original academic writing."
+            verdict_description = "Little lexical overlap was found in the sources searched. Unretrieved sources and paraphrases are not ruled out."
         elif overall_sim < 40.0:
             safeassign_risk = "Medium Risk"
             verdict = "Medium Risk / Moderate Similarity"
             status_class = "warning"
-            verdict_description = "Substantial citations, paraphrasing, or matching phrases detected. Review source attribution."
+            verdict_description = "Matching text was found in the searched sources. Review the passages and their attribution."
         else:
             safeassign_risk = "High Risk"
             verdict = "High Risk / Critical Similarity"
             status_class = "danger"
-            verdict_description = "High probability of uncredited material, verbatim duplication, or significant academic overlap."
+            verdict_description = "Substantial matching text was found. Review the passages and their attribution; similarity alone does not establish plagiarism."
 
         return {
-            "overall_similarity": round(overall_sim, 2),
+            **matching,
             "safeassign_risk": safeassign_risk,
             "verdict": verdict,
             "verdict_description": verdict_description,
             "status_class": status_class,
-            "highest_similarity": round(highest_similarity, 2),
-            "highest_matching_source": highest_matching_source,
-            "highest_matching_url": highest_matching_url,
-            "sources_breakdown": sources_breakdown[:15],
-            "highlighted_sentences": highlighted_sentences,
-            "diff_matches": diff_matches,
-            "total_words": len(query_words),
-            "total_sentences": len(query_sentences),
-            "plagiarized_sentences_count": plagiarized_count,
-            "flagged_word_count": flagged_word_count,
-            "quotes_count": len(extracted_quotes),
             "live_sources_queried": live_sources_count,
             "total_corpus_searched": len(active_pool),
             "ai_analysis": ai_analysis,
