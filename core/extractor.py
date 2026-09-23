@@ -2,6 +2,8 @@ import io
 import os
 import re
 import json
+import zipfile
+from core.limits import MAX_DOCUMENT_BYTES, validate_text
 import docx
 from pypdf import PdfReader
 
@@ -39,26 +41,29 @@ def extract_text_from_file(file_input, filename: str = None) -> str:
         if not os.path.exists(file_input):
             raise FileNotFoundError(f"File not found: {file_input}")
         with open(file_input, 'rb') as f:
-            stream = io.BytesIO(f.read())
+            stream = io.BytesIO(f.read(MAX_DOCUMENT_BYTES + 1))
     elif hasattr(file_input, 'read'):
         # Reset stream position if possible
         if hasattr(file_input, 'seek'):
             file_input.seek(0)
-        content = file_input.read()
+        content = file_input.read(MAX_DOCUMENT_BYTES + 1)
         stream = io.BytesIO(content) if isinstance(content, bytes) else io.BytesIO(content.encode('utf-8'))
     else:
         raise ValueError("Invalid file input type.")
 
+    if stream.getbuffer().nbytes > MAX_DOCUMENT_BYTES:
+        raise ValueError('Document exceeds the 8 MB file limit.')
+
     if ext in {'.txt', '.md', '.csv', '.rtf', '.bib'}:
-        return _extract_plain_text(stream)
+        return validate_text(_extract_plain_text(stream))
     elif ext == '.docx':
-        return _extract_docx(stream)
+        return validate_text(_extract_docx(stream))
     elif ext == '.pdf':
-        return _extract_pdf(stream)
+        return validate_text(_extract_pdf(stream))
     elif ext == '.tex':
-        return _extract_latex(stream)
+        return validate_text(_extract_latex(stream))
     elif ext == '.ipynb':
-        return _extract_jupyter_notebook(stream)
+        return validate_text(_extract_jupyter_notebook(stream))
     else:
         raise ValueError(f"Unsupported file format: {ext}. Supported formats: {', '.join(sorted(ALLOWED_EXTENSIONS))}")
 
@@ -77,6 +82,11 @@ def _extract_plain_text(stream: io.BytesIO) -> str:
 def _extract_docx(stream: io.BytesIO) -> str:
     """Extracts text from Word .docx document stream."""
     try:
+        with zipfile.ZipFile(stream) as archive:
+            entries = archive.infolist()
+            if len(entries) > 2000 or sum(entry.file_size for entry in entries) > 32 * 1024 * 1024:
+                raise ValueError("DOCX expanded content exceeds extraction limits.")
+        stream.seek(0)
         doc = docx.Document(stream)
         paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
         for table in doc.tables:

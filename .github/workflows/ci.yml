@@ -32,3 +32,17 @@ jobs:
       - name: Run Test Suite
         run: |
           python -m unittest discover tests -v
+
+  javascript:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18, 20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm test

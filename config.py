@@ -1,4 +1,5 @@
 import os
+import secrets
 from pathlib import Path
 
 
@@ -10,9 +11,9 @@ class Config:
     WEB_SEARCH_TIMEOUT = int(os.getenv("WEB_SEARCH_TIMEOUT", 4))
     PORT = int(os.getenv("PORT", 5001))
     HOST = os.getenv("HOST", "127.0.0.1")
-    DEBUG = os.getenv("FLASK_DEBUG", "True").lower() in ("true", "1", "yes")
-    SECRET_KEY = os.getenv("SECRET_KEY", "plagiarism-pro-secret-key-2026")
-    ADMIN_PIN = os.getenv("ADMIN_PIN", "1234")
+    DEBUG = os.getenv("FLASK_DEBUG", "False").lower() in ("true", "1", "yes")
+    SECRET_KEY = os.getenv("SECRET_KEY", secrets.token_hex(32))
+    ADMIN_PIN = os.getenv("ADMIN_PIN", "")
 
 
 class DevelopmentConfig(Config):
@@ -22,6 +23,7 @@ class DevelopmentConfig(Config):
 
 class TestingConfig(Config):
     """Testing environment configuration."""
+    ADMIN_PIN = "test-admin-pin"
     TESTING = True
     DEBUG = False
     WEB_SEARCH_TIMEOUT = 2

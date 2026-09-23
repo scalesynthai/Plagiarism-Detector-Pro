@@ -1,12 +1,15 @@
 import logging
 import os
 import io
+import hmac
+import zipfile
 from typing import Optional
 from flask import Flask, request, render_template, jsonify, send_file, make_response, url_for as flask_url_for
 from werkzeug.utils import secure_filename
-from werkzeug.exceptions import HTTPException
+from werkzeug.exceptions import HTTPException, BadRequest
 
 from config import Config, DevelopmentConfig
+from core.limits import validate_text
 from core.checker import PlagiarismChecker
 from core.extractor import extract_text_from_file, is_allowed_file
 from core.batch_processor import BatchProcessor
@@ -24,10 +27,37 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def create_app(config_class: type = DevelopmentConfig) -> Flask:
+def create_app(config_class: type = Config) -> Flask:
     """Application factory for Plagiarism Detector Pro."""
     app = Flask(__name__)
     app.config.from_object(config_class)
+
+    @app.before_request
+    def validate_request():
+        if request.is_json:
+            data = request.get_json()
+            if not isinstance(data, dict):
+                raise BadRequest("JSON body must be an object.")
+            text_fields = ("query", "sentence", "text", "references", "draft_v1",
+                           "draft_v2", "student_name", "paper_title", "source_name", "source_title")
+            for field in text_fields:
+                if field in data and not isinstance(data[field], str):
+                    if field in ("source_name", "source_title") and data[field] is None:
+                        continue
+                    raise BadRequest(f"{field} must be a string.")
+                if isinstance(data.get(field), str):
+                    try:
+                        validate_text(data[field])
+                    except ValueError as e:
+                        raise BadRequest(str(e))
+            for field in ("include_web", "exclude_quotes", "private_draft"):
+                if field in data and not isinstance(data[field], bool):
+                    raise BadRequest(f"{field} must be a boolean.")
+        if request.path == "/sources/upload" or (request.method == "DELETE" and request.path.startswith("/sources/")):
+            expected = app.config.get("ADMIN_PIN", "")
+            provided = request.headers.get("X-Admin-PIN", "")
+            if not expected or not hmac.compare_digest(provided.encode(), str(expected).encode()):
+                return jsonify({"error": "Invalid or missing Admin PIN. Corpus changes are forbidden."}), 403
 
     # Cache busting for static assets: automatically appends timestamp query parameter
     @app.context_processor
@@ -53,6 +83,9 @@ def create_app(config_class: type = DevelopmentConfig) -> Flask:
             response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
             response.headers['Pragma'] = 'no-cache'
             response.headers['Expires'] = '0'
+        if not request.path.startswith("/static/"):
+            response.headers["Cache-Control"] = "no-store"
+        response.headers["X-Content-Type-Options"] = "nosniff"
         return response
 
     # Ensure sources directory exists
@@ -165,9 +198,11 @@ def create_app(config_class: type = DevelopmentConfig) -> Flask:
             }
 
             return jsonify(analysis), 200
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
         except Exception as e:
             logger.exception("Internal analysis error: %s", e)
-            return jsonify({"error": f"Internal scan error: {str(e)}"}), 500
+            return jsonify({"error": "Unable to complete the request. See server logs for details."}), 500
 
     @app.route("/check/batch", methods=["POST"])
     def check_batch_submissions():
@@ -188,9 +223,11 @@ def create_app(config_class: type = DevelopmentConfig) -> Flask:
                     first_file.stream, include_web=include_web, exclude_quotes=exclude_quotes
                 )
                 return jsonify(batch_result), 200
+            except (ValueError, zipfile.BadZipFile) as e:
+                return jsonify({"error": str(e)}), 400
             except Exception as e:
                 logger.exception("Failed to process ZIP archive: %s", e)
-                return jsonify({"error": f"Failed to process ZIP archive: {str(e)}"}), 500
+                return jsonify({"error": "Unable to complete the request. See server logs for details."}), 500
 
         # Multiple individual files
         file_tuples = []
@@ -206,15 +243,20 @@ def create_app(config_class: type = DevelopmentConfig) -> Flask:
                 file_tuples, include_web=include_web, exclude_quotes=exclude_quotes
             )
             return jsonify(batch_result), 200
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
         except Exception as e:
             logger.exception("Batch processing error: %s", e)
-            return jsonify({"error": f"Batch processing failed: {str(e)}"}), 500
+            return jsonify({"error": "Unable to complete the request. See server logs for details."}), 500
 
     @app.route("/reports/html", methods=["POST"])
     def generate_report():
         """Generates a printable HTML/PDF-ready academic report."""
         data = request.get_json() or {}
-        html_content = report_generator.generate_html_report(data)
+        try:
+            html_content = report_generator.generate_html_report(data)
+        except ValueError as e:
+            raise BadRequest(str(e))
         response = make_response(html_content)
         response.headers["Content-Type"] = "text/html"
         return response
@@ -226,9 +268,12 @@ def create_app(config_class: type = DevelopmentConfig) -> Flask:
         data = payload.get("data", payload)
         student_name = payload.get("student_name", "Student / Author")
         paper_title = payload.get("paper_title", "Academic Manuscript")
-        html_content = report_generator.generate_student_certificate(
-            data, student_name=student_name, paper_title=paper_title
-        )
+        try:
+            html_content = report_generator.generate_student_certificate(
+                data, student_name=student_name, paper_title=paper_title
+            )
+        except ValueError as e:
+            raise BadRequest(str(e))
         response = make_response(html_content)
         response.headers["Content-Type"] = "text/html"
         return response
@@ -334,22 +379,15 @@ def create_app(config_class: type = DevelopmentConfig) -> Flask:
                 "filename": safe_name,
                 "word_count": source_data.get("word_count", 0)
             }), 201
+        except (ValueError, FileExistsError) as e:
+            return jsonify({"error": str(e)}), 400
         except Exception as e:
             logger.exception("Failed to add reference source: %s", e)
-            return jsonify({"error": f"Failed to save source: {str(e)}"}), 500
+            return jsonify({"error": "Unable to complete the request. See server logs for details."}), 500
 
     @app.route("/sources/<filename>", methods=["DELETE"])
     def delete_source(filename: str):
         """Deletes a reference document from the corpus with Admin PIN verification."""
-        provided_pin = request.headers.get("X-Admin-PIN") or request.args.get("pin")
-        expected_pin = app.config.get("ADMIN_PIN", "1234")
-
-        if not provided_pin or str(provided_pin).strip() != str(expected_pin).strip():
-            logger.warning("Unauthorized deletion attempt for '%s' (Invalid Admin PIN)", filename)
-            return jsonify({
-                "error": "Unauthorized: Invalid or missing Admin PIN. Deletion forbidden."
-            }), 403
-
         safe_name = secure_filename(filename)
         deleted = checker.delete_source(safe_name)
         if deleted:
@@ -438,9 +476,13 @@ def create_app(config_class: type = DevelopmentConfig) -> Flask:
 
 def register_error_handlers(app: Flask):
     """Registers standard HTTP error handlers."""
+    @app.errorhandler(HTTPException)
+    def http_error(error):
+        return jsonify({"error": error.description}), error.code
+
     @app.errorhandler(413)
     def request_entity_too_large(error):
-        return jsonify({"error": "File size exceeds the 32MB limit."}), 413
+        return jsonify({"error": f"Request exceeds the configured {app.config['MAX_CONTENT_LENGTH']} byte limit."}), 413
 
     @app.errorhandler(404)
     def not_found(error):

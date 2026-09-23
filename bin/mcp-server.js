@@ -32,7 +32,7 @@ const TOOLS = [
     },
     {
         name: "plag_scan_file",
-        description: "Scans a local document file (.pdf, .docx, .tex, .ipynb, .md, .txt) for originality and AI likelihood.",
+        description: "Scans a local document file (.tex, .ipynb, .md, .txt) for originality and AI likelihood.",
         inputSchema: {
             type: "object",
             properties: {
@@ -113,10 +113,16 @@ rl.on("line", async (line) => {
     try {
         request = JSON.parse(line);
     } catch {
+        sendError(null, -32700, "Parse error");
         return;
     }
 
+    if (!request || typeof request !== "object" || Array.isArray(request) || request.jsonrpc !== "2.0" || typeof request.method !== "string") {
+        sendError(null, -32600, "Invalid Request");
+        return;
+    }
     const { id, method, params } = request;
+    if (id === undefined) return; // JSON-RPC notifications never receive responses.
 
     if (method === "tools/list") {
         sendResponse(id, { tools: TOOLS });
@@ -128,6 +134,8 @@ rl.on("line", async (line) => {
         } catch (err) {
             sendResponse(id, { isError: true, content: [{ type: "text", text: `Error: ${err.message}` }] });
         }
+    } else if (method === "ping") {
+        sendResponse(id, {});
     } else if (method === "initialize") {
         sendResponse(id, {
             protocolVersion: "2024-11-05",
@@ -135,9 +143,13 @@ rl.on("line", async (line) => {
             capabilities: { tools: {} }
         });
     } else {
-        sendResponse(id, { error: { code: -32601, message: "Method not found" } });
+        sendError(id, -32601, "Method not found");
     }
 });
+
+function sendError(id, code, message) {
+    process.stdout.write(JSON.stringify({ jsonrpc: "2.0", id, error: { code, message } }) + "\n");
+}
 
 function sendResponse(id, result) {
     const payload = JSON.stringify({ jsonrpc: "2.0", id, result });
@@ -145,6 +157,16 @@ function sendResponse(id, result) {
 }
 
 async function handleToolCall(name, args) {
+    const tool = TOOLS.find(tool => tool.name === name);
+    if (!tool) throw new Error(`Unknown tool: ${name}`);
+    if (!args || typeof args !== "object" || Array.isArray(args)) throw new Error("Arguments must be an object");
+    for (const key of tool.inputSchema.required || []) {
+        if (typeof args[key] !== "string" || !args[key].trim()) throw new Error(`${key} must be a non-empty string`);
+    }
+    for (const [key, value] of Object.entries(args)) {
+        const property = tool.inputSchema.properties[key];
+        if (property && typeof value !== property.type) throw new Error(`Invalid type for ${key}`);
+    }
     switch (name) {
         case "plag_scan_text":
             return await scan(args.text, {

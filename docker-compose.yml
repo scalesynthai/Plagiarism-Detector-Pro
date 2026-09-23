@@ -15,8 +15,8 @@ services:
       - WEB_SEARCH_TIMEOUT=6
       - MAX_CONTENT_LENGTH=33554432
       - SOURCES_DIR=/app/sources
-      - SECRET_KEY=${SECRET_KEY:-komodo-plagiarism-pro-secret-2026}
-      - ADMIN_PIN=${ADMIN_PIN:-1234}
+      - SECRET_KEY=${SECRET_KEY:?Set SECRET_KEY}
+      - ADMIN_PIN=${ADMIN_PIN:?Set ADMIN_PIN}
     volumes:
       # Persistent volume for institutional reference corpus
       - plagiarism_sources:/app/sources

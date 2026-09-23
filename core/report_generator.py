@@ -1,5 +1,33 @@
 import datetime
+import html
+import math
 from typing import Dict, Any
+
+
+def _safe_data(value):
+    """Escape report values without changing numeric values used for scoring."""
+    if isinstance(value, str):
+        return html.escape(value, quote=True)
+    if isinstance(value, dict):
+        return {key: _safe_data(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_safe_data(item) for item in value]
+    return value
+
+
+def validate_report(data):
+    if not isinstance(data, dict):
+        raise ValueError("Report data must be an object.")
+    for key in ("ai_analysis", "citation_analysis", "readability"):
+        if key in data and not isinstance(data[key], dict):
+            raise ValueError(f"{key} must be an object.")
+    for key in ("highlighted_sentences", "sources_breakdown"):
+        if key in data and (not isinstance(data[key], list) or
+                            any(not isinstance(item, dict) for item in data[key])):
+            raise ValueError(f"{key} must be an array of objects.")
+    for value in (data.get("overall_similarity", 0), data.get("ai_analysis", {}).get("ai_probability", 0)):
+        if type(value) not in (int, float) or not math.isfinite(value) or not 0 <= value <= 100:
+            raise ValueError("Scores must be finite numbers between 0 and 100.")
 
 
 class ReportGenerator:
@@ -10,8 +38,11 @@ class ReportGenerator:
 
     @staticmethod
     def generate_html_report(data: Dict[str, Any], title: str = "Academic Originality Report") -> str:
+        validate_report(data)
+        data = _safe_data(data)
         date_str = datetime.datetime.now().strftime("%B %d, %Y - %H:%M UTC")
         
+        title = html.escape(title, quote=True)
         # Build sentences HTML
         sentences_html = []
         for s in data.get("highlighted_sentences", []):
@@ -32,6 +63,8 @@ class ReportGenerator:
         for s in data.get("sources_breakdown", [])[:10]:
             name = s.get("filename", "")
             url = s.get("url")
+            if not isinstance(url, str) or not url.lower().startswith(("https://", "http://")):
+                url = None
             badge = s.get("badge", "Source")
             sim = s.get("similarity", 0)
             url_html = f'<a href="{url}" target="_blank">{name}</a>' if url else name
@@ -170,9 +203,13 @@ class ReportGenerator:
         Generates a formal, verifiable Student Certificate of Academic Originality & Authorship
         suitable for attaching to LMS submissions or Honor Board reviews.
         """
+        validate_report(data)
+        data = _safe_data(data)
         date_str = datetime.datetime.now().strftime("%B %d, %Y")
         cert_id = f"CERT-{abs(hash(student_name + paper_title + str(data.get('overall_similarity', 0)))) % 10000000:07d}"
         
+        student_name = html.escape(student_name, quote=True)
+        paper_title = html.escape(paper_title, quote=True)
         plag_sim = data.get("overall_similarity", 0.0)
         ai_prob = data.get("ai_analysis", {}).get("ai_probability", 0.0)
         citations_count = data.get("citation_analysis", {}).get("in_text_citations_count", 0)
@@ -182,11 +219,11 @@ class ReportGenerator:
 
         # Risk evaluation for certificate
         if plag_sim < 15.0 and ai_prob < 30.0:
-            cert_status = "VERIFIED ORIGINAL & HUMAN-AUTHORED"
+            cert_status = "LOW HEURISTIC SCORES — AUTHORSHIP NOT VERIFIED"
             status_color = "#16a34a"
             badge_icon = "🏅"
         elif plag_sim < 30.0 and ai_prob < 50.0:
-            cert_status = "ORIGINALITY ACCEPTABLE (CITATIONS VERIFIED)"
+            cert_status = "REVIEW ATTRIBUTION AND ORIGINALITY"
             status_color = "#2563eb"
             badge_icon = "📘"
         else:

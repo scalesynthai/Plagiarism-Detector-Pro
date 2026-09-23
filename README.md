@@ -169,13 +169,15 @@ pip install -r requirements.txt
 python app.py
 ```
 
-### Environment Configuration (`.env`)
+### Environment Configuration
+
+Export these variables before running Python. Docker Compose reads a local `.env`; direct Python execution does not load that file automatically.
 ```ini
 FLASK_ENV=production
 SECRET_KEY=your-secure-random-secret-key
-ADMIN_PIN=2026           # PIN required for institutional document deletion
+ADMIN_PIN=replace-with-a-long-random-secret # Required for corpus uploads and deletions
 PORT=5001
-MAX_CONTENT_LENGTH=52428800 # 50MB max file upload size
+MAX_CONTENT_LENGTH=33554432 # 32 MB request limit; each document is limited to 8 MB
 ```
 
 ---
@@ -183,7 +185,7 @@ MAX_CONTENT_LENGTH=52428800 # 50MB max file upload size
 ## 🎓 Key Features & Capabilities
 
 ### 1. 🛡️ Student "Private Draft Shield"
-- **No Self-Plagiarism Guarantee**: Allows students to check drafts against 250M+ publications and university databases **without storing the manuscript into institutional archives**, preventing self-plagiarism flags upon final Canvas/Turnitin submission.
+- Scans do not add submitted manuscripts to the local corpus. With web search enabled, search terms derived from the manuscript are sent to external providers. Set `include_web` to `false` for local-only checks. The `private_draft` flag does not disable web requests. This project does not provide access to proprietary Turnitin/SafeAssign databases or guarantee external submission outcomes.
 
 ### 2. 🧑‍🎓 Student Academic Writing & Integrity Coach
 - **🔍 Unsupported Claim Finder**: Detects empirical and statistical assertions (*"studies show"*, *"85% of"*, *"research demonstrates"*) lacking a parenthetical citation, with a 1-click `(Author, Year)` citation placeholder.
@@ -273,3 +275,11 @@ This project is open-source software licensed under the [**MIT License**](LICENS
   <sub>Engineered by <a href="https://github.com/ScaleSynthAI">ScaleSynthAI</a> • Maintained for Scholars, Students, and Researchers Worldwide.</sub>
 </div>
 
+
+## Reliability and deployment notes
+
+See [HARDENING.md](HARDENING.md) for verified fixes, supported limits, and remaining production work. Similarity and AI scores are heuristics, not proof of plagiarism or authorship. Certificates are advisory summaries of supplied scores and are not signed attestations.
+
+Corpus uploads and deletions require `X-Admin-PIN`. Without a configured `ADMIN_PIN`, corpus mutations are disabled. Uploads reject empty or malformed documents and existing filenames; delete an existing source explicitly before replacing it. Configure both `SECRET_KEY` and `ADMIN_PIN` before starting Docker Compose.
+
+Run `python -m unittest discover tests -v` and `npm test` before release. CI runs both language suites; automated deployment runs only after successful push CI.

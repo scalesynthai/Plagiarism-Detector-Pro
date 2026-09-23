@@ -165,6 +165,8 @@ Achiam, J., Adler, S., Agarwal, S., Ahmad, L., Akkaya, I., Aleman, F. L., ... & 
             if (!fileInput.files || fileInput.files.length === 0) {
                 return alert('Please choose a file to add as an institutional reference source.');
             }
+            const adminPin = prompt('Enter the Admin PIN to add a reference source:');
+            if (!adminPin) return;
             const submitBtn = addSourceForm.querySelector('button[type="submit"]');
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<span class="spinner"></span> Adding to Repository...';
@@ -175,6 +177,7 @@ Achiam, J., Adler, S., Agarwal, S., Ahmad, L., Akkaya, I., Aleman, F. L., ... & 
             try {
                 const res = await fetch('/sources/upload', {
                     method: 'POST',
+                    headers: { 'X-Admin-PIN': adminPin },
                     body: formData
                 });
                 const data = await res.json();
@@ -969,9 +972,9 @@ async function runCitationGeneration(query) {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Could not resolve citation');
 
-        document.getElementById('cite-res-title').textContent = data.title;
+        document.getElementById('cite-res-title').textContent = data.warning ? `${data.title} — ${data.warning}` : data.title;
         document.getElementById('cite-res-authors').textContent = `Authors: ${data.authors || 'Unknown'}`;
-        document.getElementById('cite-res-meta').textContent = `${data.journal || ''} • Published: ${data.year || '2024'} • ${data.doi_or_url || ''}`;
+        document.getElementById('cite-res-meta').textContent = `${data.journal || ''} • Published: ${data.year || 'n.d.'} • ${data.doi_or_url || ''}`;
 
         document.getElementById('cite-val-bibtex').textContent = data.bibtex || '';
         document.getElementById('cite-val-apa').textContent = data.apa || '';
@@ -1471,14 +1474,23 @@ function renderBatchGradebook(data) {
         const badgeClass = row.safeassign_risk === 'Low Risk' ? 'success' : (row.safeassign_risk === 'Medium Risk' ? 'warning' : 'danger');
 
         tr.innerHTML = `
-            <td><strong>📄 ${escapeHtml(row.student_or_filename)}</strong></td>
-            <td>${row.word_count || 0} words</td>
-            <td><span style="font-weight: 700; color: ${row.plagiarism_score > 40 ? 'var(--danger)' : 'var(--text-primary)'};">${row.plagiarism_score}%</span></td>
+            <td><strong>📄 ${escapeHtml(row.filename)}</strong></td>
+            <td>${row.total_words || 0} words</td>
+            <td><span style="font-weight: 700; color: ${row.overall_similarity > 40 ? 'var(--danger)' : 'var(--text-primary)'};">${row.overall_similarity}%</span></td>
             <td>${row.ai_probability}%</td>
             <td><span class="source-badge ${badgeClass}">${escapeHtml(row.safeassign_risk)}</span></td>
             <td><button class="btn-pdf" style="padding: 3px 8px; font-size: 11px;">🔍 View</button></td>
         `;
 
+        const viewButton = tr.querySelector('button');
+        if (row.status === 'error') {
+            tr.children[2].textContent = 'Failed';
+            tr.children[3].textContent = '—';
+            tr.children[4].textContent = row.error || 'Document could not be analyzed';
+            viewButton.disabled = true;
+        } else {
+            viewButton.addEventListener('click', () => renderResults(row.analysis));
+        }
         tbody.appendChild(tr);
     });
 

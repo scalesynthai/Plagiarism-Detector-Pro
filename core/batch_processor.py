@@ -12,6 +12,10 @@ class BatchProcessor:
     generating an aggregated SafeAssign & AI originality gradebook.
     """
 
+    MAX_FILES = 100
+    MAX_FILE_BYTES = 8 * 1024 * 1024
+    MAX_TOTAL_BYTES = 32 * 1024 * 1024
+
     def __init__(self, checker):
         self.checker = checker
 
@@ -37,12 +41,19 @@ class BatchProcessor:
             stream = zip_stream_or_path
 
         with zipfile.ZipFile(stream, 'r') as zf:
-            for info in zf.infolist():
+            infos = zf.infolist()
+            if len(infos) > self.MAX_FILES:
+                raise ValueError("Archive contains too many entries (maximum 100).")
+            if sum(info.file_size for info in infos) > self.MAX_TOTAL_BYTES:
+                raise ValueError("Archive expanded size exceeds 32 MB.")
+            for info in infos:
+                if info.file_size > self.MAX_FILE_BYTES or info.flag_bits & 1:
+                    raise ValueError("Archive contains an oversized or encrypted entry.")
                 if info.is_dir() or info.filename.startswith('__MACOSX') or os.path.basename(info.filename).startswith('.'):
                     continue
                 fname = os.path.basename(info.filename)
                 if is_allowed_file(fname):
-                    file_bytes = zf.read(info.filename)
+                    file_bytes = zf.read(info)
                     submissions.append((fname, io.BytesIO(file_bytes)))
 
         return self.process_multiple_files(submissions, include_web=include_web, exclude_quotes=exclude_quotes)
@@ -51,6 +62,8 @@ class BatchProcessor:
         """
         Processes a list of (filename, file_stream_or_path) concurrently.
         """
+        if len(file_tuples) > self.MAX_FILES:
+            raise ValueError("Too many documents (maximum 100).")
         results = []
 
         def analyze_single(name, stream_or_path):

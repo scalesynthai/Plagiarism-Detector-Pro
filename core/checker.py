@@ -1,7 +1,11 @@
 import math
 import os
 import re
+import io
+import tempfile
+import threading
 from typing import Dict, List, Tuple, Any, Optional, Set
+from core.limits import validate_text
 from core.extractor import extract_text_from_file, is_allowed_file
 from core.web_searcher import LiveWebSearcher
 from core.ai_detector import AIDetector
@@ -37,6 +41,8 @@ class PlagiarismChecker:
     }
 
     def __init__(self, sources_dir: Optional[str] = None, search_timeout: int = 4):
+        self._source_lock = threading.RLock()
+        self._source_signature = None
         self.sources_dir = sources_dir
         self.sources: Dict[str, Dict[str, Any]] = {}
         self.web_searcher = LiveWebSearcher(timeout=search_timeout)
@@ -49,13 +55,14 @@ class PlagiarismChecker:
 
     def reload_sources(self):
         """Loads and indexes all documents from the institutional corpus directory."""
-        self.sources.clear()
+        sources = {}
+        vector_engine = VectorSearchEngine(vector_dim=128)
         if not self.sources_dir:
             return
 
         # Auto-seed missing default sources if a default_sources directory exists (e.g. inside Docker)
         seed_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "default_sources")
-        if os.path.exists(seed_dir) and os.path.isdir(seed_dir):
+        if os.path.isdir(seed_dir) and not os.path.exists(os.path.join(self.sources_dir, ".seeded")):
             os.makedirs(self.sources_dir, exist_ok=True)
             for seed_file in os.listdir(seed_dir):
                 target_file = os.path.join(self.sources_dir, seed_file)
@@ -66,18 +73,22 @@ class PlagiarismChecker:
                     except Exception:
                         pass
 
+            open(os.path.join(self.sources_dir, ".seeded"), "a").close()
+
         if not os.path.exists(self.sources_dir):
+            self.sources = {}
+            self.vector_engine = vector_engine
             return
 
         for fname in os.listdir(self.sources_dir):
             fpath = os.path.join(self.sources_dir, fname)
-            if os.path.isfile(fpath) and is_allowed_file(fname):
+            if not os.path.islink(fpath) and os.path.isfile(fpath) and is_allowed_file(fname):
                 try:
                     text = extract_text_from_file(fpath)
                     if text.strip():
                         words = self.tokenize(text)
                         sentences = self.split_into_sentences(text)
-                        self.sources[fname] = {
+                        sources[fname] = {
                             "filename": fname,
                             "filepath": fpath,
                             "text": text,
@@ -89,44 +100,87 @@ class PlagiarismChecker:
                             "badge": "🏛️ Institutional Repository",
                             "url": None,
                         }
-                        self.vector_engine.add_document(fname, text, {"filename": fname})
+                        vector_engine.add_document(fname, text, {"filename": fname})
                 except Exception as e:
                     print(f"Warning: Could not index source '{fname}': {e}")
 
+        self.sources = sources
+        self.vector_engine = vector_engine
+
+    def refresh_sources(self):
+        """Refresh each worker's snapshot when persisted corpus files change."""
+        if not self.sources_dir:
+            return
+        with self._source_lock:
+            if not os.path.isdir(self.sources_dir):
+                self.sources = {}
+                self.vector_engine = VectorSearchEngine(vector_dim=128)
+                self._source_signature = None
+                return
+            signature = []
+            for entry in os.scandir(self.sources_dir):
+                if entry.is_file(follow_symlinks=False) and is_allowed_file(entry.name):
+                    try:
+                        stat = entry.stat()
+                        signature.append((entry.name, stat.st_mtime_ns, stat.st_size))
+                    except FileNotFoundError:
+                        continue
+            signature = tuple(sorted(signature))
+            if signature != self._source_signature:
+                self.reload_sources()
+                self._source_signature = signature
+
+    @staticmethod
+    def _validate_source_name(filename):
+        if (not filename or os.path.basename(filename) != filename or
+                "\\" in filename or not is_allowed_file(filename)):
+            raise ValueError("Invalid source filename.")
+
     def add_source(self, filename: str, content_or_stream) -> Dict[str, Any]:
-        """Saves a new source to the institutional repository and indexes it."""
+        """Validate first, then publish a complete file without overwriting sources."""
+        self._validate_source_name(filename)
         if not self.sources_dir:
             raise ValueError("No sources directory configured.")
         os.makedirs(self.sources_dir, exist_ok=True)
-        
-        target_path = os.path.join(self.sources_dir, filename)
-        if hasattr(content_or_stream, 'save'):
-            content_or_stream.save(target_path)
-        elif isinstance(content_or_stream, (bytes, bytearray)):
-            with open(target_path, 'wb') as f:
-                f.write(content_or_stream)
+        if hasattr(content_or_stream, 'read'):
+            content_or_stream.seek(0)
+            content = content_or_stream.read()
         elif isinstance(content_or_stream, str):
-            with open(target_path, 'w', encoding='utf-8') as f:
-                f.write(content_or_stream)
+            content = content_or_stream.encode('utf-8')
+        elif isinstance(content_or_stream, (bytes, bytearray)):
+            content = bytes(content_or_stream)
         else:
             raise ValueError("Unsupported content type for source file.")
-
-        self.reload_sources()
-        return self.sources.get(filename, {})
+        text = extract_text_from_file(io.BytesIO(content), filename)
+        if not text.strip():
+            raise ValueError("Source contains no extractable text.")
+        target = os.path.join(self.sources_dir, filename)
+        with self._source_lock:
+            fd, temporary = tempfile.mkstemp(dir=self.sources_dir, prefix='.upload-')
+            try:
+                with os.fdopen(fd, 'wb') as stream:
+                    stream.write(content)
+                os.link(temporary, target)  # Atomic and fails if target already exists.
+            finally:
+                os.unlink(temporary)
+            self.refresh_sources()
+            return self.sources[filename]
 
     def delete_source(self, filename: str) -> bool:
-        """Deletes a source file from the repository."""
+        self._validate_source_name(filename)
         if not self.sources_dir:
             return False
-        fpath = os.path.join(self.sources_dir, filename)
-        if os.path.exists(fpath):
-            os.remove(fpath)
-            self.reload_sources()
+        with self._source_lock:
+            try:
+                os.remove(os.path.join(self.sources_dir, filename))
+            except FileNotFoundError:
+                return False
+            self.refresh_sources()
             return True
-        return False
 
     def list_sources(self) -> List[Dict[str, Any]]:
         """Returns metadata for all indexed institutional reference sources."""
+        self.refresh_sources()
         result = []
         for name, data in sorted(self.sources.items()):
             preview = data["text"][:160].replace("\n", " ")
@@ -291,6 +345,7 @@ class PlagiarismChecker:
         Executes complete academic plagiarism, AI content, obfuscation defense, and citation analysis.
         Strictly enforces continuous passage verification and proportional SafeAssign overlap scoring.
         """
+        validate_text(query_text)
         # 0. Adversarial Obfuscation & Readability Pre-Check
         sanitization = TextSanitizer.analyze_and_sanitize(query_text)
         cleaned_text = sanitization["sanitized_text"]
@@ -342,6 +397,7 @@ class PlagiarismChecker:
             }
 
         # Build candidate pool: Local Institutional Corpus + Real-Time Global Repositories
+        self.refresh_sources()
         active_pool: Dict[str, Dict[str, Any]] = dict(self.sources)
         live_sources_count = 0
 

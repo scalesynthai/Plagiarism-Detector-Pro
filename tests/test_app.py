@@ -1,6 +1,9 @@
 import io
 import json
 import unittest
+import tempfile
+import shutil
+from pathlib import Path
 import zipfile
 import docx
 from pypdf import PdfWriter
@@ -20,7 +23,12 @@ from core.student_coach import AcademicStudentCoach
 
 class EnterpriseAcademicOriginalityTestSuite(unittest.TestCase):
     def setUp(self):
-        self.app_instance = create_app(TestingConfig)
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        for source in (Path(__file__).resolve().parents[1] / "sources").glob("*.txt"):
+            shutil.copy(source, temporary.name)
+        config = type("IsolatedConfig", (TestingConfig,), {"SOURCES_DIR": temporary.name})
+        self.app_instance = create_app(config)
         self.client = self.app_instance.test_client()
         self.checker = self.app_instance.checker
 
@@ -240,7 +248,7 @@ class EnterpriseAcademicOriginalityTestSuite(unittest.TestCase):
         stream = io.BytesIO(b"Institutional document content for deletion test.")
         upload_res = self.client.post("/sources/upload", data={
             "file": (stream, "temp_delete_test.txt")
-        }, content_type="multipart/form-data")
+        }, content_type="multipart/form-data", headers={"X-Admin-PIN": TestingConfig.ADMIN_PIN})
         self.assertEqual(upload_res.status_code, 201)
 
         # 2. Attempt delete without PIN -> 403 Forbidden

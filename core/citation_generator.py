@@ -60,7 +60,7 @@ class CitationGenerator:
     def _fetch_arxiv(cls, arxiv_id: str, timeout: int = 5) -> Dict[str, Any]:
         try:
             from bs4 import BeautifulSoup
-            url = f"http://export.arxiv.org/api/query?id_list={urllib.parse.quote(arxiv_id)}"
+            url = f"https://export.arxiv.org/api/query?id_list={urllib.parse.quote(arxiv_id)}"
             res = requests.get(url, headers=HEADERS, timeout=timeout)
             if res.status_code == 200:
                 soup = BeautifulSoup(res.text, 'xml')
@@ -172,23 +172,25 @@ class CitationGenerator:
     @classmethod
     def _fallback_format(cls, title_or_query: str, is_doi: bool = False) -> Dict[str, Any]:
         clean_t = title_or_query.strip().title()
-        year = "2024"
-        apa = f"Author, A. ({year}). {clean_t}. Institutional Scholarly Archive."
-        mla = f'Author, A. "{clean_t}." Institutional Repository, {year}.'
-        ieee = f'[1] A. Author, "{clean_t}," Institutional Repository, {year}.'
-        chicago = f'Author, A. "{clean_t}." Institutional Repository ({year}).'
+        year = "n.d."
+        apa = f"Unknown author ({year}). {clean_t}. Unknown publication."
+        mla = f'Unknown author "{clean_t}." Unknown publication, {year}.'
+        ieee = f'[1] Unknown author, "{clean_t}," Unknown publication, {year}.'
+        chicago = f'Unknown author "{clean_t}." Unknown publication ({year}).'
         bibtex = (
             f"@article{{author{year}article,\n"
-            f"  author = {{Author, A.}},\n"
+            f"  author = {{Unknown author}},\n"
             f"  title  = {{{{{clean_t}}}}},\n"
             f"  year   = {{{year}}}\n"
             f"}}"
         )
         return {
+            "metadata_resolved": False,
+            "warning": "Metadata lookup unavailable. Unverified template: verify every field before citing.",
             "title": clean_t,
-            "authors": "Author, A.",
+            "authors": "Unknown author",
             "year": year,
-            "journal": "Institutional Repository",
+            "journal": "Unknown publication",
             "doi_or_url": "",
             "apa": apa,
             "mla": mla,
