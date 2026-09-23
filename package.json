@@ -12,6 +12,7 @@
   },
   "scripts": {
     "test": "node tests_js/cli.test.js && node tests_js/hardening.test.js && node tests_js/accuracy.test.js",
+    "prepublishOnly": "npm test",
     "start": "node bin/plag.js",
     "mcp": "node bin/mcp-server.js",
     "benchmark": "python3 benchmarks/run.py"
@@ -34,6 +35,9 @@
   ],
   "author": "ScaleSynthAI <scalesynthai@users.noreply.github.com>",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "bugs": {
     "url": "https://github.com/scalesynthai/Plagiarism-Detector-Pro/issues"
   },

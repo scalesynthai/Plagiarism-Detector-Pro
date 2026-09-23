@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.0.4] - 2026-09-23
+
+### Matching accuracy and diagnostic reliability
+
+- Replaced sentence-level similarity estimates with deterministic exact-word-span coverage in both Python and Node.
+- Prevented duplicated and overlapping sources from inflating the overall matched-word count.
+- Added independent quotation and bibliography exclusions while keeping citations in the similarity calculation.
+- Added raw, body, bibliography, quotation, and selected-score disclosures with exact matched offsets.
+- Improved APA/IEEE citation recognition, thesis-section selection, front-matter anonymity screening, and distributed web-query sampling.
+- Reframed AI-related output as an uncalibrated writing-pattern heuristic rather than an authorship determination.
+- Added a fixed 25-case accuracy benchmark, Python/Node parity checks, challenge cases, and CI enforcement.
+- Hardened generated reports, external source links, advisory summaries, and CLI/MCP descriptions against misleading claims.
+
+The benchmark is a regression fixture set rather than evidence of real-world accuracy or equivalence to proprietary services. See `benchmarks/README.md` in the repository for results and limitations.
+
+---
+
 ## [v1.0.0] - 2026-09-08
 
 ### 🌟 Initial Major Release — Enterprise Academic Originality & SafeAssign Suite
