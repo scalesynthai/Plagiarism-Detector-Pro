@@ -440,15 +440,111 @@ function appendMatchedText(container, sentence, scoring) {
     container.appendChild(document.createTextNode(chars.slice(position).join('') + ' '));
 }
 
-function renderResults(data) {
+function finiteScore(value) {
+    const number = Number(value);
+    return Number.isFinite(number) ? Math.max(0, Math.min(100, number)) : 0;
+}
+
+function similarityBand(score) {
+    if (score >= 40) return { label: 'High similarity band', className: 'danger' };
+    if (score >= 15) return { label: 'Moderate similarity band', className: 'warning' };
+    return { label: 'Low similarity band', className: 'success' };
+}
+
+function readingGradeDescription(readability) {
+    const grade = Number(readability.fk_grade_level ?? String(readability.grade_level || '').match(/[\d.]+/)?.[0]);
+    if (!Number.isFinite(grade)) return readability.reading_level_desc || 'Reading grade unavailable';
+    if (grade <= 5) return 'Elementary school';
+    if (grade <= 8) return 'Middle school';
+    if (grade <= 12) return 'High school';
+    if (grade <= 14) return 'Late high school / early college';
+    if (grade <= 16) return 'College';
+    return 'Advanced college';
+}
+
+function renderScoreDetails(data) {
     const details = document.getElementById('similarity-details');
-    if (details && data.scoring) {
-        details.textContent = `Selected score: ${data.overall_similarity}% (${data.flagged_word_count}/${data.scored_word_count} eligible words). ` +
-            `All text: ${data.raw_similarity}%. Body: ${data.body_similarity}%. References: ${data.bibliography_similarity}% (${data.bibliography_word_count} words). ` +
-            `Quotations: ${data.quotation_similarity}% (${data.quotation_word_count} words). ` +
-            `Quoted text excluded: ${data.scoring.exclude_quotes ? 'yes' : 'no'}; references excluded: ${data.scoring.exclude_bibliography ? 'yes' : 'no'}. ` +
-            `Citations remain included. Source percentages may overlap. Scores measure lexical overlap in searched sources, not proof of plagiarism.`;
+    if (!details || !data.scoring) return;
+    const selected = finiteScore(data.overall_similarity);
+    const matched = Number(data.flagged_word_count) || 0;
+    const eligible = Number(data.scored_word_count) || 0;
+    const lines = [
+        `Selected similarity: ${selected.toFixed(2)}% = ${matched} matched words ÷ ${eligible} eligible words.`,
+        `All text: ${finiteScore(data.raw_similarity).toFixed(2)}% • Body: ${finiteScore(data.body_similarity).toFixed(2)}% • References: ${finiteScore(data.bibliography_similarity).toFixed(2)}% • Quotations: ${finiteScore(data.quotation_similarity).toFixed(2)}%.`,
+        `Scoring options: quoted text ${data.scoring.exclude_quotes ? 'excluded' : 'included'}; references ${data.scoring.exclude_bibliography ? 'excluded' : 'included'}; citations included.`,
+        `The score measures exact-word overlap only in ${Number(data.total_corpus_searched) || 0} compared sources. It is not a plagiarism verdict, and source percentages may overlap.`
+    ];
+    details.replaceChildren();
+    const heading = document.createElement('strong');
+    heading.textContent = 'How this score was calculated';
+    details.appendChild(heading);
+    for (const line of lines) {
+        const paragraph = document.createElement('p');
+        paragraph.textContent = line;
+        paragraph.style.marginTop = '6px';
+        details.appendChild(paragraph);
     }
+}
+
+function renderSuggestions(data) {
+    const list = document.getElementById('suggestions-list');
+    const priority = document.getElementById('suggestions-priority');
+    if (!list || !priority) return;
+    const score = finiteScore(data.overall_similarity);
+    const sentences = Array.isArray(data.highlighted_sentences) ? data.highlighted_sentences : [];
+    const matchedSentences = sentences.filter(row => row.is_plagiarized);
+    const uncitedMatches = matchedSentences.filter(row => !row.has_citation);
+    const citations = data.citation_analysis || {};
+    const unlinked = Number(citations.unlinked_citations_count) || 0;
+    const sources = Number(data.total_corpus_searched) || 0;
+    const aiScore = finiteScore(data.ai_analysis && data.ai_analysis.ai_probability);
+    const readability = data.readability || {};
+    const grade = Number(readability.fk_grade_level ?? String(readability.grade_level || '').match(/[\d.]+/)?.[0]);
+    const suggestions = [];
+
+    if (matchedSentences.length) {
+        suggestions.push(`Review ${matchedSentences.length} highlighted sentence${matchedSentences.length === 1 ? '' : 's'} covering ${data.flagged_word_count || 0} matched words. Open each highlight and compare it with the named source.`);
+        if (uncitedMatches.length) {
+            suggestions.push(`${uncitedMatches.length} matched sentence${uncitedMatches.length === 1 ? '' : 's'} ${uncitedMatches.length === 1 ? 'contains' : 'contain'} no recognized citation. Add accurate attribution, quote verbatim wording, or rewrite from your own analysis.`);
+        } else {
+            suggestions.push('Recognized citation syntax appears in every matched sentence. Confirm that verbatim wording uses quotation marks and that each bibliography entry is accurate.');
+        }
+    } else {
+        suggestions.push(`No qualifying exact-word overlap was found in the ${sources} sources compared. Check that the relevant source collection was searched; this result does not cover unavailable sources or semantic paraphrases.`);
+    }
+
+    if (unlinked > 0) {
+        suggestions.push(`Link ${unlinked} detected in-text citation${unlinked === 1 ? '' : 's'} to a matching bibliography entry, then verify author, year, title, and URL or DOI manually.`);
+    }
+    if (!data.scoring.exclude_bibliography && finiteScore(data.bibliography_similarity) > 0) {
+        suggestions.push(`Reference-list overlap is ${finiteScore(data.bibliography_similarity).toFixed(2)}%. Compare the body score (${finiteScore(data.body_similarity).toFixed(2)}%) before revising prose; reference entries often match by design.`);
+    }
+    if (sources === 0) {
+        suggestions.push('Add local reference sources or enable web search before interpreting a zero similarity score.');
+    }
+    if (aiScore >= 25) {
+        suggestions.push(`The writing-pattern heuristic is ${aiScore.toFixed(1)}/100. Review repetitive transitions and unusually uniform sentence structure, but do not treat this score as evidence of AI authorship.`);
+    } else {
+        suggestions.push(`The writing-pattern heuristic is low (${aiScore.toFixed(1)}/100). Do not rewrite solely to reduce this uncalibrated score.`);
+    }
+    if (Number.isFinite(grade) && grade > 14) {
+        suggestions.push(`Readability is approximately grade ${grade.toFixed(1)}. Shorten dense sentences and define specialized terms if the intended audience is broader than college-level readers.`);
+    }
+
+    list.replaceChildren();
+    for (const suggestion of suggestions.slice(0, 6)) {
+        const item = document.createElement('li');
+        item.textContent = suggestion;
+        list.appendChild(item);
+    }
+    const highPriority = score >= 40 || unlinked > 0 || uncitedMatches.length > 0;
+    priority.className = `badge-pill ${highPriority ? 'danger' : score >= 15 ? 'warning' : 'info'}`;
+    priority.textContent = highPriority ? 'Attribution review' : score >= 15 ? 'Review matches' : 'Focused review';
+}
+
+function renderResults(data) {
+    renderScoreDetails(data);
+    renderSuggestions(data);
     const scope = document.getElementById('scan-sources-meta');
     if (scope) scope.textContent = `${data.total_corpus_searched || 0} sources compared • ${data.live_sources_queried || 0} online results`;
     // 1. Obfuscation Alert Banner
@@ -470,22 +566,31 @@ function renderResults(data) {
     // 2.2 Student Academic Writing & Integrity Coach
     renderStudentCoach(data);
 
-    // 3. Score Gauges: Plagiarism + AI
-    const plagScore = data.overall_similarity || 0;
+    // 3. Score gauges: text similarity + writing-pattern heuristic
+    const plagScore = finiteScore(data.overall_similarity);
     const aiData = data.ai_analysis || {};
-    const aiScore = aiData.ai_probability || 0;
+    const aiScore = finiteScore(aiData.ai_probability);
 
     const circlePlag = document.getElementById('score-circle-plag');
     const numPlag = document.getElementById('score-number-plag');
     const circleAi = document.getElementById('score-circle-ai');
     const numAi = document.getElementById('score-number-ai');
 
-    numPlag.textContent = `${plagScore.toFixed(1)}%`;
-    circlePlag.className = `score-circle ${data.status_class || 'success'}`;
+    const plagBand = similarityBand(plagScore);
+    numPlag.textContent = `${plagScore.toFixed(2)}%`;
+    circlePlag.className = `score-circle ${plagBand.className}`;
+    circlePlag.style.setProperty('--score-angle', `${plagScore * 3.6}deg`);
+    circlePlag.setAttribute('aria-label', `${plagScore.toFixed(2)} percent text similarity, ${plagBand.label}`);
+    document.getElementById('score-band-plag').textContent = plagBand.label;
+    document.getElementById('score-formula-plag').textContent = `${data.flagged_word_count || 0} matched ÷ ${data.scored_word_count || 0} eligible words`;
 
-    numAi.textContent = `${aiScore.toFixed(1)}%`;
+    numAi.textContent = `${aiScore.toFixed(1)}/100`;
     const aiStatus = aiScore >= 65 ? 'danger' : (aiScore >= 25 ? 'warning' : 'success');
     circleAi.className = `score-circle ${aiStatus}`;
+    circleAi.style.setProperty('--score-angle', `${aiScore * 3.6}deg`);
+    const aiBand = aiScore >= 65 ? 'High pattern band' : aiScore >= 25 ? 'Elevated pattern band' : 'Low pattern band';
+    circleAi.setAttribute('aria-label', `${aiScore.toFixed(1)} out of 100 writing-pattern heuristic, ${aiBand}`);
+    document.getElementById('score-band-ai').textContent = aiBand;
 
     // Verdict Card
     const verdictBadge = document.getElementById('verdict-badge');
@@ -493,12 +598,12 @@ function renderResults(data) {
     const verdictDesc = document.getElementById('verdict-desc');
 
     verdictBadge.className = `verdict-badge ${data.status_class}`;
-    verdictBadge.textContent = `${data.safeassign_risk} • AI-pattern heuristic ${aiScore.toFixed(1)}%`;
+    verdictBadge.textContent = `${plagBand.label} • ${data.flagged_word_count || 0} matched words`;
 
     if (data.highest_matching_source) {
         const safeUrl = safeHttpUrl(data.highest_matching_url);
         const urlAttr = safeUrl ? ` <a href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener noreferrer" style="color: var(--primary); font-size: 13px;">[Open Reference ↗]</a>` : '';
-        verdictTitle.innerHTML = `Top Match: ${escapeHtml(data.highest_matching_source)}${urlAttr}`;
+        verdictTitle.innerHTML = `Top matched source: ${escapeHtml(data.highest_matching_source)}${urlAttr}`;
         verdictDesc.textContent = data.verdict_description || `Highest single source similarity is ${data.highest_similarity}%.`;
     } else {
         verdictTitle.textContent = 'No Matching Passages Found';
@@ -606,10 +711,12 @@ function renderManuscriptInspector(data) {
 }
 
 function renderChecklist(data) {
-    const plagScore = data.overall_similarity || 0;
-    const aiScore = (data.ai_analysis && data.ai_analysis.ai_probability) || 0;
+    const plagScore = finiteScore(data.overall_similarity);
+    const aiScore = finiteScore(data.ai_analysis && data.ai_analysis.ai_probability);
     const citeData = data.citation_analysis || {};
     const readability = data.readability || {};
+    const matchedWords = Number(data.flagged_word_count) || 0;
+    const eligibleWords = Number(data.scored_word_count) || Number(data.total_words) || 0;
 
     const chkPlagPill = document.getElementById('chk-plag-pill');
     const chkPlagDesc = document.getElementById('chk-plag-desc');
@@ -617,18 +724,18 @@ function renderChecklist(data) {
     if (chkPlagPill) {
         if (plagScore < 15.0) {
             chkPlagPill.className = 'badge-pill success';
-            chkPlagPill.textContent = `${plagScore}% Low observed similarity`;
-            if (chkPlagDesc) chkPlagDesc.textContent = 'Below the local low-score band; still review source coverage and attribution.';
+            chkPlagPill.textContent = `${plagScore.toFixed(2)}% matched • Low`;
+            if (chkPlagDesc) chkPlagDesc.textContent = `${matchedWords} of ${eligibleWords} eligible words matched exact passages. Review highlights and source coverage.`;
             if (chkPlag) chkPlag.style.borderLeft = '3px solid var(--success)';
         } else if (plagScore < 40.0) {
             chkPlagPill.className = 'badge-pill warning';
-            chkPlagPill.textContent = `${plagScore}% Moderate`;
-            if (chkPlagDesc) chkPlagDesc.textContent = 'Review flagged sentences to ensure all citations are attributed.';
+            chkPlagPill.textContent = `${plagScore.toFixed(2)}% matched • Moderate`;
+            if (chkPlagDesc) chkPlagDesc.textContent = `${matchedWords} of ${eligibleWords} eligible words matched. Review each highlighted passage for quotation and attribution.`;
             if (chkPlag) chkPlag.style.borderLeft = '3px solid var(--warning)';
         } else {
             chkPlagPill.className = 'badge-pill danger';
-            chkPlagPill.textContent = `${plagScore}% High Risk`;
-            if (chkPlagDesc) chkPlagDesc.textContent = 'Significant verbatim overlap detected. Rewrite uncredited sections.';
+            chkPlagPill.textContent = `${plagScore.toFixed(2)}% matched • High`;
+            if (chkPlagDesc) chkPlagDesc.textContent = `${matchedWords} of ${eligibleWords} eligible words matched. Prioritize verbatim passages without clear quotation or attribution.`;
             if (chkPlag) chkPlag.style.borderLeft = '3px solid var(--danger)';
         }
     }
@@ -639,17 +746,17 @@ function renderChecklist(data) {
     if (chkAiPill) {
         if (aiScore < 25.0) {
             chkAiPill.className = 'badge-pill success';
-            chkAiPill.textContent = `${aiScore}% Low pattern score`;
-            if (chkAiDesc) chkAiDesc.textContent = 'Few configured AI-writing markers detected; this does not verify authorship.';
+            chkAiPill.textContent = `${aiScore.toFixed(1)}/100 • Low`;
+            if (chkAiDesc) chkAiDesc.textContent = 'Few configured writing-pattern markers detected; this does not identify authorship.';
             if (chkAi) chkAi.style.borderLeft = '3px solid var(--success)';
         } else if (aiScore < 65.0) {
             chkAiPill.className = 'badge-pill warning';
-            chkAiPill.textContent = `${aiScore}% Medium pattern score`;
+            chkAiPill.textContent = `${aiScore.toFixed(1)}/100 • Elevated`;
             if (chkAiDesc) chkAiDesc.textContent = 'Some configured writing-pattern markers were detected. Review manually.';
             if (chkAi) chkAi.style.borderLeft = '3px solid var(--warning)';
         } else {
             chkAiPill.className = 'badge-pill danger';
-            chkAiPill.textContent = `${aiScore}% High pattern score`;
+            chkAiPill.textContent = `${aiScore.toFixed(1)}/100 • High`;
             if (chkAiDesc) chkAiDesc.textContent = 'Many configured writing-pattern markers were detected; this is not proof of AI use.';
             if (chkAi) chkAi.style.borderLeft = '3px solid var(--danger)';
         }
@@ -661,8 +768,8 @@ function renderChecklist(data) {
     if (chkCitePill) {
         if (citeData.in_text_citations_count > 0) {
             chkCitePill.className = 'badge-pill info';
-            chkCitePill.textContent = `${citeData.in_text_citations_count} Detected`;
-            if (chkCiteDesc) chkCiteDesc.textContent = `${citeData.unlinked_citations_count || 0} citation(s) not linked to a bibliography entry. Detection does not verify the source.`;
+            chkCitePill.textContent = `${citeData.in_text_citations_count} detected • ${citeData.unlinked_citations_count || 0} unlinked`;
+            if (chkCiteDesc) chkCiteDesc.textContent = 'Links are inferred from citation syntax and bibliography text. Source existence and claim support were not verified.';
             if (chkCite) chkCite.style.borderLeft = '3px solid #6366f1';
         } else {
             chkCitePill.className = 'badge-pill warning';
@@ -678,7 +785,7 @@ function renderChecklist(data) {
     if (chkReadPill && readability.grade_level) {
         chkReadPill.className = 'badge-pill info';
         chkReadPill.textContent = `${readability.grade_level}`;
-        if (chkReadDesc) chkReadDesc.textContent = `${readability.reading_level_desc || 'Academic Standard'} • ~${readability.reading_time_minutes || 1} min read.`;
+        if (chkReadDesc) chkReadDesc.textContent = `${readingGradeDescription(readability)} • Estimated ${readability.reading_time_minutes || 1} min read.`;
         if (chkRead) chkRead.style.borderLeft = '3px solid #8b5cf6';
     }
 
@@ -686,7 +793,7 @@ function renderChecklist(data) {
     if (overallBadge) {
         if (plagScore < 15.0 && aiScore < 30.0) {
             overallBadge.className = 'badge-pill success';
-            overallBadge.textContent = 'Low heuristic scores • Review required';
+            overallBadge.textContent = 'Low scores • Check highlighted text';
             overallBadge.style.background = '';
             overallBadge.style.color = '';
         } else {

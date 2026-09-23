@@ -132,7 +132,10 @@ class EnterpriseAcademicOriginalityTestSuite(unittest.TestCase):
         res = TextSanitizer.compute_readability(text)
         self.assertIn("flesch_reading_ease", res)
         self.assertIn("grade_level", res)
+        self.assertIn("reading_ease_desc", res)
         self.assertGreater(res["avg_sentence_len"], 0.0)
+        simple = TextSanitizer.compute_readability("This is a short sentence. It is easy to read.")
+        self.assertIn(simple["reading_level_desc"], ("Elementary school", "Middle school"))
 
     def test_smart_citations_generation(self):
         citations = PlagiarismChecker.generate_smart_citations(
@@ -412,5 +415,4 @@ class EnterpriseAcademicOriginalityTestSuite(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
 

@@ -129,7 +129,8 @@ class TextSanitizer:
             return {
                 "flesch_reading_ease": 100.0,
                 "grade_level": "Grade 1-2 (Elementary)",
-                "reading_level_desc": "Very Easy",
+                "reading_level_desc": "Elementary school",
+                "reading_ease_desc": "Very easy",
                 "avg_sentence_len": 0.0,
                 "reading_time_minutes": 0.0
             }
@@ -144,7 +145,8 @@ class TextSanitizer:
             return {
                 "flesch_reading_ease": 100.0,
                 "grade_level": "Grade 1-2",
-                "reading_level_desc": "Very Easy",
+                "reading_level_desc": "Elementary school",
+                "reading_ease_desc": "Very easy",
                 "avg_sentence_len": 0.0,
                 "reading_time_minutes": 0.0
             }
@@ -162,15 +164,28 @@ class TextSanitizer:
         fk_grade = round(max(1.0, fk_grade), 1)
 
         if flesch_score >= 80:
-            level_desc = "Very Easy (Middle School)"
+            ease_desc = "Very easy"
         elif flesch_score >= 60:
-            level_desc = "Standard (High School)"
+            ease_desc = "Standard"
         elif flesch_score >= 40:
-            level_desc = "Fairly Difficult (College Undergraduate)"
+            ease_desc = "Fairly difficult"
         elif flesch_score >= 20:
-            level_desc = "Difficult (University Graduate)"
+            ease_desc = "Difficult"
         else:
-            level_desc = "Very Complex (Academic / Scientific)"
+            ease_desc = "Very complex"
+
+        if fk_grade <= 5:
+            level_desc = "Elementary school"
+        elif fk_grade <= 8:
+            level_desc = "Middle school"
+        elif fk_grade <= 12:
+            level_desc = "High school"
+        elif fk_grade <= 14:
+            level_desc = "Late high school / early college"
+        elif fk_grade <= 16:
+            level_desc = "College"
+        else:
+            level_desc = "Advanced college"
 
         reading_time_mins = round(total_words / 220.0, 1)  # average 220 wpm
 
@@ -179,6 +194,7 @@ class TextSanitizer:
             "fk_grade_level": fk_grade,
             "grade_level": f"Grade {fk_grade}",
             "reading_level_desc": level_desc,
+            "reading_ease_desc": ease_desc,
             "avg_sentence_len": round(asl, 1),
             "reading_time_minutes": max(0.1, reading_time_mins)
         }

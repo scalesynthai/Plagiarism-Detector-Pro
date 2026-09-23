@@ -153,8 +153,8 @@
                         </label>
                     </div>
 
-                    <button type="submit" class="btn-primary" data-original-text="Run Dual Plagiarism & AI Scan">
-                        <span>🔍 Run Dual Plagiarism & AI Scan</span>
+                    <button type="submit" class="btn-primary" data-original-text="Run Similarity & Writing-Pattern Scan">
+                        <span>🔍 Run Similarity & Writing-Pattern Scan</span>
                     </button>
                 </form>
             </div>
@@ -420,7 +420,7 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                         </div>
                         <div class="stat-card">
                             <div id="batch-stat-avg-plag" class="stat-val">0%</div>
-                            <div class="stat-lbl">Avg. Plagiarism</div>
+                            <div class="stat-lbl">Avg. Text Similarity</div>
                         </div>
                         <div class="stat-card">
                             <div id="batch-stat-avg-ai" class="stat-val">0%</div>
@@ -437,7 +437,7 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                             <tr>
                                 <th>Student / Document</th>
                                 <th>Word Count</th>
-                                <th>Plagiarism Index</th>
+                                <th>Text Similarity</th>
                                 <th>Pattern Score</th>
                                 <th>Similarity Tier</th>
                                 <th>Action</th>
@@ -489,7 +489,7 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                     <div>
                         <h3 class="section-title" style="margin-bottom: 4px;">Active Institutional Repository Documents</h3>
                         <p style="color: var(--text-secondary); font-size: 13px; margin: 0;">
-                            Permanent reference library for multi-dimensional plagiarism cross-matching. Deletion requires Admin PIN.
+                            Permanent reference library for exact-text cross-matching. Deletion requires Admin PIN.
                         </p>
                     </div>
                     <div style="display: flex; gap: 8px; align-items: center;">
@@ -530,17 +530,17 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                     <div class="checklist-grid">
                         <div id="chk-plag" class="checklist-subitem">
                             <div class="checklist-subitem-header">
-                                <div class="checklist-subitem-title">🔍 Plagiarism Match</div>
-                                <span id="chk-plag-pill" class="badge-pill success">0.0% Low Risk</span>
+                                <div class="checklist-subitem-title">🔍 Text Similarity</div>
+                                <span id="chk-plag-pill" class="badge-pill success">Not assessed</span>
                             </div>
-                            <div id="chk-plag-desc" class="checklist-subitem-desc">Minimal matching phrases detected vs database.</div>
+                            <div id="chk-plag-desc" class="checklist-subitem-desc">Run a scan to measure exact-word overlap in the sources searched.</div>
                         </div>
                         <div id="chk-ai" class="checklist-subitem">
                             <div class="checklist-subitem-header">
                                 <div class="checklist-subitem-title">🤖 Writing Patterns</div>
-                                <span id="chk-ai-pill" class="badge-pill success">Human Authored</span>
+                                <span id="chk-ai-pill" class="badge-pill success">Not assessed</span>
                             </div>
-                            <div id="chk-ai-desc" class="checklist-subitem-desc">Organic human syntactic variance and burstiness.</div>
+                            <div id="chk-ai-desc" class="checklist-subitem-desc">This style heuristic does not determine authorship.</div>
                         </div>
                         <div id="chk-cite" class="checklist-subitem">
                             <div class="checklist-subitem-header">
@@ -552,9 +552,9 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                         <div id="chk-read" class="checklist-subitem">
                             <div class="checklist-subitem-header">
                                 <div class="checklist-subitem-title">📖 Reading Level</div>
-                                <span id="chk-read-pill" class="badge-pill info">PhD Level</span>
+                                <span id="chk-read-pill" class="badge-pill info">Not assessed</span>
                             </div>
-                            <div id="chk-read-desc" class="checklist-subitem-desc">College & post-graduate standard readability.</div>
+                            <div id="chk-read-desc" class="checklist-subitem-desc">Run a scan to estimate the reading grade and reading time.</div>
                         </div>
                     </div>
                 </div>
@@ -653,25 +653,54 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                     </div>
                 </div>
 
-                <!-- Dual Hero Score: Plagiarism + AI -->
+                <!-- Dual Hero Score: text similarity + writing-pattern heuristic -->
                 <div class="result-hero">
                     <div class="score-gauges">
-                        <div id="score-circle-plag" class="score-circle success">
-                            <div id="score-number-plag" class="score-number">0.0%</div>
-                            <div class="score-label">Plagiarism</div>
+                        <div class="score-gauge-card">
+                            <div id="score-circle-plag" class="score-circle success" role="img" aria-label="Text similarity not assessed">
+                                <div id="score-number-plag" class="score-number">0.0%</div>
+                                <div class="score-label">Text matched</div>
+                            </div>
+                            <div id="score-band-plag" class="score-band">Similarity not assessed</div>
+                            <div id="score-formula-plag" class="score-formula">Matched ÷ eligible words</div>
                         </div>
-                        <div id="score-circle-ai" class="score-circle ai-purple">
-                            <div id="score-number-ai" class="score-number">0.0%</div>
-                            <div class="score-label">AI-Pattern Heuristic</div>
+                        <div class="score-gauge-card">
+                            <div id="score-circle-ai" class="score-circle ai-purple" role="img" aria-label="Writing-pattern score not assessed">
+                                <div id="score-number-ai" class="score-number">0.0</div>
+                                <div class="score-label">Pattern score</div>
+                            </div>
+                            <div id="score-band-ai" class="score-band">Heuristic not assessed</div>
+                            <div class="score-formula">Score out of 100; not AI probability</div>
                         </div>
                     </div>
 
                     <div class="verdict-info">
                         <div id="verdict-badge" class="verdict-badge success">Low Risk</div>
                         <div id="verdict-title" class="verdict-title">No scan results yet</div>
-                        <div id="verdict-desc" class="verdict-desc">Content appears original with organic syntax.</div>
+                        <div id="verdict-desc" class="verdict-desc">Run a scan to review matched text and source coverage.</div>
                     </div>
                 </div>
+
+                <div class="score-key" aria-label="Similarity score bands">
+                    <strong>Similarity bands:</strong>
+                    <span class="score-key-item low">0–14.99% Low</span>
+                    <span class="score-key-item medium">15–39.99% Moderate</span>
+                    <span class="score-key-item high">40–100% High</span>
+                    <span>These are local review bands, not institutional pass/fail thresholds.</span>
+                </div>
+
+                <section class="suggestions-card" aria-labelledby="suggestions-title">
+                    <div class="suggestions-header">
+                        <div>
+                            <h3 id="suggestions-title">Recommended next steps</h3>
+                            <p>Suggestions are generated from the matched passages, citation links, exclusions, and source coverage.</p>
+                        </div>
+                        <span id="suggestions-priority" class="badge-pill info">Run a scan</span>
+                    </div>
+                    <ol id="suggestions-list" class="suggestions-list">
+                        <li>Scan a document to receive evidence-based revision suggestions.</li>
+                    </ol>
+                </section>
 
                 <!-- Stats Grid -->
                 <div class="stats-grid">
