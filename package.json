@@ -5,10 +5,10 @@
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "bin": {
-    "plag": "./bin/plag.js",
-    "plagiarism-detector": "./bin/plag.js",
-    "plagiarism-detector-pro": "./bin/plag.js",
-    "plag-mcp": "./bin/mcp-server.js"
+    "plag": "bin/plag.js",
+    "plagiarism-detector": "bin/plag.js",
+    "plagiarism-detector-pro": "bin/plag.js",
+    "plag-mcp": "bin/mcp-server.js"
   },
   "scripts": {
     "test": "node tests_js/cli.test.js && node tests_js/hardening.test.js && node tests_js/accuracy.test.js",
