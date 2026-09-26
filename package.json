@@ -1,6 +1,6 @@
 {
   "name": "plagiarism-detector-pro",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Academic text-similarity, citation, writing-pattern, and coaching CLI and MCP server",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",

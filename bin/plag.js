@@ -65,7 +65,7 @@ function printHelp() {
     console.log(`\n${colors.bold}EXAMPLES:${colors.reset}`);
     console.log(`  ${colors.gray}$ plag scan essay.docx${colors.reset}`);
     console.log(`  ${colors.gray}$ plag coach manuscript.tex${colors.reset}`);
-    console.log(`  ${colors.gray}$ plag audit research_paper.pdf${colors.reset}`);
+    console.log(`  ${colors.gray}$ plag audit research_paper.docx${colors.reset}`);
     console.log(`  ${colors.gray}$ plag batch ./student_submissions/${colors.reset}`);
     console.log(`  ${colors.gray}$ plag certificate essay.md --name "Jane Doe" --title "Deep Learning Essay"${colors.reset}`);
     console.log(`  ${colors.gray}$ plag mcp${colors.reset}\n`);

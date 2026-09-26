@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.0.5] - 2026-09-25
+
+### Local document formats
+
+- The Node CLI, library, and MCP server now read `.docx` and text-based `.pdf` files directly, with no new dependencies.
+- PDF extraction handles compressed streams, object streams, CID fonts with ToUnicode maps, and kerned text. Scanned/image-only and encrypted PDFs are rejected with a clear error rather than scanned as empty text.
+
+---
+
 ## [v1.0.4] - 2026-09-23
 
 ### Matching accuracy and diagnostic reliability
