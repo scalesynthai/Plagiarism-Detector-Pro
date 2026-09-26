@@ -11,14 +11,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Python dependencies
+# Install Python dependencies, then drop the packaging tools: the app does not need them at runtime,
+# and the base image's bundled copies carry known CVEs
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt gunicorn
+RUN pip install --no-cache-dir -r requirements.txt gunicorn && \
+    pip uninstall -y pip setuptools wheel
 
 # Copy application source code
 COPY . .
@@ -33,7 +30,7 @@ USER appuser
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:${PORT}/sources || exit 1
+    CMD ["python", "-c", "import os, urllib.request; urllib.request.urlopen('http://localhost:%s/sources' % os.environ['PORT'], timeout=4)"]
 
 EXPOSE 5001
 
