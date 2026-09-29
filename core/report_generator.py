@@ -107,6 +107,16 @@ class ReportGenerator:
         pattern_score = ai_data.get("pattern_score", ai_data.get("ai_probability", 0))
         em_dash_count = ai_data.get("style_metrics", {}).get("em_dash_count", 0)
         provenance_flags = ai_data.get("provenance_flags", []) or []
+        if provenance_flags:
+            provenance_kinds = "; ".join(html.escape(str(row.get("kind", ""))) for row in provenance_flags[:20])
+            provenance_html = (
+                f'<p class="provenance-alert"><strong>⚠ AI-tool copy-paste artifacts found '
+                f"({len(provenance_flags)}):</strong> {provenance_kinds}. "
+                "These are literal, checkable artifacts of an AI assistant's output, not style "
+                "inference, and are not part of the pattern score above.</p>"
+            )
+        else:
+            provenance_html = ""
 
         return f'''<!DOCTYPE html>
 <html lang="en">
@@ -204,9 +214,7 @@ class ReportGenerator:
     <p><strong>Writing review:</strong> {em_dash_count} em dash(es) detected; evidence integrity
     {evidence_data.get('evidence_score', 'N/A')}/100; claim citation coverage
     {evidence_data.get('claim_citation_coverage_pct', 'N/A')}%. The writing-pattern score identifies configured style signals and does not determine authorship.</p>
-    {f'''<p class="provenance-alert"><strong>⚠ AI-tool copy-paste artifacts found ({len(provenance_flags)}):</strong>
-    {"; ".join(html.escape(str(row.get("kind", ""))) for row in provenance_flags[:20])}.
-    These are literal, checkable artifacts of an AI assistant's output, not style inference, and are not part of the pattern score above.</p>''' if provenance_flags else ''}
+    {provenance_html}
     <!-- Manuscript -->
     <div class="section-hdr">1. Color-Annotated Manuscript</div>
     <div class="manuscript">
