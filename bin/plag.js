@@ -16,7 +16,8 @@ const {
     CitationGenerator,
     DraftComparator,
     CertificateGenerator,
-    BatchProcessor
+    BatchProcessor,
+    WritingCleanup
 } = require("../lib/index");
 
 const args = process.argv.slice(2);
@@ -49,6 +50,7 @@ function printHelp() {
     console.log(`  ${colors.green}plag scan <file|text>${colors.reset}               Scan lexical overlap and writing-pattern signals`);
     console.log(`  ${colors.green}plag coach <file|text>${colors.reset}              Unsupported claims, tone booster & thesis score`);
     console.log(`  ${colors.green}plag audit <file|text>${colors.reset}              PhD & Conference double-blind pre-flight audit`);
+    console.log(`  ${colors.green}plag cleanup <file|text>${colors.reset}            Offline word-swap cleanup (--apply to write the result)`);
     console.log(`  ${colors.green}plag paraphrase <sentence>${colors.reset}         Generate 3 academic restructurings & citations`);
     console.log(`  ${colors.green}plag cite <query>${colors.reset}                   Auto-generate BibTeX, APA, MLA, and IEEE`);
     console.log(`  ${colors.green}plag alphabetize <file|text>${colors.reset}        Auto-sort references & validate DOIs/years`);
@@ -62,8 +64,11 @@ function printHelp() {
     console.log(`  ${colors.yellow}--name <Student Name>${colors.reset}           Student full name for certificate`);
     console.log(`  ${colors.yellow}--title <Paper Title>${colors.reset}           Manuscript title for certificate`);
     console.log(`  ${colors.yellow}--source <name>${colors.reset}                 Source attribution key for paraphrasing`);
+    console.log(`  ${colors.yellow}--apply${colors.reset}                         Write the cleaned text (plag cleanup)`);
+    console.log(`  ${colors.yellow}--output <path>${colors.reset}                 Save cleaned text to a file instead of stdout`);
     console.log(`\n${colors.bold}EXAMPLES:${colors.reset}`);
     console.log(`  ${colors.gray}$ plag scan essay.docx${colors.reset}`);
+    console.log(`  ${colors.gray}$ plag cleanup essay.docx --apply --output essay.clean.txt${colors.reset}`);
     console.log(`  ${colors.gray}$ plag coach manuscript.tex${colors.reset}`);
     console.log(`  ${colors.gray}$ plag audit research_paper.docx${colors.reset}`);
     console.log(`  ${colors.gray}$ plag batch ./student_submissions/${colors.reset}`);
@@ -260,6 +265,55 @@ async function main() {
             tone.slice(0, 5).forEach((t, idx) => {
                 console.log(`  [${idx + 1}] Replace ${colors.red}'${t.matched_term}'${colors.reset} with: ${colors.green}${t.scholarly_replacements.join(", ")}${colors.reset}`);
             });
+            console.log("");
+            printDisclaimer();
+            break;
+        }
+
+        case "cleanup": {
+            const input = args[1];
+            if (!input) {
+                console.error(`${colors.red}Error: Missing document or text to clean up.${colors.reset}`);
+                process.exit(1);
+            }
+            let text = input;
+            if (fs.existsSync(input)) {
+                text = DocumentExtractor.extractFromFile(input);
+            }
+            const edits = WritingCleanup.suggestEdits(text);
+            const apply = args.includes("--apply");
+            const cleanedText = apply ? WritingCleanup.applyEdits(text, edits) : null;
+
+            if (isJson) {
+                const payload = { edits, edits_count: edits.length };
+                if (apply) payload.cleaned_text = cleanedText;
+                console.log(JSON.stringify(payload, null, 2));
+                return;
+            }
+
+            printBanner();
+            console.log(`${colors.bold}🧹 DETERMINISTIC WRITING CLEANUP (${edits.length} proposed edit${edits.length === 1 ? "" : "s"}):${colors.reset}`);
+            console.log(`${colors.gray}Offline word/phrase swaps only — no rewriting, no network, nothing regenerated. Review every line.${colors.reset}\n`);
+            if (edits.length === 0) {
+                console.log(`  ${colors.green}✓ No auto-appliable predictable-vocabulary swaps found.${colors.reset}`);
+            }
+            edits.forEach((edit, idx) => {
+                console.log(`  [${idx + 1}] ${colors.red}"${edit.original}"${colors.reset} → ${colors.green}"${edit.replacement}"${colors.reset}`);
+            });
+
+            if (apply) {
+                const outputIdx = args.indexOf("--output");
+                const outputPath = outputIdx !== -1 ? args[outputIdx + 1] : null;
+                if (outputPath) {
+                    fs.writeFileSync(outputPath, cleanedText, "utf8");
+                    console.log(`\n${colors.green}✓ Wrote cleaned text (${edits.length} edits applied) to ${outputPath}${colors.reset}`);
+                } else {
+                    console.log(`\n${colors.bold}CLEANED TEXT:${colors.reset}\n`);
+                    console.log(cleanedText);
+                }
+            } else if (edits.length > 0) {
+                console.log(`\n${colors.gray}Run with --apply to write the cleaned text (--output <path> to save to a file instead of stdout).${colors.reset}`);
+            }
             console.log("");
             printDisclaimer();
             break;

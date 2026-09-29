@@ -36,11 +36,15 @@ The `suggestion` field attached to flagged predictable-vocabulary evidence
 (for example "leverage" -> "use") is taken directly from the before/after
 word-replacement tables both projects publish in their own READMEs
 (avoid-ai-writing's "Language Patterns" table; humanize's Lever 1 word list).
-It is a writing suggestion shown to the person reviewing the text, not an
-automated rewrite: nothing in this project rewrites a document's prose.
-Neither upstream project's own rewrite/humanization skill (the part of their
-own tooling built to help text evade AI detectors) is used here; that is a
-different purpose than this project's, and was deliberately left out.
+`core/writing_cleanup.py` / `lib/writing_cleanup.js` can mechanically apply
+this same fixed lookup table when the writer opts in and reviews each change
+(`plag cleanup --apply`; the web app's "Suggested cleanup" panel) -- a plain
+find-and-replace over an already-fixed word list, not text generation. Neither
+upstream project's own rewrite/humanization skill (the part of their own
+tooling built with an LLM to help arbitrary text evade AI detectors, including
+third-party ones) is used here; that is a different purpose than this
+project's, and was deliberately left out. See docs/AI_SCORING.md for the exact
+boundary of what the cleanup tool does and does not do.
 
 ## HyperResearch
 

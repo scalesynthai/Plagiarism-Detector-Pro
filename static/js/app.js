@@ -53,6 +53,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. Live Editor Stats, Presets & Hotkeys
     initEditorTools();
 
+    // 3b. Deterministic writing cleanup (offline word-swap review)
+    initCleanupTool();
+
     // 4. Handle Direct Text Form Submit
     const textForm = document.getElementById('text-scan-form');
     if (textForm) {
@@ -392,6 +395,64 @@ function initEditorTools() {
     }
 }
 
+function initCleanupTool() {
+    const applyBtn = document.getElementById('cleanup-apply-btn');
+    const copyBtn = document.getElementById('cleanup-copy-btn');
+    const listEl = document.getElementById('cleanup-edit-list');
+    const resultEl = document.getElementById('cleanup-result');
+    const resultText = document.getElementById('cleanup-result-text');
+    const statusEl = document.getElementById('cleanup-apply-status');
+    if (!applyBtn || !listEl) return;
+
+    applyBtn.addEventListener('click', async () => {
+        if (!currentAnalysisData || !currentAnalysisData.normalized_text) {
+            if (statusEl) statusEl.textContent = 'Run a scan first.';
+            return;
+        }
+        const accept = [...listEl.querySelectorAll('input[type="checkbox"]:checked')]
+            .map(box => Number(box.dataset.editIndex));
+        if (!accept.length) {
+            if (statusEl) statusEl.textContent = 'Select at least one edit to apply.';
+            return;
+        }
+        const originalLabel = applyBtn.textContent;
+        applyBtn.disabled = true;
+        applyBtn.textContent = 'Applying…';
+        if (statusEl) statusEl.textContent = '';
+        try {
+            const res = await fetch('/api/writing-cleanup/apply', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: currentAnalysisData.normalized_text, accept })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to apply cleanup.');
+            if (resultText) resultText.value = data.cleaned_text || '';
+            if (resultEl) resultEl.hidden = false;
+            if (statusEl) statusEl.textContent = `Applied ${data.applied_count} of ${accept.length} selected edit${accept.length === 1 ? '' : 's'}.`;
+        } catch (err) {
+            if (statusEl) statusEl.textContent = err.message || 'Failed to apply cleanup.';
+        } finally {
+            applyBtn.disabled = false;
+            applyBtn.textContent = originalLabel;
+        }
+    });
+
+    if (copyBtn && resultText) {
+        copyBtn.addEventListener('click', async () => {
+            const originalLabel = copyBtn.textContent;
+            try {
+                await navigator.clipboard.writeText(resultText.value);
+                copyBtn.textContent = 'Copied!';
+            } catch {
+                resultText.select();
+                copyBtn.textContent = 'Select the text above and copy manually';
+            }
+            setTimeout(() => { copyBtn.textContent = originalLabel; }, 2000);
+        });
+    }
+}
+
 /* ==============================================================================
    PLAGIARISM & AI DUAL SCAN LOGIC
    ============================================================================== */
@@ -606,6 +667,54 @@ function renderPatternAnalysis(data) {
             group.append(heading, findings, recommendation);
             evidenceList.appendChild(group);
         }
+    }
+
+    renderCleanupEdits(categories);
+}
+
+/** Deterministic, offline word-swap edits derived the same way the server's
+ * WritingCleanup.suggest_edits does: predictability evidence with a plain
+ * replacement (not a parenthetical judgment call), sorted by start. */
+function getCleanupEdits(categories) {
+    const predictability = (categories || []).find(row => row.id === 'predictability');
+    const evidence = (predictability && predictability.evidence) || [];
+    return evidence
+        .filter(row => row.suggestion && !String(row.suggestion).startsWith('('))
+        .slice()
+        .sort((a, b) => a.start - b.start)
+        .map((row, index) => ({ index, start: row.start, end: row.end, original: row.text, replacement: row.suggestion }));
+}
+
+function renderCleanupEdits(categories) {
+    const details = document.getElementById('cleanup-details');
+    const countEl = document.getElementById('cleanup-count');
+    const listEl = document.getElementById('cleanup-edit-list');
+    const resultEl = document.getElementById('cleanup-result');
+    const statusEl = document.getElementById('cleanup-apply-status');
+    if (!details || !listEl) return;
+
+    const edits = getCleanupEdits(categories);
+    details.hidden = edits.length === 0;
+    if (countEl) countEl.textContent = String(edits.length);
+    if (resultEl) resultEl.hidden = true;
+    if (statusEl) statusEl.textContent = '';
+    listEl.replaceChildren();
+
+    for (const edit of edits) {
+        const row = document.createElement('li');
+        row.className = 'cleanup-edit-row';
+        const label = document.createElement('label');
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = true;
+        checkbox.dataset.editIndex = String(edit.index);
+        const del = document.createElement('del');
+        del.textContent = edit.original;
+        const ins = document.createElement('ins');
+        ins.textContent = edit.replacement;
+        label.append(checkbox, ' ', del, ' → ', ins);
+        row.appendChild(label);
+        listEl.appendChild(row);
     }
 }
 

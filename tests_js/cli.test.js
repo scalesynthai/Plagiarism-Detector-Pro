@@ -11,7 +11,8 @@ const {
     CitationGenerator,
     DraftComparator,
     CertificateGenerator,
-    EvidenceAnalyzer
+    EvidenceAnalyzer,
+    WritingCleanup
 } = require("../lib/index");
 
 console.log("🧪 Starting Plagiarism Detector Pro JavaScript & CLI Test Suite...\n");
@@ -95,6 +96,24 @@ assert.strictEqual(evidenceRes.claim_citation_coverage_pct, 50.0);
 assert.strictEqual(evidenceRes.evidence_score, 68.8);
 console.log("✓ AIDetector passed.");
 
+// 5b. Test WritingCleanup (deterministic, offline word-swap cleanup)
+console.log("Testing WritingCleanup...");
+const cleanupText = "This holistic approach plays a pivotal role and it is important to note we leverage a robust framework.";
+const cleanupEdits = WritingCleanup.suggestEdits(cleanupText);
+const cleanupSwapped = Object.fromEntries(cleanupEdits.map(e => [e.original, e.replacement]));
+assert.strictEqual(cleanupSwapped["holistic approach"], "overall approach");
+assert.strictEqual(cleanupSwapped["pivotal role"], "important role");
+assert.strictEqual(cleanupSwapped["leverage"], "use");
+assert.strictEqual(cleanupSwapped["robust"], "reliable");
+assert.ok(!("it is important to note" in cleanupSwapped), "judgment-call phrases must not be auto-appliable");
+const cleanupResult = WritingCleanup.applyEdits(cleanupText, cleanupEdits);
+assert.ok(cleanupResult.includes("an important role"), "a -> an fix-up should apply around the swapped word");
+assert.ok(cleanupResult.includes("it is important to note"), "judgment-call phrase must stay untouched");
+assert.ok(!cleanupResult.includes("leverage") && !cleanupResult.includes("robust"));
+const cleanupPartial = WritingCleanup.applyEdits(cleanupText, cleanupEdits.filter(e => e.original === "leverage"));
+assert.ok(cleanupPartial.includes("robust") && cleanupPartial.includes("use a"));
+console.log("✓ WritingCleanup passed.");
+
 // 6. Test Draft Comparator
 console.log("Testing DraftComparator...");
 const cmpRes = DraftComparator.compare(
@@ -162,8 +181,15 @@ CitationGenerator.resolveCitation("1706.03762").then(citeRes => {
     assert.ok(scanOut.includes("try: use"));
     assert.ok(scanOut.includes("Unsupported claims"));
 
+    const cleanupOut = execSync(`node "${cliPath}" cleanup "This holistic approach plays a pivotal role and we leverage a robust framework." --apply`).toString();
+    assert.ok(cleanupOut.includes("DETERMINISTIC WRITING CLEANUP"));
+    assert.ok(cleanupOut.includes('"leverage"') && cleanupOut.includes('"use"'));
+    assert.ok(cleanupOut.includes("CLEANED TEXT"));
+    assert.ok(cleanupOut.includes("an important role"));
+    assert.ok(!cleanupOut.split("CLEANED TEXT:")[1].includes("leverage"));
+
     console.log("✓ CLI binary execution tests passed.");
-    console.log("\n🎉 ALL JAVASCRIPT & CLI TESTS PASSED SUCCESSFULLY (12/12)!");
+    console.log("\n🎉 ALL JAVASCRIPT & CLI TESTS PASSED SUCCESSFULLY (13/13)!");
 }).catch(err => {
     console.error("Test failure:", err);
     process.exit(1);

@@ -154,6 +154,22 @@ export class EvidenceAnalyzer {
     static analyze(claims?: any[], citationAnalysis?: any, sources?: any[]): EvidenceAnalysis;
 }
 
+export interface CleanupEdit {
+    index: number;
+    start: number;
+    end: number;
+    original: string;
+    replacement: string;
+    category: "predictability";
+}
+
+export class WritingCleanup {
+    /** Deterministic, offline predictable-vocabulary swap suggestions. Never rewrites text itself. */
+    static suggestEdits(text: string): CleanupEdit[];
+    /** Applies the given edits (absolute offsets into `text`) with a minimal a/an fix-up. */
+    static applyEdits(text: string, edits: CleanupEdit[]): string;
+}
+
 export class DocumentExtractor {
     static extractFromFile(filePath: string): string;
 }

@@ -19,6 +19,7 @@ from core.sanitizer import TextSanitizer
 from core.checker import PlagiarismChecker
 from core.phd_auditor import PhdResearchAuditor
 from core.student_coach import AcademicStudentCoach
+from core.writing_cleanup import WritingCleanup
 from core.evidence_analyzer import EvidenceAnalyzer
 
 
@@ -440,6 +441,46 @@ class EnterpriseAcademicOriginalityTestSuite(unittest.TestCase):
         self.assertTrue(res["has_hypothesis"])
         self.assertTrue(res["has_method"])
         self.assertTrue(res["has_significance"])
+
+    def test_writing_cleanup_applies_only_unambiguous_swaps_with_article_fixup(self):
+        text = "This holistic approach plays a pivotal role and it is important to note we leverage a robust framework."
+        edits = WritingCleanup.suggest_edits(text)
+        swapped = {e["original"]: e["replacement"] for e in edits}
+        self.assertEqual(swapped["holistic approach"], "overall approach")
+        self.assertEqual(swapped["pivotal role"], "important role")
+        self.assertEqual(swapped["leverage"], "use")
+        self.assertEqual(swapped["robust"], "reliable")
+        # Judgment-call phrases (parenthetical instruction) must never be auto-appliable.
+        self.assertNotIn("it is important to note", swapped)
+
+        cleaned = WritingCleanup.apply_edits(text, edits)
+        self.assertIn("an important role", cleaned)  # a -> an fix-up around the swapped word
+        self.assertIn("it is important to note", cleaned)  # left untouched
+        self.assertNotIn("leverage", cleaned)
+        self.assertNotIn("robust", cleaned)
+
+        # Applying a subset only changes the accepted edits.
+        partial = WritingCleanup.apply_edits(text, [e for e in edits if e["original"] == "leverage"])
+        self.assertIn("robust", partial)
+        self.assertIn("use a", partial)
+
+    def test_writing_cleanup_endpoints(self):
+        text = "This holistic approach plays a pivotal role and we leverage a robust framework."
+        suggest_res = self.client.post("/api/writing-cleanup", json={"text": text})
+        self.assertEqual(suggest_res.status_code, 200)
+        edits = suggest_res.get_json()["edits"]
+        self.assertGreaterEqual(len(edits), 3)
+
+        apply_res = self.client.post("/api/writing-cleanup/apply", json={
+            "text": text, "accept": [edits[0]["index"], edits[-1]["index"]],
+        })
+        self.assertEqual(apply_res.status_code, 200)
+        applied = apply_res.get_json()
+        self.assertEqual(applied["applied_count"], 2)
+        self.assertNotEqual(applied["cleaned_text"], text)
+
+        empty_res = self.client.post("/api/writing-cleanup", json={"text": ""})
+        self.assertEqual(empty_res.status_code, 400)
 
     def test_student_coach_endpoints(self):
         # 1. Tone and Claims endpoint

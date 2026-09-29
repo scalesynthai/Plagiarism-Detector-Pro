@@ -18,6 +18,7 @@ from core.paraphraser import AcademicParaphraser
 from core.citation_generator import CitationGenerator
 from core.diff_comparator import DraftComparator
 from core.student_coach import AcademicStudentCoach
+from core.writing_cleanup import WritingCleanup
 
 # Configure standard logging
 logging.basicConfig(
@@ -481,6 +482,40 @@ def create_app(config_class: type = Config) -> Flask:
 
         res = AcademicStudentCoach.evaluate_thesis_abstract(text)
         return jsonify(res), 200
+
+    @app.route("/api/writing-cleanup", methods=["POST"])
+    def suggest_writing_cleanup():
+        """Deterministic, offline predictable-vocabulary swap suggestions.
+
+        Never rewrites anything itself: returns the edit-eligible findings for
+        the client to display, and separately accepts which indices to apply.
+        """
+        data = request.get_json(silent=True) or {}
+        text = data.get("text", "")
+        if not text or not text.strip():
+            return jsonify({"error": "No text provided for cleanup."}), 400
+
+        edits = WritingCleanup.suggest_edits(text)
+        return jsonify({"edits": edits, "edits_count": len(edits)}), 200
+
+    @app.route("/api/writing-cleanup/apply", methods=["POST"])
+    def apply_writing_cleanup():
+        """Applies only the caller-selected subset of freshly recomputed edits.
+
+        The edit content (start/end/replacement) is always re-derived from
+        `text` on the server; the client can only choose which indices to
+        include, never supply arbitrary replacement text.
+        """
+        data = request.get_json(silent=True) or {}
+        text = data.get("text", "")
+        if not text or not text.strip():
+            return jsonify({"error": "No text provided for cleanup."}), 400
+        accept = data.get("accept")
+
+        all_edits = WritingCleanup.suggest_edits(text)
+        selected = all_edits if accept is None else [e for e in all_edits if e["index"] in set(accept)]
+        cleaned_text = WritingCleanup.apply_edits(text, selected)
+        return jsonify({"cleaned_text": cleaned_text, "applied_count": len(selected)}), 200
 
     return app
 

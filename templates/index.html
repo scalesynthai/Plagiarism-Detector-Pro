@@ -738,6 +738,20 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                             <p>Run a scan to see the phrases and sentences that affected each category.</p>
                         </div>
                     </details>
+                    <details id="cleanup-details" class="pattern-evidence-details" hidden>
+                        <summary>Suggested cleanup (<span id="cleanup-count">0</span> word swaps — offline, nothing rewritten automatically)</summary>
+                        <p class="pattern-disclaimer">Deterministic word/phrase swaps only, taken from the flagged vocabulary above. No text is generated and nothing is sent anywhere; review each one before applying. Adapted from avoid-ai-writing's and humanize's own published word tables — see THIRD_PARTY_NOTICES.md.</p>
+                        <ul id="cleanup-edit-list" class="cleanup-edit-list"></ul>
+                        <div class="cleanup-actions">
+                            <button type="button" id="cleanup-apply-btn" class="btn-secondary">Apply selected</button>
+                            <span id="cleanup-apply-status" class="cleanup-apply-status"></span>
+                        </div>
+                        <div id="cleanup-result" class="cleanup-result" hidden>
+                            <label for="cleanup-result-text">Cleaned text</label>
+                            <textarea id="cleanup-result-text" class="cleanup-result-text" readonly rows="8"></textarea>
+                            <button type="button" id="cleanup-copy-btn" class="btn-secondary">Copy cleaned text</button>
+                        </div>
+                    </details>
                     <p class="pattern-disclaimer">These signals describe writing style and evidence structure. They cannot determine whether a person or an AI wrote the document.</p>
                 </section>
 

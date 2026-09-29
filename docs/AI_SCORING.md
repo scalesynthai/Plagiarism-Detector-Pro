@@ -22,13 +22,40 @@ as limited because document-level rhythm and structure need enough text.
 
 Each flagged predictable-vocabulary phrase (`categories[].evidence[].suggestion`
 where `id` is `predictability`) carries a plain-language replacement, e.g.
-`"leverage" -> "use"`. This is a suggestion for the person reviewing the text
-to consider, not an automated rewrite: the tool never rewrites a document's
-prose, and the suggestion table is a small, fixed lookup, not a text-generation
-step. Shown in the CLI's "Top Fixes" section and the web app's evidence list.
-Sourced from `avoid-ai-writing`'s and `humanize`'s own published word tables;
-see THIRD_PARTY_NOTICES.md for the boundary on what was and was not adapted
-from those two projects.
+`"leverage" -> "use"`. The suggestion table is a small, fixed lookup, not a
+text-generation step. Shown in the CLI's "Top Fixes" section and the web app's
+evidence list. Sourced from `avoid-ai-writing`'s and `humanize`'s own published
+word tables; see THIRD_PARTY_NOTICES.md for the boundary on what was and was
+not adapted from those two projects.
+
+## Deterministic writing cleanup (opt-in, offline, reviewable)
+
+`core/writing_cleanup.py` / `lib/writing_cleanup.js` (`WritingCleanup`) can
+mechanically apply the word-level suggestions above. This is not a rewrite
+engine and not a humanizer: it is a plain find-and-replace over exactly what
+the writing-pattern score already flagged, with no model call, no network
+access, and no attempt to change how any third-party detector scores the
+result.
+
+- Only unambiguous 1:1 word/phrase swaps are auto-appliable. Suggestions that
+  are a parenthetical instruction rather than a replacement (e.g. "(cut the
+  phrase; state the fact directly)") are never auto-applied -- they need
+  editorial judgment a mechanical tool cannot make, and stay suggestion-only.
+- A minimal a/an fix-up runs on the word immediately before an edit (`"a
+  pivotal role"` -> `"an important role"`). No other grammar around an edit is
+  fixed; that is what the review step is for.
+- Every edit is shown for the writer to accept or reject before anything
+  changes. `plag cleanup <file> --apply` in the CLI; the web app's "Suggested
+  cleanup" panel with a checkbox per edit.
+- The web app's apply endpoint (`POST /api/writing-cleanup/apply`) never
+  trusts client-supplied replacement text: it re-derives the edit list from
+  the submitted text server-side and only accepts which indices to apply.
+
+What this deliberately does not do: generate new prose, paraphrase a sentence,
+or optimize for a lower score on GPTZero, Turnitin, Pangram, or any other
+external detector. That would make an academic-integrity tool double as
+detection-evasion tooling, which is out of scope for this project regardless
+of what an upstream project's own rewrite skill does.
 
 ## Em dashes
 

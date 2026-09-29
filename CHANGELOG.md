@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.3.0] - 2026-09-29
+
+### Deterministic, offline writing cleanup (opt-in, reviewable)
+
+- Added `core/writing_cleanup.py` / `lib/writing_cleanup.js` (`WritingCleanup`): mechanically applies the exact predictable-vocabulary word-swap suggestions already shown by the writing-pattern score. Not a rewrite engine — only unambiguous 1:1 word/phrase swaps are auto-appliable; parenthetical judgment-call suggestions (e.g. "cut the phrase") are never auto-applied. A minimal a/an fix-up runs on the word before an edit.
+- `plag cleanup <file|text>` CLI command lists the proposed edits; `--apply` (optionally `--output <path>`) applies them.
+- Web app: a "Suggested cleanup" panel with one checkbox per edit, an "Apply selected" button, and a copy-to-clipboard result. New endpoints `POST /api/writing-cleanup` and `POST /api/writing-cleanup/apply`; the apply endpoint always re-derives edit content from the submitted text server-side and only accepts which indices to apply, never client-supplied replacement text.
+- No network access, no external model, and deliberately no attempt to change how any third-party AI detector (GPTZero, Turnitin, Pangram, etc.) scores the result — seeing this as a humanizer/evasion feature was considered and explicitly declined; see docs/AI_SCORING.md and THIRD_PARTY_NOTICES.md for the boundary.
+
+---
+
 ## [v1.2.0] - 2026-09-29
 
 ### CLI fix tips and word-level suggestions

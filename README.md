@@ -97,6 +97,10 @@ plag certificate essay.md --name "Jane Doe" --title "Deep Learning Study"
 
 # 🤖 10. Start Model Context Protocol (MCP) Server for Claude & Codex
 plag mcp
+
+# 🧹 11. Deterministic Writing Cleanup (offline, reviewable word swaps)
+# Applies only the flagged predictable-vocabulary suggestions already shown by `plag scan` -- no rewriting, no network
+plag cleanup essay.docx --apply --output essay.clean.txt
 ```
 
 ---
@@ -204,6 +208,8 @@ MAX_CONTENT_LENGTH=33554432 # 32 MB request limit; each document is limited to 8
 - Shows the exact phrases and sentence spans behind every non-zero category, plus sample-length reliability.
 - Reports em-dash count and rate separately so punctuation feedback is actionable without treating one mark as proof of AI use.
 - Adds an evidence-integrity profile for claim citation coverage, bibliography linkage, and available source quality.
+- Flags literal AI-tool copy-paste artifacts (unfilled placeholders, leftover chatbot citation markup, AI-tool tracking links) separately from the style score, since those are checkable facts rather than inference.
+- Offers a deterministic, opt-in cleanup: apply the exact word-swap suggestions already shown, reviewed one by one, fully offline. Not a rewrite engine and not built to change how any third-party detector scores the result — see [Deterministic writing cleanup](docs/AI_SCORING.md#deterministic-writing-cleanup-opt-in-offline-reviewable).
 - See [Explainable writing-pattern scoring](docs/AI_SCORING.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
 
 ### 6. 📦 Whole-Class Batch Submissions Gradebook
@@ -223,6 +229,8 @@ MAX_CONTENT_LENGTH=33554432 # 32 MB request limit; each document is limited to 8
 | `POST` | `/api/student-coach/tone-and-claims` | Scan unsupported claims and formal tone boosts |
 | `POST` | `/api/student-coach/alphabetize-references` | Alphabetize and validate reference list |
 | `POST` | `/api/student-coach/evaluate-thesis` | Evaluate opening abstract / thesis statement |
+| `POST` | `/api/writing-cleanup` | List deterministic, offline predictable-vocabulary swap suggestions |
+| `POST` | `/api/writing-cleanup/apply` | Apply the caller-selected subset of those suggestions and return the result |
 | `POST` | `/reports/certificate` | Generate an unsigned advisory analysis summary |
 | `GET` | `/sources` | List institutional repository documents |
 | `POST` | `/sources/upload` | Add new document to institutional repository |
@@ -236,7 +244,7 @@ MAX_CONTENT_LENGTH=33554432 # 32 MB request limit; each document is limited to 8
 Plagiarism Detector Pro includes comprehensive test suites across both Python and Node.js:
 
 ```bash
-# Run Node.js & CLI test suite (12 tests)
+# Run Node.js & CLI test suite (13 tests)
 npm test
 
 # Run Python & Web test suite (28 tests)
