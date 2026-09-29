@@ -185,6 +185,29 @@ async function main() {
                     console.log(`  • Structural Score:       ${res.phd_audit.conference_readiness_score}/100 (manual review required)`);
                 }
 
+                const activeCategories = res.ai_analysis
+                    ? res.ai_analysis.categories.filter(c => c.score > 0).sort((a, b) => b.score - a.score || b.evidence_count - a.evidence_count)
+                    : [];
+                if (activeCategories.length || (res.student_coach && res.student_coach.unsupported_claims_count > 0)) {
+                    console.log(`\n${colors.bold}💡 TOP FIXES:${colors.reset}`);
+                }
+                activeCategories.slice(0, 4).forEach(cat => {
+                    console.log(`\n  ${colors.yellow}${cat.label} (${cat.score}/3):${colors.reset} ${cat.recommendation}`);
+                    cat.evidence.slice(0, 3).forEach(ev => {
+                        const suggestion = ev.suggestion ? ` ${colors.gray}→ try: ${ev.suggestion}${colors.reset}` : "";
+                        console.log(`    • "${ev.text}"${suggestion}`);
+                    });
+                });
+                if (res.student_coach && res.student_coach.unsupported_claims_count > 0) {
+                    console.log(`\n  ${colors.yellow}Unsupported claims (${res.student_coach.unsupported_claims_count}):${colors.reset} add or verify a citation for each.`);
+                    res.student_coach.unsupported_claims.slice(0, 3).forEach(claim => {
+                        console.log(`    • "${claim.sentence.slice(0, 140)}${claim.sentence.length > 140 ? "…" : ""}"`);
+                    });
+                }
+                if (activeCategories.length || (res.student_coach && res.student_coach.unsupported_claims_count > 0)) {
+                    console.log(`\n  ${colors.gray}Run with --verbose for the full evidence list, or scan --json for everything.${colors.reset}`);
+                }
+
                 if (isVerbose && res.highlighted_sentences) {
                     console.log(`\n${colors.bold}📝 SIDE-BY-SIDE MATCHING PASSAGES:${colors.reset}`);
                     res.highlighted_sentences.filter(s => s.is_plagiarized).forEach((s, idx) => {

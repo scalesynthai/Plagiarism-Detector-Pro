@@ -18,6 +18,18 @@ Every non-zero category includes the phrases or sentence spans that caused the
 finding and a focused revision suggestion. Samples under 120 words are marked
 as limited because document-level rhythm and structure need enough text.
 
+## Word-level suggestions
+
+Each flagged predictable-vocabulary phrase (`categories[].evidence[].suggestion`
+where `id` is `predictability`) carries a plain-language replacement, e.g.
+`"leverage" -> "use"`. This is a suggestion for the person reviewing the text
+to consider, not an automated rewrite: the tool never rewrites a document's
+prose, and the suggestion table is a small, fixed lookup, not a text-generation
+step. Shown in the CLI's "Top Fixes" section and the web app's evidence list.
+Sourced from `avoid-ai-writing`'s and `humanize`'s own published word tables;
+see THIRD_PARTY_NOTICES.md for the boundary on what was and was not adapted
+from those two projects.
+
 ## Em dashes
 
 The analyzer reports both the count and the number of em dashes per 300 words.

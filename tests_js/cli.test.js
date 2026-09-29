@@ -157,6 +157,11 @@ CitationGenerator.resolveCitation("1706.03762").then(citeRes => {
     const batchJson = JSON.parse(batchOut);
     assert.ok(batchJson.total_submissions > 0);
 
+    const scanOut = execSync(`node "${cliPath}" scan "It is important to note that we leverage a comprehensive framework. Studies show that many organizations report significant improvements when this method is applied."`).toString();
+    assert.ok(scanOut.includes("TOP FIXES"));
+    assert.ok(scanOut.includes("try: use"));
+    assert.ok(scanOut.includes("Unsupported claims"));
+
     console.log("✓ CLI binary execution tests passed.");
     console.log("\n🎉 ALL JAVASCRIPT & CLI TESTS PASSED SUCCESSFULLY (12/12)!");
 }).catch(err => {

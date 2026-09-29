@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.2.0] - 2026-09-29
+
+### CLI fix tips and word-level suggestions
+
+- `plag scan` now prints a "Top Fixes" section by default: the highest-scoring writing-pattern categories with their recommendation and quoted evidence, and the unsupported-claim sentences needing a citation. Previously the CLI only showed counts; the full explanation existed only in the web app.
+- Added a `suggestion` field to flagged predictable-vocabulary evidence (e.g. `"leverage" -> "use"`), taken from `avoid-ai-writing`'s and `humanize`'s own published before/after word tables. This is a suggestion shown to the reviewer, not an automated rewrite; no document text is ever rewritten by this project. Surfaced in the CLI and the web app's evidence list.
+- Corrected the `THIRD_PARTY_NOTICES.md` credit for `hyperresearch`: the earlier wording ("claim-to-citation pairing and renormalized scoring") overstated the connection to that project, which is a web-research agent, not a citation-scoring library. Replaced with an accurate, narrower credit and documented the real gap between what's credited and what's implemented (no live retraction/citation-authority check yet).
+
+---
+
 ## [v1.1.0] - 2026-09-29
 
 ### Explainable writing-pattern scoring

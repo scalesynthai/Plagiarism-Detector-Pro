@@ -25,6 +25,25 @@ class AIDetector:
         "foster innovation", "game changer", "vibrant tapestry", "leverage",
         "utilize", "robust", "comprehensive", "streamline",
     }
+    # Plain-language replacements for each marker above, taken directly from the
+    # before/after tables the MIT-licensed avoid-ai-writing and humanize projects
+    # publish in their own READMEs (avoid-ai-writing's "Language Patterns" table;
+    # humanize's Lever 1 word list). A writing suggestion, not a rewrite: the
+    # student picks the replacement, nothing is rewritten automatically.
+    # See THIRD_PARTY_NOTICES.md.
+    SUGGESTED_REPLACEMENTS = {
+        "delve": "look into", "delve into": "look into",
+        "tapestry": "mix (or cut the word)", "vibrant tapestry": "mix (or cut the phrase)",
+        "testament to": "shows", "pivotal role": "important role",
+        "seamless integration": "smooth integration", "holistic approach": "overall approach",
+        "multifaceted": "complex", "in the realm of": "in", "the landscape of": "the field of",
+        "a myriad of": "many", "a plethora of": "many",
+        "it is important to note": "(cut the phrase; state the fact directly)",
+        "it is worth noting": "(cut the phrase; state the fact directly)",
+        "plays a crucial role": "matters for", "foster innovation": "encourage innovation",
+        "game changer": "(name the specific effect instead)", "leverage": "use",
+        "utilize": "use", "robust": "reliable", "comprehensive": "thorough", "streamline": "simplify",
+    }
 
     HEDGE_PATTERNS: Tuple[Pattern[str], ...] = tuple(re.compile(p, re.I) for p in (
         r"\b(?:often|generally|typically|arguably|potentially|perhaps|possibly)\b",
@@ -203,6 +222,8 @@ class AIDetector:
             pattern = re.compile(r"\b" + re.escape(phrase) + r"\b", re.I)
             vocabulary_evidence.extend(cls._evidence(m, "stock vocabulary") for m in pattern.finditer(text))
         vocabulary_evidence = cls._dedupe_evidence(vocabulary_evidence)
+        for row in vocabulary_evidence:
+            row["suggestion"] = cls.SUGGESTED_REPLACEMENTS.get(row["text"].lower())
         distinct_markers = len({row["text"].lower() for row in vocabulary_evidence})
         predictability_score = cls._score_count(distinct_markers, 2, 5)
 

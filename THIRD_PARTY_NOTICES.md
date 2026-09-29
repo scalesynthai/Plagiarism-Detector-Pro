@@ -26,7 +26,21 @@ artifacts rather than style inference.
 
 The nine-category review layout draws on its research-backed AI-check signal
 groups: predictable vocabulary, burstiness, hedging, structure, specificity,
-transitions, punctuation, register, and rhetorical scaffolding.
+transitions, punctuation, register, and rhetorical scaffolding. Its documented
+em-dash rate ("roughly 3-5x above human baseline... hard limit: one per 300
+words") is the source of this project's own em-dash review threshold.
+
+## Avoid AI Writing and Humanize (word-suggestion tables)
+
+The `suggestion` field attached to flagged predictable-vocabulary evidence
+(for example "leverage" -> "use") is taken directly from the before/after
+word-replacement tables both projects publish in their own READMEs
+(avoid-ai-writing's "Language Patterns" table; humanize's Lever 1 word list).
+It is a writing suggestion shown to the person reviewing the text, not an
+automated rewrite: nothing in this project rewrites a document's prose.
+Neither upstream project's own rewrite/humanization skill (the part of their
+own tooling built to help text evade AI detectors) is used here; that is a
+different purpose than this project's, and was deliberately left out.
 
 ## HyperResearch
 
@@ -34,8 +48,18 @@ transitions, punctuation, register, and rhetorical scaffolding.
 - Copyright (c) 2026 Jordan Gibbs
 - License: MIT
 
-The evidence-integrity profile draws on its claim-to-citation pairing and
-renormalized scoring of available evidence-quality components.
+**Correction (this notice previously overstated this credit).** HyperResearch
+is a multi-agent deep-research harness (web crawling, a persistent source
+vault, adversarial critics) and does not implement or document a
+"claim-to-citation pairing" technique as such; an earlier version of this
+notice described one anyway. The one specific, comparable idea this project's
+`evidence_analysis.source_quality` heuristic takes from HyperResearch's design
+is the general principle that source quality should be scored by source type
+rather than treated uniformly. HyperResearch computes this from live citation
+authority and retraction status (OpenAlex/Crossref lookups); this project's
+`SOURCE_TIERS` is a static, offline heuristic by source-type string and does
+not check retraction status or citation counts — a real gap, not yet closed,
+between what is credited here and what is implemented.
 
 Each upstream project is provided under the MIT License. The full permission
 notice for each project is reproduced below:

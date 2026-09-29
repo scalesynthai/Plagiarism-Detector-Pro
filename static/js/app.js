@@ -593,7 +593,9 @@ function renderPatternAnalysis(data) {
                 for (const row of quoted) {
                     const quote = document.createElement('span');
                     quote.className = 'pattern-evidence-quote';
-                    quote.textContent = `“${String(row.text || '').slice(0, 180)}”`;
+                    quote.textContent = row.suggestion
+                        ? `“${String(row.text || '').slice(0, 180)}” → try: ${row.suggestion}`
+                        : `“${String(row.text || '').slice(0, 180)}”`;
                     findings.appendChild(quote);
                 }
             } else {

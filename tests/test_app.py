@@ -89,6 +89,19 @@ class EnterpriseAcademicOriginalityTestSuite(unittest.TestCase):
         self.assertGreater(punctuation["score"], 0)
         self.assertIn("not evidence", result["assessment_scope"])
 
+    def test_predictable_vocabulary_evidence_includes_plain_language_suggestion(self):
+        text = (
+            "It is important to note that we leverage a comprehensive and robust framework "
+            "to streamline the delivery pipeline for stakeholders across the organization."
+        )
+        result = AIDetector.analyze(text)
+        predictability = next(row for row in result["categories"] if row["id"] == "predictability")
+        suggestions = {row["text"].lower(): row["suggestion"] for row in predictability["evidence"]}
+        self.assertEqual(suggestions["leverage"], "use")
+        self.assertEqual(suggestions["robust"], "reliable")
+        self.assertEqual(suggestions["comprehensive"], "thorough")
+        self.assertEqual(suggestions["streamline"], "simplify")
+
     def test_provenance_flags_catch_ai_tool_copy_paste_artifacts_not_citations(self):
         text = (
             "Please fill in [Your Name] before submitting the final draft. "

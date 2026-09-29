@@ -106,7 +106,7 @@ export interface WritingPatternCategory {
     score: number;
     max_score: 3;
     evidence_count: number;
-    evidence: Array<{text: string; start: number; end: number; kind: string}>;
+    evidence: Array<{text: string; start: number; end: number; kind: string; suggestion?: string | null}>;
     metrics: Record<string, unknown>;
     recommendation: string;
 }
