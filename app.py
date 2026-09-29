@@ -1,8 +1,10 @@
+import json
 import logging
 import os
 import io
 import hmac
 import zipfile
+from pathlib import Path
 from typing import Optional
 from flask import Flask, request, render_template, jsonify, send_file, make_response, url_for as flask_url_for
 from werkzeug.utils import secure_filename
@@ -26,6 +28,24 @@ logging.basicConfig(
     format="[%(asctime)s] [%(levelname)s] in %(module)s: %(message)s"
 )
 logger = logging.getLogger(__name__)
+
+
+def _read_app_version(default: str = "0.0.0") -> str:
+    """Single source of truth for the version shown in the UI, reports, and
+    OpenAPI spec: package.json's "version", the number that actually gets
+    bumped and released (see CHANGELOG.md). Falls back to `default` rather
+    than raising, so a missing/unreadable file never breaks the app itself
+    -- only the version badge, which is cosmetic.
+    """
+    try:
+        package_json = Path(__file__).resolve().parent / "package.json"
+        return json.loads(package_json.read_text(encoding="utf-8")).get("version", default)
+    except (OSError, ValueError):
+        logger.warning("Could not read version from package.json; using default %s", default)
+        return default
+
+
+APP_VERSION = _read_app_version()
 
 
 def create_app(config_class: type = Config) -> Flask:
@@ -71,7 +91,7 @@ def create_app(config_class: type = Config) -> Flask:
                     if os.path.isfile(file_path):
                         values['v'] = int(os.stat(file_path).st_mtime)
             return flask_url_for(endpoint, **values)
-        return dict(url_for=dated_url_for)
+        return dict(url_for=dated_url_for, app_version=APP_VERSION)
 
     # Cache control headers to prevent stale reverse proxy / CDN / browser caching
     @app.after_request
@@ -297,7 +317,7 @@ def create_app(config_class: type = Config) -> Flask:
             "openapi": "3.0.3",
             "info": {
                 "title": "Plagiarism Detector Pro API",
-                "version": "2.1.0",
+                "version": APP_VERSION,
                 "description": "Academic text-similarity, citation, and writing-pattern analysis REST API."
             },
             "servers": [

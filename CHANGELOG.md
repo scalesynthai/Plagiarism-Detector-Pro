@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Fixed a stale version badge on the live website
+
+- The web app's header badge was hardcoded to `v1.0.4` and had been stale since v1.0.5 shipped; `pyproject.toml` independently said `2.1.0` (coincidentally, not by design — untouched since before this project's early history) and was never read by anything. Three disconnected version numbers for one product.
+- `app.py` now reads the version from `package.json` (the number that's actually bumped and released) once at startup and injects it into every template and the OpenAPI spec, so this can't go stale again. `pyproject.toml` realigned to match. Added a regression test that fails if the rendered page, the OpenAPI spec, and `package.json` ever disagree.
+
+---
+
 ## [v1.3.0] - 2026-09-29
 
 ### Deterministic, offline writing cleanup (opt-in, reviewable)

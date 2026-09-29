@@ -275,6 +275,26 @@ class EnterpriseAcademicOriginalityTestSuite(unittest.TestCase):
         self.assertEqual(spec_data["openapi"], "3.0.3")
         self.assertIn("/check", spec_data["paths"])
 
+    def test_app_version_matches_package_json_everywhere_it_is_shown(self):
+        """Regression guard: the version badge, the OpenAPI spec, and
+        package.json must never drift apart the way the hardcoded "v1.0.4"
+        badge silently did for several releases."""
+        import json as json_module
+        from pathlib import Path
+        import app as app_module
+
+        package_json_path = Path(app_module.__file__).resolve().parent / "package.json"
+        expected_version = json_module.loads(package_json_path.read_text(encoding="utf-8"))["version"]
+        self.assertEqual(app_module.APP_VERSION, expected_version)
+
+        home_res = self.client.get("/")
+        self.assertEqual(home_res.status_code, 200)
+        self.assertIn(f"v{expected_version}".encode(), home_res.data)
+        self.assertNotIn(b"v1.0.4", home_res.data)
+
+        spec_data = self.client.get("/api/spec.json").get_json()
+        self.assertEqual(spec_data["info"]["version"], expected_version)
+
     def test_extract_latex(self):
         latex_content = rb"""
         \documentclass{article}
