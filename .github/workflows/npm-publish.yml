@@ -24,6 +24,36 @@ jobs:
       - name: Run JavaScript & CLI Tests
         run: npm test
 
+      - name: Guard against publishing an older or already-published version
+        # Protects the live "latest" npm dist-tag (500+ real users install
+        # against it) from ever moving backward -- a retroactively tagged
+        # release, a manual re-run, or a mis-ordered publish would otherwise
+        # silently downgrade every new `npm install`.
+        run: |
+          LOCAL_VERSION="$(node -p "require('./package.json').version")"
+          LIVE_VERSION="$(npm view plagiarism-detector-pro version 2>/dev/null || echo '0.0.0')"
+          node -e "
+            const semverGt = (a, b) => {
+              const pa = a.split('.').map(Number), pb = b.split('.').map(Number);
+              for (let i = 0; i < 3; i++) {
+                if ((pa[i] || 0) > (pb[i] || 0)) return true;
+                if ((pa[i] || 0) < (pb[i] || 0)) return false;
+              }
+              return false;
+            };
+            const local = '$LOCAL_VERSION', live = '$LIVE_VERSION';
+            console.log('package.json version:', local, '| currently published latest:', live);
+            if (!semverGt(local, live)) {
+              console.error(
+                'Refusing to publish: ' + local + ' is not newer than the currently published ' +
+                live + '. Publishing it now would move the \"latest\" npm dist-tag backward for ' +
+                'every existing installer. If this is an intentional release for an older line, ' +
+                'publish manually with an explicit --tag so it never becomes \"latest\".'
+              );
+              process.exit(1);
+            }
+          "
+
       - name: Publish to NPM
         run: npm publish --access public --provenance
         env:
