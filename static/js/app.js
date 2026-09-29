@@ -501,6 +501,93 @@ function renderScoreDetails(data) {
     }
 }
 
+function renderPatternAnalysis(data) {
+    const ai = data.ai_analysis || {};
+    const evidence = data.evidence_analysis || {};
+    const categories = Array.isArray(ai.categories) ? ai.categories : [];
+    const metrics = ai.style_metrics || {};
+    const explanation = document.getElementById('pattern-score-explanation');
+    const reliability = document.getElementById('pattern-reliability');
+    const categoryGrid = document.getElementById('pattern-category-grid');
+    const evidenceList = document.getElementById('pattern-evidence-list');
+
+    if (explanation) explanation.textContent = ai.score_explanation || 'Nine signal groups are scored from 0 to 3 using visible evidence.';
+    if (reliability) {
+        const limited = ai.reliability !== 'standard';
+        reliability.className = `badge-pill ${limited ? 'warning' : 'success'}`;
+        reliability.textContent = limited ? `Limited sample • ${metrics.word_count || 0} words` : `Standard sample • ${metrics.word_count || 0} words`;
+    }
+
+    const emDashCount = Number(metrics.em_dash_count) || 0;
+    const emDashRate = Number(metrics.em_dashes_per_300_words) || 0;
+    const emDashValue = document.getElementById('pattern-em-dash-count');
+    const emDashDetail = document.getElementById('pattern-em-dash-detail');
+    if (emDashValue) emDashValue.textContent = String(emDashCount);
+    if (emDashDetail) emDashDetail.textContent = `${emDashRate.toFixed(1)} per 300 words • review above 1`;
+
+    const claimCoverage = document.getElementById('pattern-claim-coverage');
+    const claimDetail = document.getElementById('pattern-claim-detail');
+    if (claimCoverage) claimCoverage.textContent = evidence.claim_citation_coverage_pct == null ? '—' : `${finiteScore(evidence.claim_citation_coverage_pct).toFixed(0)}%`;
+    if (claimDetail) claimDetail.textContent = evidence.claim_count
+        ? `${evidence.cited_claims_count || 0} of ${evidence.claim_count} recognized claims cited`
+        : 'No configured empirical claim markers found';
+
+    const evidenceScore = document.getElementById('pattern-evidence-score');
+    const evidenceDetail = document.getElementById('pattern-evidence-detail');
+    if (evidenceScore) evidenceScore.textContent = evidence.evidence_score == null ? '—' : `${finiteScore(evidence.evidence_score).toFixed(0)}/100`;
+    if (evidenceDetail) evidenceDetail.textContent = evidence.band || 'Not enough evidence data';
+
+    if (categoryGrid) {
+        categoryGrid.replaceChildren();
+        for (const category of categories) {
+            const item = document.createElement('div');
+            item.className = 'pattern-category-item';
+            const label = document.createElement('strong');
+            label.textContent = category.label || category.id || 'Signal';
+            const score = document.createElement('span');
+            const numericScore = Math.max(0, Math.min(3, Number(category.score) || 0));
+            score.className = `pattern-category-score score-${numericScore}`;
+            score.textContent = `${numericScore}/3`;
+            const detail = document.createElement('small');
+            detail.textContent = `${Number(category.evidence_count) || 0} finding${Number(category.evidence_count) === 1 ? '' : 's'}`;
+            item.append(label, score, detail);
+            categoryGrid.appendChild(item);
+        }
+    }
+
+    if (evidenceList) {
+        evidenceList.replaceChildren();
+        const active = categories.filter(category => Number(category.score) > 0);
+        if (!active.length) {
+            const clean = document.createElement('p');
+            clean.textContent = 'No configured writing-pattern findings were detected in this sample.';
+            evidenceList.appendChild(clean);
+        }
+        for (const category of active) {
+            const group = document.createElement('div');
+            group.className = 'pattern-evidence-group';
+            const heading = document.createElement('h4');
+            heading.textContent = `${category.label} • ${category.score}/3`;
+            const findings = document.createElement('p');
+            const quoted = (Array.isArray(category.evidence) ? category.evidence : []).slice(0, 5);
+            if (quoted.length) {
+                for (const row of quoted) {
+                    const quote = document.createElement('span');
+                    quote.className = 'pattern-evidence-quote';
+                    quote.textContent = `“${String(row.text || '').slice(0, 180)}”`;
+                    findings.appendChild(quote);
+                }
+            } else {
+                findings.textContent = 'This score comes from document-level rhythm or structure.';
+            }
+            const recommendation = document.createElement('p');
+            recommendation.textContent = category.recommendation || '';
+            group.append(heading, findings, recommendation);
+            evidenceList.appendChild(group);
+        }
+    }
+}
+
 function renderSuggestions(data) {
     const list = document.getElementById('suggestions-list');
     const priority = document.getElementById('suggestions-priority');
@@ -512,7 +599,11 @@ function renderSuggestions(data) {
     const citations = data.citation_analysis || {};
     const unlinked = Number(citations.unlinked_citations_count) || 0;
     const sources = Number(data.total_corpus_searched) || 0;
-    const aiScore = finiteScore(data.ai_analysis && data.ai_analysis.ai_probability);
+    const aiData = data.ai_analysis || {};
+    const aiScore = finiteScore(aiData.pattern_score ?? aiData.ai_probability);
+    const evidence = data.evidence_analysis || {};
+    const emDashCount = Number(aiData.style_metrics && aiData.style_metrics.em_dash_count) || 0;
+    const emDashRate = Number(aiData.style_metrics && aiData.style_metrics.em_dashes_per_300_words) || 0;
     const readability = data.readability || {};
     const grade = Number(readability.fk_grade_level ?? String(readability.grade_level || '').match(/[\d.]+/)?.[0]);
     const suggestions = [];
@@ -530,6 +621,12 @@ function renderSuggestions(data) {
 
     if (unlinked > 0) {
         suggestions.push(`Link ${unlinked} detected in-text citation${unlinked === 1 ? '' : 's'} to a matching bibliography entry, then verify author, year, title, and URL or DOI manually.`);
+    }
+    if (emDashCount > 0) {
+        suggestions.push(`Review ${emDashCount} em dash${emDashCount === 1 ? '' : 'es'} (${emDashRate.toFixed(1)} per 300 words). Your professor specifically flagged this pattern; keep only the marks that are necessary for meaning.`);
+    }
+    if (Number(evidence.unsupported_claims_count) > 0) {
+        suggestions.push(`Add and verify references for ${evidence.unsupported_claims_count} recognized empirical claim${evidence.unsupported_claims_count === 1 ? '' : 's'} that currently lack an in-text citation.`);
     }
     if (!data.scoring.exclude_bibliography && finiteScore(data.bibliography_similarity) > 0) {
         suggestions.push(`Reference-list overlap is ${finiteScore(data.bibliography_similarity).toFixed(2)}%. Compare the body score (${finiteScore(data.body_similarity).toFixed(2)}%) before revising prose; reference entries often match by design.`);
@@ -559,6 +656,7 @@ function renderSuggestions(data) {
 
 function renderResults(data) {
     renderScoreDetails(data);
+    renderPatternAnalysis(data);
     renderSuggestions(data);
     const scope = document.getElementById('scan-sources-meta');
     if (scope) scope.textContent = `${data.total_corpus_searched || 0} sources compared • ${data.live_sources_queried || 0} online results`;
@@ -584,7 +682,7 @@ function renderResults(data) {
     // 3. Score gauges: text similarity + writing-pattern heuristic
     const plagScore = finiteScore(data.overall_similarity);
     const aiData = data.ai_analysis || {};
-    const aiScore = finiteScore(aiData.ai_probability);
+    const aiScore = finiteScore(aiData.pattern_score ?? aiData.ai_probability);
 
     const circlePlag = document.getElementById('score-circle-plag');
     const numPlag = document.getElementById('score-number-plag');
@@ -727,7 +825,8 @@ function renderManuscriptInspector(data) {
 
 function renderChecklist(data) {
     const plagScore = finiteScore(data.overall_similarity);
-    const aiScore = finiteScore(data.ai_analysis && data.ai_analysis.ai_probability);
+    const aiData = data.ai_analysis || {};
+    const aiScore = finiteScore(aiData.pattern_score ?? aiData.ai_probability);
     const citeData = data.citation_analysis || {};
     const readability = data.readability || {};
     const matchedWords = Number(data.flagged_word_count) || 0;
@@ -1623,7 +1722,7 @@ function renderBatchGradebook(data) {
 
     document.getElementById('batch-stat-total').textContent = data.total_submissions || 0;
     document.getElementById('batch-stat-avg-plag').textContent = `${data.average_plagiarism || 0}%`;
-    document.getElementById('batch-stat-avg-ai').textContent = `${data.average_ai_probability || 0}%`;
+    document.getElementById('batch-stat-avg-ai').textContent = `${data.average_pattern_score ?? data.average_ai_probability ?? 0}/100`;
 
     let highRiskCount = 0;
     tbody.innerHTML = '';
@@ -1637,7 +1736,7 @@ function renderBatchGradebook(data) {
             <td><strong>📄 ${escapeHtml(row.filename)}</strong></td>
             <td>${row.total_words || 0} words</td>
             <td><span style="font-weight: 700; color: ${row.overall_similarity > 40 ? 'var(--danger)' : 'var(--text-primary)'};">${row.overall_similarity}%</span></td>
-            <td>${row.ai_probability}%</td>
+            <td>${row.pattern_score ?? row.ai_probability ?? 0}/100</td>
             <td><span class="source-badge ${badgeClass}">${escapeHtml(row.safeassign_risk)}</span></td>
             <td><button class="btn-pdf" style="padding: 3px 8px; font-size: 11px;">🔍 View</button></td>
         `;

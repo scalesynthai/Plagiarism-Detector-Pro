@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.1.0] - 2026-09-29
+
+### Explainable writing-pattern scoring
+
+- Replaced the single AI-probability estimate with a nine-signal `pattern_score` (0-100), adapted from the MIT-licensed `avoid-ai-writing` and `humanize` projects. Every non-zero category quotes the exact phrases or sentence spans behind it and includes a focused revision suggestion. See [docs/AI_SCORING.md](docs/AI_SCORING.md) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+- Em dashes are now reported as an exact count and a rate per 300 words, with each instance located in the text. An em dash alone can no longer produce a high score or imply authorship, addressing the common false signal that punctuation choice alone proves AI use.
+- Added a separate evidence-integrity score, adapted from the MIT-licensed `hyperresearch` project. It pairs recognized empirical claims with same-sentence citations, links in-text citations to bibliography entries, and factors in source-type quality, renormalizing when a component is unavailable rather than scoring it as zero.
+- `ai_probability` and `human_probability` remain in the Python API and npm CLI/MCP output as compatibility aliases for `pattern_score`; they are documented as uncalibrated heuristic mirrors, not calibrated probabilities.
+- The web dashboard, PDF/HTML reports, advisory certificates, and batch gradebook all display the new score consistently. Python and Node implementations are verified to score identically on the same input.
+
+---
+
 ## [v1.0.5] - 2026-09-25
 
 ### Local document formats

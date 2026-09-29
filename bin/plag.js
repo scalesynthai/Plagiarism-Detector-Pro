@@ -134,13 +134,21 @@ async function main() {
                 });
 
                 const riskColor = res.overall_similarity > 25 ? colors.red : res.overall_similarity > 15 ? colors.yellow : colors.green;
-                const aiColor = res.ai_analysis && res.ai_analysis.ai_probability > 40 ? colors.magenta : colors.green;
+                const patternScore = res.ai_analysis ? (res.ai_analysis.pattern_score ?? res.ai_analysis.ai_probability) : 0;
+                const aiColor = patternScore > 40 ? colors.magenta : colors.green;
 
                 console.log(`${colors.bold}📊 TEXT-SIMILARITY METRICS:${colors.reset}`);
                 console.log(`  • Selected Similarity:    ${riskColor}${res.overall_similarity}% (${res.safeassign_risk})${colors.reset}`);
                 if (res.ai_analysis) {
-                    console.log(`  • AI-Pattern Heuristic:   ${aiColor}${res.ai_analysis.ai_probability}% (${res.ai_analysis.ai_risk_level})${colors.reset}`);
+                    console.log(`  • Writing-Pattern Score:  ${aiColor}${patternScore}/100 (${res.ai_analysis.ai_risk_level})${colors.reset}`);
                     console.log(`  • Syntax Burstiness:      ${res.ai_analysis.burstiness}`);
+                    console.log(`  • Em Dashes:              ${res.ai_analysis.style_metrics.em_dash_count} (${res.ai_analysis.style_metrics.em_dashes_per_300_words} per 300 words)`);
+                }
+                if (res.evidence_analysis) {
+                    const evidenceScore = res.evidence_analysis.evidence_score == null ? "N/A" : `${res.evidence_analysis.evidence_score}/100`;
+                    const claimCoverage = res.evidence_analysis.claim_citation_coverage_pct == null ? "N/A" : `${res.evidence_analysis.claim_citation_coverage_pct}%`;
+                    console.log(`  • Evidence Integrity:     ${evidenceScore}`);
+                    console.log(`  • Claim Citation Coverage:${claimCoverage.padStart(10)}`);
                 }
                 console.log(`  • Total Analyzed Words:   ${res.total_words}`);
                 console.log(`  • Matching Words:         ${res.flagged_word_count || 0}`);
@@ -381,7 +389,7 @@ async function main() {
             console.log(`${colors.bold}📦 BATCH SUBMISSION GRADEBOOK:${colors.reset}`);
             console.log(`  • Submissions Processed:  ${res.total_submissions}`);
             console.log(`  • Average Similarity:     ${res.average_plagiarism}%`);
-            console.log(`  • Average Pattern Score:  ${res.average_ai_probability}%`);
+            console.log(`  • Average Pattern Score:  ${res.average_pattern_score ?? res.average_ai_probability}/100`);
             console.log(`  • High Risk Papers:       ${res.high_risk_count > 0 ? colors.red : colors.green}${res.high_risk_count}${colors.reset}\n`);
 
             console.log(`${"Document".padEnd(30)} ${"Words".padStart(8)} ${"Similarity".padStart(12)} ${"Pattern Score".padStart(16)} ${"Risk Tier".padStart(14)}`);
@@ -390,7 +398,7 @@ async function main() {
                 const name = row.student_or_filename.slice(0, 28).padEnd(30);
                 const words = String(row.word_count || 0).padStart(8);
                 const plag = `${row.plagiarism_score || 0}%`.padStart(12);
-                const ai = `${row.ai_probability || 0}%`.padStart(16);
+                const ai = `${row.pattern_score ?? row.ai_probability ?? 0}/100`.padStart(16);
                 const risk = (row.safeassign_risk || "Low Risk").padStart(14);
                 console.log(`${name} ${words} ${plag} ${ai} ${risk}`);
             });
@@ -413,7 +421,7 @@ async function main() {
                 studentName,
                 paperTitle,
                 plagiarismScore: scanRes.overall_similarity,
-                aiScore: scanRes.ai_analysis ? scanRes.ai_analysis.ai_probability : 0.0,
+                aiScore: scanRes.ai_analysis ? (scanRes.ai_analysis.pattern_score ?? scanRes.ai_analysis.ai_probability) : 0.0,
                 wordCount: scanRes.total_words,
                 safeassignRisk: scanRes.safeassign_risk,
                 text

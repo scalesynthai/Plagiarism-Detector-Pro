@@ -191,12 +191,16 @@ def create_app(config_class: type = Config) -> Flask:
             )
 
             # Add Student Writing & Academic Integrity Coach Insights
-            unsupported_claims = AcademicStudentCoach.scan_unsupported_claims(query_text)
+            claim_analysis = analysis.get("claim_analysis") or AcademicStudentCoach.scan_claims(query_text)
+            unsupported_claims = [claim for claim in claim_analysis if not claim.get("has_citation")]
             tone_suggestions = AcademicStudentCoach.analyze_tone_and_vocabulary(query_text)
             thesis_eval = AcademicStudentCoach.evaluate_thesis_abstract(query_text)
             analysis["student_coach"] = {
                 "unsupported_claims": unsupported_claims,
                 "unsupported_claims_count": len(unsupported_claims),
+                "claims": claim_analysis,
+                "claims_count": len(claim_analysis),
+                "cited_claims_count": sum(1 for claim in claim_analysis if claim.get("has_citation")),
                 "tone_suggestions": tone_suggestions,
                 "tone_suggestions_count": len(tone_suggestions),
                 "thesis_evaluation": thesis_eval

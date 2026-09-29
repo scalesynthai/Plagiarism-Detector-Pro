@@ -60,7 +60,9 @@ def validate_report(data):
                 type(span.get("start")) is not int or type(span.get("end")) is not int
                 for span in spans):
             raise ValueError("Invalid matched spans.")
-    for value in (data.get("overall_similarity", 0), data.get("ai_analysis", {}).get("ai_probability", 0)):
+    ai_data = data.get("ai_analysis", {})
+    pattern_score = ai_data.get("pattern_score", ai_data.get("ai_probability", 0))
+    for value in (data.get("overall_similarity", 0), pattern_score):
         if type(value) not in (int, float) or not math.isfinite(value) or not 0 <= value <= 100:
             raise ValueError("Scores must be finite numbers between 0 and 100.")
 
@@ -101,6 +103,9 @@ class ReportGenerator:
 
         ai_data = data.get("ai_analysis", {})
         citation_data = data.get("citation_analysis", {})
+        evidence_data = data.get("evidence_analysis", {})
+        pattern_score = ai_data.get("pattern_score", ai_data.get("ai_probability", 0))
+        em_dash_count = ai_data.get("style_metrics", {}).get("em_dash_count", 0)
 
         return f'''<!DOCTYPE html>
 <html lang="en">
@@ -179,8 +184,8 @@ class ReportGenerator:
             <div class="score-lbl">Selected Similarity ({data.get('safeassign_risk', 'Low Risk')})</div>
         </div>
         <div class="score-box">
-            <div class="score-num {ai_data.get('status_class', 'success')}">{ai_data.get('ai_probability', 0)}%</div>
-            <div class="score-lbl">AI-Pattern Heuristic (not authorship proof)</div>
+            <div class="score-num {ai_data.get('status_class', 'success')}">{pattern_score}/100</div>
+            <div class="score-lbl">Writing-Pattern Score</div>
         </div>
         <div class="score-box">
             <div class="score-num" style="color: #4f46e5;">{citation_data.get('in_text_citations_count', 0)}</div>
@@ -194,6 +199,9 @@ class ReportGenerator:
     Exclude quotations: {data.get('scoring', {}).get('exclude_quotes', False)};
     exclude bibliography: {data.get('scoring', {}).get('exclude_bibliography', False)}.
     Citations remain included. Source percentages may overlap. Similarity is not proof of plagiarism.</p>
+    <p><strong>Writing review:</strong> {em_dash_count} em dash(es) detected; evidence integrity
+    {evidence_data.get('evidence_score', 'N/A')}/100; claim citation coverage
+    {evidence_data.get('claim_citation_coverage_pct', 'N/A')}%. The writing-pattern score identifies configured style signals and does not determine authorship.</p>
     <!-- Manuscript -->
     <div class="section-hdr">1. Color-Annotated Manuscript</div>
     <div class="manuscript">
@@ -236,18 +244,19 @@ class ReportGenerator:
         student_name = html.escape(student_name, quote=True)
         paper_title = html.escape(paper_title, quote=True)
         plag_sim = data.get("overall_similarity", 0.0)
-        ai_prob = data.get("ai_analysis", {}).get("ai_probability", 0.0)
+        ai_data = data.get("ai_analysis", {})
+        pattern_score = ai_data.get("pattern_score", ai_data.get("ai_probability", 0.0))
         citations_count = data.get("citation_analysis", {}).get("in_text_citations_count", 0)
         readability = data.get("readability", {})
         fk_grade = readability.get("grade_level", "College Level")
         words_count = data.get("total_words", 0)
 
         # Risk evaluation for certificate
-        if plag_sim < 15.0 and ai_prob < 30.0:
+        if plag_sim < 15.0 and pattern_score < 30.0:
             cert_status = "LOW HEURISTIC SCORES — AUTHORSHIP NOT VERIFIED"
             status_color = "#16a34a"
             badge_icon = "🏅"
-        elif plag_sim < 30.0 and ai_prob < 50.0:
+        elif plag_sim < 30.0 and pattern_score < 50.0:
             cert_status = "REVIEW ATTRIBUTION AND ORIGINALITY"
             status_color = "#2563eb"
             badge_icon = "📘"
@@ -425,8 +434,8 @@ class ReportGenerator:
                 <div class="metric-lbl">Selected Similarity</div>
             </div>
             <div class="metric-card">
-                <div class="metric-val" style="color: #7c3aed;">{ai_prob}%</div>
-                <div class="metric-lbl">AI-Pattern Heuristic</div>
+                <div class="metric-val" style="color: #7c3aed;">{pattern_score}/100</div>
+                <div class="metric-lbl">Writing-Pattern Score</div>
             </div>
             <div class="metric-card">
                 <div class="metric-val" style="color: #2563eb;">{citations_count}</div>

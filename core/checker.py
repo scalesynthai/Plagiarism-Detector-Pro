@@ -14,6 +14,8 @@ from core.citation_validator import CitationValidator
 from core.vector_engine import VectorSearchEngine
 from core.sanitizer import TextSanitizer
 from core.phd_auditor import PhdResearchAuditor
+from core.student_coach import AcademicStudentCoach
+from core.evidence_analyzer import EvidenceAnalyzer
 
 
 class PlagiarismChecker:
@@ -313,9 +315,15 @@ class PlagiarismChecker:
 
         # 1. Run Citation and Bibliography Validator
         citation_analysis = self.citation_validator.validate_citations(cleaned_text)
-        
-        # 2. Run the uncalibrated writing-pattern heuristic
-        ai_analysis = self.ai_detector.analyze(cleaned_text)
+
+        # 2. Pair empirical claims with recognized citations, then pass the
+        # unsupported subset into the explainable writing-pattern review.
+        claim_analysis = AcademicStudentCoach.scan_claims(cleaned_text)
+        unsupported_claims = [claim for claim in claim_analysis if not claim["has_citation"]]
+        ai_analysis = self.ai_detector.analyze(cleaned_text, {
+            "unsupported_claims": unsupported_claims,
+            "citation_analysis": citation_analysis,
+        })
 
         # 3. Run PhD Conference & Double-Blind Anonymity Auditor
         phd_audit = PhdResearchAuditor.audit_manuscript(cleaned_text)
@@ -357,6 +365,11 @@ class PlagiarismChecker:
             row["smart_citations"] = self.generate_smart_citations(row["source_name"], row.get("source_url"))
             row["paraphrase_advice"] = self.generate_paraphrase_advice(row["student_sentence"], row["similarity"])
         overall_sim = matching["overall_similarity"]
+        evidence_analysis = EvidenceAnalyzer.analyze(
+            claim_analysis,
+            citation_analysis,
+            matching["sources_breakdown"],
+        )
 
         # 4. Advisory similarity tier
         if overall_sim < 15.0:
@@ -385,6 +398,8 @@ class PlagiarismChecker:
             "total_corpus_searched": len(active_pool),
             "ai_analysis": ai_analysis,
             "citation_analysis": citation_analysis,
+            "claim_analysis": claim_analysis,
+            "evidence_analysis": evidence_analysis,
             "readability": readability,
             "obfuscation_info": obfuscation_info,
             "phd_audit": phd_audit,

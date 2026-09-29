@@ -30,11 +30,18 @@ export interface PlagiarismResult {
         has_citation: boolean;
     }>;
     ai_analysis?: {
+        pattern_score: number;
         ai_probability: number;
         burstiness: number;
         ai_risk_level: string;
         flagged_markers_count: number;
+        reliability: "insufficient" | "limited" | "standard";
+        pattern_version: string;
+        categories: WritingPatternCategory[];
+        top_signals: Array<{id: string; label: string; score: number; evidence_count: number; recommendation: string}>;
+        style_metrics: WritingStyleMetrics;
     };
+    evidence_analysis?: EvidenceAnalysis;
     student_coach?: {
         unsupported_claims: Array<{
             sentence: string;
@@ -75,12 +82,50 @@ export class PlagiarismChecker {
 }
 
 export class AIDetector {
-    static analyze(text: string): {
+    static analyze(text: string, context?: {unsupported_claims?: Array<{sentence: string}>}): {
+        pattern_score: number;
         ai_probability: number;
         burstiness: number;
         ai_risk_level: string;
         flagged_markers_count: number;
+        reliability: "insufficient" | "limited" | "standard";
+        categories: WritingPatternCategory[];
+        style_metrics: WritingStyleMetrics;
     };
+}
+
+export interface WritingPatternCategory {
+    id: string;
+    label: string;
+    score: number;
+    max_score: 3;
+    evidence_count: number;
+    evidence: Array<{text: string; start: number; end: number; kind: string}>;
+    metrics: Record<string, unknown>;
+    recommendation: string;
+}
+
+export interface WritingStyleMetrics {
+    word_count: number;
+    sentence_count: number;
+    paragraph_count: number;
+    em_dash_count: number;
+    em_dashes_per_300_words: number;
+    hedge_count: number;
+    transition_count: number;
+}
+
+export interface EvidenceAnalysis {
+    evidence_score: number | null;
+    band: string;
+    claim_count: number;
+    cited_claims_count: number;
+    unsupported_claims_count: number;
+    claim_citation_coverage_pct: number | null;
+    citation_count: number;
+    citation_link_rate_pct: number | null;
+    source_quality_score: number | null;
+    limitation: string;
 }
 
 export class AcademicParaphraser {
@@ -92,10 +137,15 @@ export class AcademicParaphraser {
 }
 
 export class AcademicStudentCoach {
+    static scanClaims(text: string): Array<{ sentence: string; claim_marker: string; has_citation: boolean; citation: string | null; start: number; end: number; recommendation: string; }>;
     static scanUnsupportedClaims(text: string): Array<{ sentence: string; claim_marker: string; recommendation: string; }>;
     static analyzeToneAndVocabulary(text: string): Array<{ matched_term: string; context_snippet: string; scholarly_replacements: string[]; tip: string; }>;
     static alphabetizeAndFormatReferences(referencesText: string): { sorted_references: string[]; count: number; formatted_text: string; issues: string[]; };
     static evaluateThesisAbstract(text: string): { score: number; word_count: number; has_hypothesis: boolean; has_method: boolean; has_significance: boolean; feedback: string[]; };
+}
+
+export class EvidenceAnalyzer {
+    static analyze(claims?: any[], citationAnalysis?: any, sources?: any[]): EvidenceAnalysis;
 }
 
 export class DocumentExtractor {

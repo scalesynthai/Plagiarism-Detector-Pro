@@ -77,11 +77,15 @@ class BatchProcessor:
                     }
 
                 analysis = self.checker.analyze(text, include_web_sources=include_web, exclude_quotes=exclude_quotes, exclude_bibliography=exclude_bibliography)
+                pattern_score = analysis.get("ai_analysis", {}).get(
+                    "pattern_score", analysis.get("ai_analysis", {}).get("ai_probability", 0.0)
+                )
                 return {
                     "filename": name,
                     "status": "success",
                     "overall_similarity": analysis["overall_similarity"],
-                    "ai_probability": analysis.get("ai_analysis", {}).get("ai_probability", 0.0),
+                    "pattern_score": pattern_score,
+                    "ai_probability": pattern_score,
                     "ai_risk_level": analysis.get("ai_analysis", {}).get("ai_risk_level", "Unknown"),
                     "safeassign_risk": analysis["safeassign_risk"],
                     "status_class": analysis["status_class"],
@@ -108,7 +112,7 @@ class BatchProcessor:
         # Compute batch summary statistics
         success_results = [r for r in results if r.get("status") == "success"]
         avg_plag = round(sum(r["overall_similarity"] for r in success_results) / max(len(success_results), 1), 2)
-        avg_ai = round(sum(r["ai_probability"] for r in success_results) / max(len(success_results), 1), 2)
+        avg_pattern = round(sum(r["pattern_score"] for r in success_results) / max(len(success_results), 1), 2)
 
         high_risk_count = sum(1 for r in success_results if r.get("safeassign_risk") == "High Risk")
         med_risk_count = sum(1 for r in success_results if r.get("safeassign_risk") == "Medium Risk")
@@ -118,7 +122,8 @@ class BatchProcessor:
             "total_submissions": len(results),
             "processed_successfully": len(success_results),
             "average_plagiarism": avg_plag,
-            "average_ai_probability": avg_ai,
+            "average_pattern_score": avg_pattern,
+            "average_ai_probability": avg_pattern,
             "high_risk_count": high_risk_count,
             "medium_risk_count": med_risk_count,
             "low_risk_count": low_risk_count,

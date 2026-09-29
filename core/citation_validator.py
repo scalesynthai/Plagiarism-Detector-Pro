@@ -144,6 +144,8 @@ class CitationValidator:
             "bibliography_entries_count": len(bib_entries),
             "in_text_citations_count": len(citations),
             "citations": citations,
+            "linked_citations": matched_citations,
+            "unlinked_citations": unmatched_citations,
             "bibliography_entries": bib_entries[:10],
             "body_text": body_text,
             "has_unlinked_citations": len(unmatched_citations) > 0,

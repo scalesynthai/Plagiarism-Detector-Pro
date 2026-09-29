@@ -10,7 +10,8 @@ const {
     DocumentExtractor,
     CitationGenerator,
     DraftComparator,
-    CertificateGenerator
+    CertificateGenerator,
+    EvidenceAnalyzer
 } = require("../lib/index");
 
 console.log("🧪 Starting Plagiarism Detector Pro JavaScript & CLI Test Suite...\n");
@@ -64,6 +65,19 @@ console.log("Testing AIDetector...");
 const aiText = "Furthermore, it is important to note that the holistic approach plays a pivotal role in the seamless integration. In conclusion, this vibrant tapestry is a testament to innovation.";
 const aiRes = AIDetector.analyze(aiText);
 assert.ok(aiRes.ai_probability > 30.0);
+assert.strictEqual(aiRes.pattern_version, "2.0.0");
+assert.strictEqual(aiRes.categories.length, 9);
+const emDashRes = AIDetector.analyze(("The documented result—recorded after review—was retained for the final analysis. ").repeat(18));
+assert.strictEqual(emDashRes.style_metrics.em_dash_count, 36);
+assert.ok(emDashRes.categories.find(row => row.id === "punctuation").score > 0);
+assert.ok(emDashRes.assessment_scope.includes("not evidence"));
+
+const allClaims = AcademicStudentCoach.scanClaims("Studies show that feedback helps (Smith, 2024). 85% of students revised their paper.");
+assert.strictEqual(allClaims.length, 2);
+assert.strictEqual(allClaims.filter(claim => claim.has_citation).length, 1);
+const evidenceRes = EvidenceAnalyzer.analyze(allClaims, { in_text_citations_count: 1, unlinked_citations_count: 0 }, []);
+assert.strictEqual(evidenceRes.claim_citation_coverage_pct, 50.0);
+assert.strictEqual(evidenceRes.evidence_score, 68.8);
 console.log("✓ AIDetector passed.");
 
 // 6. Test Draft Comparator

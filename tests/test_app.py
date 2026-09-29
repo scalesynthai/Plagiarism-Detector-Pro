@@ -19,6 +19,7 @@ from core.sanitizer import TextSanitizer
 from core.checker import PlagiarismChecker
 from core.phd_auditor import PhdResearchAuditor
 from core.student_coach import AcademicStudentCoach
+from core.evidence_analyzer import EvidenceAnalyzer
 
 
 class EnterpriseAcademicOriginalityTestSuite(unittest.TestCase):
@@ -68,9 +69,41 @@ class EnterpriseAcademicOriginalityTestSuite(unittest.TestCase):
             "Moreover, it is worth noting that deep neural networks foster innovation."
         )
         res = detector.analyze(sample_text)
+        self.assertEqual(res["pattern_version"], "2.0.0")
+        self.assertEqual(len(res["categories"]), 9)
+        self.assertEqual({row["max_score"] for row in res["categories"]}, {3})
         self.assertIn("ai_probability", res)
         self.assertIn("burstiness", res)
         self.assertGreater(res["ai_probability"], 0.0)
+
+    def test_writing_patterns_report_exact_em_dashes_without_authorship_claim(self):
+        sample_text = (
+            "The pilot included 120 students (Smith, 2024). Results improved by 18 percent across two sections. "
+            "The instructors revised the rubric—then repeated the assessment with the same cohort. "
+            "A second review—completed after grading—found similar outcomes. "
+            "These observations describe the course evaluation and its documented limits. "
+        ) * 4
+        result = AIDetector.analyze(sample_text)
+        self.assertEqual(result["style_metrics"]["em_dash_count"], 12)
+        punctuation = next(row for row in result["categories"] if row["id"] == "punctuation")
+        self.assertGreater(punctuation["score"], 0)
+        self.assertIn("not evidence", result["assessment_scope"])
+
+    def test_claim_citation_coverage_and_evidence_score(self):
+        text = (
+            "Studies show that structured feedback improves revision (Smith et al., 2024). "
+            "85% of students submitted a second draft."
+        )
+        claims = AcademicStudentCoach.scan_claims(text)
+        self.assertEqual(len(claims), 2)
+        self.assertEqual(sum(1 for claim in claims if claim["has_citation"]), 1)
+        result = EvidenceAnalyzer.analyze(
+            claims,
+            {"in_text_citations_count": 1, "unlinked_citations_count": 0},
+            [],
+        )
+        self.assertEqual(result["claim_citation_coverage_pct"], 50.0)
+        self.assertEqual(result["evidence_score"], 68.8)
 
     def test_citation_validator(self):
         validator = CitationValidator()
@@ -113,6 +146,7 @@ class EnterpriseAcademicOriginalityTestSuite(unittest.TestCase):
         self.assertIn("overall_similarity", data)
         self.assertIn("safeassign_risk", data)
         self.assertIn("ai_analysis", data)
+        self.assertIn("evidence_analysis", data)
         self.assertIn("diff_matches", data)
         self.assertIn("readability", data)
         self.assertIn("obfuscation_info", data)
@@ -415,4 +449,3 @@ class EnterpriseAcademicOriginalityTestSuite(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

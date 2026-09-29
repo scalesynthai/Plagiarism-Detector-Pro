@@ -200,7 +200,11 @@ MAX_CONTENT_LENGTH=33554432 # 32 MB request limit; each document is limited to 8
 - Clicking any highlighted sentence opens a split-screen viewer comparing the student submission on the left with the verbatim original source on the right.
 
 ### 5. 🤖 Writing-Pattern Heuristic
-- Computes syntactic burstiness and lexical entropy as review signals. These scores do not identify authorship or prove AI use.
+- Scores nine explainable signal groups: vocabulary, sentence rhythm, hedging, structure, specificity, transitions, punctuation, register, and rhetorical scaffolding.
+- Shows the exact phrases and sentence spans behind every non-zero category, plus sample-length reliability.
+- Reports em-dash count and rate separately so punctuation feedback is actionable without treating one mark as proof of AI use.
+- Adds an evidence-integrity profile for claim citation coverage, bibliography linkage, and available source quality.
+- See [Explainable writing-pattern scoring](docs/AI_SCORING.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
 
 ### 6. 📦 Whole-Class Batch Submissions Gradebook
 - Upload a `.zip` archive or multiple files to scan all submissions concurrently and produce an aggregated **Instructor Gradebook Table**.

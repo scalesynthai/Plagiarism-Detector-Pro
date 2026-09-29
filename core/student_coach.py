@@ -49,29 +49,41 @@ class AcademicStudentCoach:
     )
 
     @classmethod
-    def scan_unsupported_claims(cls, text: str) -> List[Dict[str, Any]]:
+    def scan_claims(cls, text: str) -> List[Dict[str, Any]]:
         """
-        Flags empirical, factual, or statistical assertions that lack parenthetical or numeric citations.
+        Pairs empirical, factual, or statistical assertions with any recognized
+        in-text citation in the same sentence.
         """
-        sentences = [text[a:b].strip() for a,b in sentence_ranges(text) if len(text[a:b].strip()) > 20]
-        unsupported = []
-
-        for s in sentences:
-            has_cite = CitationValidator().has_in_text_citation(s)[0]
-            if has_cite:
+        claims = []
+        validator = CitationValidator()
+        for start, end in sentence_ranges(text):
+            s = text[start:end].strip()
+            if len(s) <= 20:
                 continue
-
             for marker in cls.CLAIM_MARKERS:
                 match = re.search(marker, s, re.I)
                 if match:
-                    unsupported.append({
+                    has_cite, citation = validator.has_in_text_citation(s)
+                    claims.append({
                         "sentence": s,
                         "claim_marker": match.group(0),
-                        "recommendation": f"Sentence contains empirical assertion ('{match.group(0)}') without a cited authority. Insert (Author, Year) or numeric reference.",
+                        "has_citation": has_cite,
+                        "citation": citation,
+                        "start": start,
+                        "end": end,
+                        "recommendation": (
+                            "Verify that the cited source directly supports this claim."
+                            if has_cite else
+                            f"Sentence contains empirical assertion ('{match.group(0)}') without a cited authority. Insert (Author, Year) or numeric reference."
+                        ),
                     })
                     break
+        return claims
 
-        return unsupported
+    @classmethod
+    def scan_unsupported_claims(cls, text: str) -> List[Dict[str, Any]]:
+        """Return claim rows with no recognized in-text citation."""
+        return [claim for claim in cls.scan_claims(text) if not claim["has_citation"]]
 
     @classmethod
     def analyze_tone_and_vocabulary(cls, text: str) -> List[Dict[str, Any]]:
