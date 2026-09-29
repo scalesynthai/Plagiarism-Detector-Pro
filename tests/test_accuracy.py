@@ -6,6 +6,8 @@ from core.phd_auditor import PhdResearchAuditor
 from core.web_searcher import LiveWebSearcher
 from core.report_generator import ReportGenerator
 from benchmarks.run import evaluate, aggregate
+from benchmarks.calibrate_thresholds import load_corpus, ELEVATED_THRESHOLD
+from core.ai_detector import AIDetector
 
 
 def scan(text, sources, **options):
@@ -132,6 +134,20 @@ class DiagnosticAccuracyTests(unittest.TestCase):
         self.assertTrue(clean['is_anonymity_compliant'])
         self.assertNotIn('Verified',clean['readiness_verdict'])
         self.assertIsNone(PhdResearchAuditor.audit_manuscript('')['is_anonymity_compliant'])
+
+
+class WritingPatternCalibrationTests(unittest.TestCase):
+    def test_human_corpus_does_not_cross_elevated_threshold(self):
+        """Regression guard for benchmarks/threshold_calibration.md: a detector
+        change that starts flagging guaranteed-human writing as Elevated should
+        fail this test before it fails a real student."""
+        docs = load_corpus()
+        self.assertGreaterEqual(len(docs), 15, "human_corpus/ appears to have shrunk")
+        false_positives = [
+            doc["id"] for doc in docs
+            if AIDetector.analyze(doc["text"])["pattern_score"] >= ELEVATED_THRESHOLD
+        ]
+        self.assertEqual(false_positives, [], f"human documents flagged Elevated+: {false_positives}")
 
 
 class BenchmarkEvaluatorTests(unittest.TestCase):

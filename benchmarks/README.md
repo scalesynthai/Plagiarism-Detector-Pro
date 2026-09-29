@@ -30,3 +30,11 @@ Both engines agree on all 25 fixtures. The 18 evaluation cases have token precis
 All four challenge cases expose limitations: a synonym paraphrase, a three-word copied fragment, a missing source, and generic boilerplate. Challenge token recall is 0.0 and score MAE is 85.72 percentage points. The boilerplate case is deliberately labeled as non-actionable common wording despite exact lexical overlap: its false positive measures a *review-policy* disagreement, not a failure to find identical words. Keep challenge results separate from exact lexical-coverage results.
 
 For a credible production evaluation, collect consented documents with independently annotated source passages and include difficult negatives from the same subject area. Keep documents and source families disjoint between development and evaluation; have reviewers adjudicate uncertain labels. Measure retrieval coverage separately from matching quality. Add multilingual, OCR, long-document, and source-outage cases. A SafeAssign total alone supplies neither token ground truth nor access to its private corpus.
+
+## Writing-pattern score calibration
+
+This is a separate concern from the similarity benchmark above: `python3
+benchmarks/calibrate_thresholds.py` checks the writing-pattern score's
+Elevated/High thresholds against a small, guaranteed-human corpus (see
+`human_corpus/README.md`) rather than checking lexical-overlap matching.
+See `threshold_calibration.md` for the corpus, methodology, and results.

@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a separate evidence-integrity score, adapted from the MIT-licensed `hyperresearch` project. It pairs recognized empirical claims with same-sentence citations, links in-text citations to bibliography entries, and factors in source-type quality, renormalizing when a component is unavailable rather than scoring it as zero.
 - `ai_probability` and `human_probability` remain in the Python API and npm CLI/MCP output as compatibility aliases for `pattern_score`; they are documented as uncalibrated heuristic mirrors, not calibrated probabilities.
 - The web dashboard, PDF/HTML reports, advisory certificates, and batch gradebook all display the new score consistently. Python and Node implementations are verified to score identically on the same input.
+- Added `provenance_flags`: a separate, high-precision check for literal AI-tool copy-paste artifacts (unfilled template placeholders, leftover chatbot citation markup, AI-tool URL tracking parameters), adapted from `avoid-ai-writing`'s documented "AI-tool fingerprint" category. Never folded into `pattern_score`. Surfaced in the CLI, web app, and HTML report.
+- Checked the Elevated/High `pattern_score` thresholds against a small, guaranteed-human corpus (21 documents, all predating LLMs entirely) and confirmed zero false positives; thresholds were not changed. See [benchmarks/threshold_calibration.md](benchmarks/threshold_calibration.md).
 
 ---
 

@@ -51,6 +51,17 @@ Missing components do not become zero. Citation syntax and bibliography links
 do not prove that a source exists or supports the sentence, so the report tells
 the writer to verify each important claim against the cited source.
 
+## Threshold calibration
+
+The Elevated (≥25) and High (≥65) `pattern_score` bands were checked against
+a small, guaranteed-human corpus (documents that predate LLMs entirely, so
+authorship is not in question) and produced zero false positives. This
+validates the existing thresholds; the corpus is too small (21 documents)
+to justify tightening them further. See
+[benchmarks/threshold_calibration.md](../benchmarks/threshold_calibration.md)
+for the corpus, methodology, and full results, adapted from `avoid-ai-writing`'s
+documented approach to its own threshold.
+
 ## Compatibility fields
 
 `ai_probability` and `human_probability` remain in API and npm CLI output for
