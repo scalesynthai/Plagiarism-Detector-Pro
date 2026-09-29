@@ -69,7 +69,7 @@ class EnterpriseAcademicOriginalityTestSuite(unittest.TestCase):
             "Moreover, it is worth noting that deep neural networks foster innovation."
         )
         res = detector.analyze(sample_text)
-        self.assertEqual(res["pattern_version"], "2.0.0")
+        self.assertEqual(res["pattern_version"], "2.1.0")
         self.assertEqual(len(res["categories"]), 9)
         self.assertEqual({row["max_score"] for row in res["categories"]}, {3})
         self.assertIn("ai_probability", res)
@@ -88,6 +88,27 @@ class EnterpriseAcademicOriginalityTestSuite(unittest.TestCase):
         punctuation = next(row for row in result["categories"] if row["id"] == "punctuation")
         self.assertGreater(punctuation["score"], 0)
         self.assertIn("not evidence", result["assessment_scope"])
+
+    def test_provenance_flags_catch_ai_tool_copy_paste_artifacts_not_citations(self):
+        text = (
+            "Please fill in [Your Name] before submitting the final draft. "
+            "See details citeturn0search0 and also contentReference[oaicite:0]{index=0} here. "
+            "Visit https://example.com/report?utm_source=chatgpt.com for the source dataset."
+        )
+        result = AIDetector.analyze(text)
+        self.assertEqual(result["provenance_flags_count"], 4)
+        kinds = {row["kind"] for row in result["provenance_flags"]}
+        self.assertEqual(kinds, {
+            "unfilled template placeholder", "AI-assistant citation markup", "AI-tool tracking link",
+        })
+        self.assertNotIn("pattern_score", result["provenance_note"])
+
+        clean_text = (
+            "The result is consistent with prior work [1]. See [Smith, 2024] for details, and [sic] as quoted. "
+            "Refer to [Figure 1] and visit https://example.com/report?utm_source=google.com for the dataset."
+        )
+        clean_result = AIDetector.analyze(clean_text)
+        self.assertEqual(clean_result["provenance_flags_count"], 0)
 
     def test_claim_citation_coverage_and_evidence_score(self):
         text = (

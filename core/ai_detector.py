@@ -14,7 +14,7 @@ from typing import Any, Dict, Iterable, List, Pattern, Tuple
 class AIDetector:
     """Nine-category writing-pattern review model."""
 
-    PATTERN_VERSION = "2.0.0"
+    PATTERN_VERSION = "2.1.0"
     MIN_RELIABLE_WORDS = 120
 
     AI_MARKER_PHRASES = {
@@ -66,6 +66,19 @@ class AIDetector:
     ))
     CITATION_RE = re.compile(
         r"\((?:[A-Z][\w'’–-]+(?:\s+(?:et\s+al\.|&\s*[A-Z][\w'’–-]+))?,\s*(?:19|20)\d{2}[a-z]?|(?:19|20)\d{2})[^)]*\)|\[\d+(?:\s*[-–,]\s*\d+)*\]"
+    )
+    # Literal artifacts of copying an AI assistant's output, rather than style inference.
+    # Pattern set adapted from the MIT-licensed avoid-ai-writing project's documented
+    # "unfilled placeholder" / "chatbot citation markup" / "AI-tool URL parameter" tells;
+    # see THIRD_PARTY_NOTICES.md.
+    PROVENANCE_PATTERNS: Tuple[Tuple[str, Pattern[str]], ...] = (
+        ("unfilled template placeholder", re.compile(
+            r"\[(?:your name|insert (?:source|citation|name|date|link|here|[a-z]{3,20})|company name|client name|date here|placeholder|todo|tbd)\]"
+            r"|\b(?:19|20)\d{2}-xx-xx\b|\bxx[/-]xx[/-](?:19|20)\d{2}\b", re.I)),
+        ("AI-assistant citation markup", re.compile(
+            r"\bciteturn\d+search\d+\b|\boai_citation\b|contentreference\[oaicite:\d+\](?:\{index=\d+\})?", re.I)),
+        ("AI-tool tracking link", re.compile(
+            r"utm_source=(?:chatgpt|copilot|perplexity|openai|claude|gemini|bard)(?:\.\w+)*", re.I)),
     )
     ANCHOR_RE = re.compile(
         r"\b(?:19|20)\d{2}\b|\b\d+(?:\.\d+)?%\b|\b\d+(?:,\d{3})+(?:\.\d+)?\b|\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3}\b"
@@ -270,6 +283,11 @@ class AIDetector:
         rhetoric_evidence = cls._dedupe_evidence(rhetoric_evidence)
         rhetoric_score = cls._score_count(len(rhetoric_evidence), 2, 4)
 
+        provenance_evidence: List[Dict[str, Any]] = []
+        for kind, pattern in cls.PROVENANCE_PATTERNS:
+            provenance_evidence.extend(cls._evidence(m, kind) for m in pattern.finditer(text))
+        provenance_evidence = cls._dedupe_evidence(provenance_evidence)
+
         categories = [
             cls._category("predictability", predictability_score, vocabulary_evidence, {"distinct_markers": distinct_markers}),
             cls._category("burstiness", rhythm_score, rhythm_evidence, {"sentence_lengths": lengths, "coefficient_of_variation_pct": burstiness}),
@@ -308,6 +326,13 @@ class AIDetector:
             "pattern_version": cls.PATTERN_VERSION,
             "categories": categories,
             "top_signals": [{"id": row["id"], "label": row["label"], "score": row["score"], "evidence_count": row["evidence_count"], "recommendation": row["recommendation"]} for row in top_signals],
+            "provenance_flags": provenance_evidence[:20],
+            "provenance_flags_count": len(provenance_evidence),
+            "provenance_note": (
+                "These are literal artifacts of copying an AI assistant's output (an unfilled template "
+                "placeholder, leftover chatbot citation markup, or an AI-tool tracking link), not stylistic "
+                "inference. Each flag is a specific, checkable fact and is not folded into the pattern score above."
+            ),
             "style_metrics": {"word_count": word_count, "sentence_count": len(sentences), "paragraph_count": len(paragraphs), "em_dash_count": len(em_dash_matches), "em_dashes_per_300_words": round(em_dash_rate_300, 2), "hedge_count": len(hedge_evidence), "transition_count": len(transition_evidence)},
             "burstiness": burstiness,
             "lexical_diversity": diversity,
@@ -341,6 +366,11 @@ class AIDetector:
             "ai_risk_level": "Insufficient Text", "status_class": "warning",
             "reliability": "insufficient", "minimum_reliable_words": cls.MIN_RELIABLE_WORDS,
             "pattern_version": cls.PATTERN_VERSION, "categories": categories, "top_signals": [],
+            "provenance_flags": [], "provenance_flags_count": 0,
+            "provenance_note": (
+                "These are literal artifacts of copying an AI assistant's output, not stylistic inference. "
+                "Not folded into the pattern score above."
+            ),
             "style_metrics": {"word_count": word_count, "sentence_count": 0, "paragraph_count": 0, "em_dash_count": 0, "em_dashes_per_300_words": 0.0, "hedge_count": 0, "transition_count": 0},
             "burstiness": 50.0, "lexical_diversity": 0.0, "entropy": 0.0,
             "ai_marker_count": 0, "flagged_markers_count": 0,

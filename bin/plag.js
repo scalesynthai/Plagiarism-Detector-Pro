@@ -150,6 +150,13 @@ async function main() {
                     console.log(`  • Evidence Integrity:     ${evidenceScore}`);
                     console.log(`  • Claim Citation Coverage:${claimCoverage.padStart(10)}`);
                 }
+                if (res.ai_analysis && res.ai_analysis.provenance_flags_count > 0) {
+                    console.log(`\n${colors.red}${colors.bold}⚠ AI-TOOL COPY-PASTE ARTIFACTS FOUND (${res.ai_analysis.provenance_flags_count}):${colors.reset}`);
+                    res.ai_analysis.provenance_flags.forEach(flag => {
+                        console.log(`  ${colors.red}•${colors.reset} ${flag.kind}: ${JSON.stringify(flag.text)}`);
+                    });
+                    console.log(`  ${colors.gray}These are literal artifacts, not style inference. Remove them before submission.${colors.reset}`);
+                }
                 console.log(`  • Total Analyzed Words:   ${res.total_words}`);
                 console.log(`  • Matching Words:         ${res.flagged_word_count || 0}`);
                 if (res.readability) {

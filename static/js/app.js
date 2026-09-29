@@ -518,6 +518,25 @@ function renderPatternAnalysis(data) {
         reliability.textContent = limited ? `Limited sample • ${metrics.word_count || 0} words` : `Standard sample • ${metrics.word_count || 0} words`;
     }
 
+    const provenanceAlert = document.getElementById('pattern-provenance-alert');
+    const provenanceList = document.getElementById('pattern-provenance-list');
+    const provenanceFlags = Array.isArray(ai.provenance_flags) ? ai.provenance_flags : [];
+    if (provenanceAlert) {
+        provenanceAlert.hidden = provenanceFlags.length === 0;
+        if (provenanceList) {
+            provenanceList.replaceChildren();
+            for (const flag of provenanceFlags) {
+                const item = document.createElement('li');
+                const label = document.createElement('strong');
+                label.textContent = `${flag.kind}: `;
+                const quote = document.createElement('span');
+                quote.textContent = `“${String(flag.text || '').slice(0, 120)}”`;
+                item.append(label, quote);
+                provenanceList.appendChild(item);
+            }
+        }
+    }
+
     const emDashCount = Number(metrics.em_dash_count) || 0;
     const emDashRate = Number(metrics.em_dashes_per_300_words) || 0;
     const emDashValue = document.getElementById('pattern-em-dash-count');

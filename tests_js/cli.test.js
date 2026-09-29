@@ -65,12 +65,27 @@ console.log("Testing AIDetector...");
 const aiText = "Furthermore, it is important to note that the holistic approach plays a pivotal role in the seamless integration. In conclusion, this vibrant tapestry is a testament to innovation.";
 const aiRes = AIDetector.analyze(aiText);
 assert.ok(aiRes.ai_probability > 30.0);
-assert.strictEqual(aiRes.pattern_version, "2.0.0");
+assert.strictEqual(aiRes.pattern_version, "2.1.0");
 assert.strictEqual(aiRes.categories.length, 9);
 const emDashRes = AIDetector.analyze(("The documented result—recorded after review—was retained for the final analysis. ").repeat(18));
 assert.strictEqual(emDashRes.style_metrics.em_dash_count, 36);
 assert.ok(emDashRes.categories.find(row => row.id === "punctuation").score > 0);
 assert.ok(emDashRes.assessment_scope.includes("not evidence"));
+
+const provenanceRes = AIDetector.analyze(
+    "Please fill in [Your Name] before submitting. See details citeturn0search0 and also " +
+    "contentReference[oaicite:0]{index=0} here. Visit https://example.com/report?utm_source=chatgpt.com for the source."
+);
+assert.strictEqual(provenanceRes.provenance_flags_count, 4);
+assert.deepStrictEqual(
+    new Set(provenanceRes.provenance_flags.map(row => row.kind)),
+    new Set(["unfilled template placeholder", "AI-assistant citation markup", "AI-tool tracking link"])
+);
+const cleanProvenanceRes = AIDetector.analyze(
+    "The result is consistent with prior work [1]. See [Smith, 2024] for details, and [sic] as quoted. " +
+    "Refer to [Figure 1] and visit https://example.com/report?utm_source=google.com for the dataset."
+);
+assert.strictEqual(cleanProvenanceRes.provenance_flags_count, 0);
 
 const allClaims = AcademicStudentCoach.scanClaims("Studies show that feedback helps (Smith, 2024). 85% of students revised their paper.");
 assert.strictEqual(allClaims.length, 2);

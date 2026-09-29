@@ -12,7 +12,11 @@ dependency-free implementations from the following MIT-licensed projects:
 The writing-pattern engine draws on its categorized pattern detection,
 length-normalized review model, visible evidence, and explicit false-positive
 boundaries. Em-dash use is reported as style guidance and is not decisive
-authorship evidence.
+authorship evidence. `provenance_flags` (unfilled template placeholders,
+chatbot citation markup, AI-tool URL tracking parameters) is adapted directly
+from its documented "AI-tool fingerprint" pattern category and is reported
+separately from the pattern score because these are literal, checkable
+artifacts rather than style inference.
 
 ## Humanize
 

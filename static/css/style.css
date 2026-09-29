@@ -1513,6 +1513,38 @@ textarea:focus, input:focus, select:focus {
     font-size: 12px;
 }
 
+.pattern-provenance-alert {
+    margin-bottom: var(--space-4);
+    padding: var(--space-4);
+    border: 1px solid var(--danger);
+    border-radius: var(--rounded-md, 8px);
+    background: var(--danger-bg);
+}
+
+.pattern-provenance-alert strong {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--danger-text);
+    font-size: 14px;
+}
+
+.pattern-provenance-alert p {
+    margin-bottom: 8px;
+    color: var(--danger-text);
+    font-size: 12px;
+}
+
+.pattern-provenance-alert ul {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--danger-text);
+    font-size: 13px;
+}
+
+.pattern-provenance-alert li {
+    margin-bottom: 4px;
+}
+
 .pattern-summary-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));

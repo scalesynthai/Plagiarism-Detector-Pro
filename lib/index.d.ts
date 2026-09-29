@@ -40,6 +40,9 @@ export interface PlagiarismResult {
         categories: WritingPatternCategory[];
         top_signals: Array<{id: string; label: string; score: number; evidence_count: number; recommendation: string}>;
         style_metrics: WritingStyleMetrics;
+        provenance_flags: Array<{text: string; start: number; end: number; kind: string}>;
+        provenance_flags_count: number;
+        provenance_note: string;
     };
     evidence_analysis?: EvidenceAnalysis;
     student_coach?: {
@@ -91,6 +94,9 @@ export class AIDetector {
         reliability: "insufficient" | "limited" | "standard";
         categories: WritingPatternCategory[];
         style_metrics: WritingStyleMetrics;
+        provenance_flags: Array<{text: string; start: number; end: number; kind: string}>;
+        provenance_flags_count: number;
+        provenance_note: string;
     };
 }
 

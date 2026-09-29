@@ -26,6 +26,18 @@ produce a high score or establish authorship. This preserves the professor's
 useful style feedback without converting one punctuation choice into an
 academic-integrity accusation.
 
+## AI-tool copy-paste artifacts
+
+Separate from the nine scored categories, the analyzer checks for a small set of
+literal artifacts of copying an AI assistant's output: an unfilled template
+placeholder (`[Your Name]`, `2025-XX-XX`), leftover chatbot citation markup
+(`citeturn0search0`, `contentReference[oaicite:0]`), or an AI-tool tracking
+parameter in a URL (`utm_source=chatgpt.com`). These are checkable facts, not
+style inference, so they are reported as `provenance_flags` and are never added
+to `pattern_score`. Pattern set adapted from the MIT-licensed `avoid-ai-writing`
+project's documented tells; see THIRD_PARTY_NOTICES.md. A zero count means none
+of these specific artifacts were found, not that the document is human-written.
+
 ## Evidence integrity
 
 The evidence score is separate from the writing-pattern score. It combines the
