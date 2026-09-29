@@ -12,7 +12,8 @@ const {
     DraftComparator,
     CertificateGenerator,
     EvidenceAnalyzer,
-    WritingCleanup
+    WritingCleanup,
+    buildCheckSummary
 } = require("../lib/index");
 
 console.log("🧪 Starting Plagiarism Detector Pro JavaScript & CLI Test Suite...\n");
@@ -114,6 +115,29 @@ const cleanupPartial = WritingCleanup.applyEdits(cleanupText, cleanupEdits.filte
 assert.ok(cleanupPartial.includes("robust") && cleanupPartial.includes("use a"));
 console.log("✓ WritingCleanup passed.");
 
+// 5c. Test buildCheckSummary (combines ai_analysis + evidence_analysis into one verdict)
+console.log("Testing buildCheckSummary...");
+const provenanceAnalysis = AIDetector.analyze("Please review this draft, [Your Name], before the growth claim is finalized.");
+const emptyEvidence = EvidenceAnalyzer.analyze([], { in_text_citations_count: 0 }, []);
+const provenanceSummary = buildCheckSummary(provenanceAnalysis, emptyEvidence);
+assert.strictEqual(provenanceSummary.verdict, "needs_review");
+assert.ok(provenanceSummary.provenance_flags_count > 0);
+assert.strictEqual(provenanceSummary.top_fixes[0].kind, "provenance");
+assert.strictEqual(provenanceSummary.top_fixes[0].priority, "critical");
+
+const cleanAnalysis = AIDetector.analyze(
+    "Photosynthesis converts light into chemical energy stored in glucose molecules, a process first " +
+    "quantified experimentally by Jan Ingenhousz in 1779 through controlled observation of oxygen " +
+    "bubbles forming on submerged leaves under sunlight."
+);
+const cleanSummary = buildCheckSummary(cleanAnalysis, emptyEvidence);
+assert.strictEqual(cleanSummary.verdict, "clear");
+assert.deepStrictEqual(cleanSummary.reasons, []);
+
+const insufficientSummary = buildCheckSummary(AIDetector.analyze(""), EvidenceAnalyzer.analyze([], {}, []));
+assert.strictEqual(insufficientSummary.verdict, "insufficient_text");
+console.log("✓ buildCheckSummary passed.");
+
 // 6. Test Draft Comparator
 console.log("Testing DraftComparator...");
 const cmpRes = DraftComparator.compare(
@@ -188,8 +212,13 @@ CitationGenerator.resolveCitation("1706.03762").then(citeRes => {
     assert.ok(cleanupOut.includes("an important role"));
     assert.ok(!cleanupOut.split("CLEANED TEXT:")[1].includes("leverage"));
 
+    const checkOut = execSync(`node "${cliPath}" check "Please review this draft, [Your Name], before the growth claim is finalized." --json`).toString();
+    const checkJson = JSON.parse(checkOut);
+    assert.strictEqual(checkJson.verdict, "needs_review");
+    assert.strictEqual(checkJson.top_fixes[0].kind, "provenance");
+
     console.log("✓ CLI binary execution tests passed.");
-    console.log("\n🎉 ALL JAVASCRIPT & CLI TESTS PASSED SUCCESSFULLY (13/13)!");
+    console.log("\n🎉 ALL JAVASCRIPT & CLI TESTS PASSED SUCCESSFULLY (14/14)!");
 }).catch(err => {
     console.error("Test failure:", err);
     process.exit(1);

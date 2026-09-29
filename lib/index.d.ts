@@ -45,6 +45,7 @@ export interface PlagiarismResult {
         provenance_note: string;
     };
     evidence_analysis?: EvidenceAnalysis;
+    check_summary?: CheckSummary;
     student_coach?: {
         unsupported_claims: Array<{
             sentence: string;
@@ -153,6 +154,29 @@ export class AcademicStudentCoach {
 export class EvidenceAnalyzer {
     static analyze(claims?: any[], citationAnalysis?: any, sources?: any[]): EvidenceAnalysis;
 }
+
+export interface CheckFix {
+    priority: "critical" | "high" | "moderate";
+    kind: "provenance" | "writing_pattern" | "citation";
+    message: string;
+    category?: string;
+    evidence_count?: number;
+    examples?: string[];
+}
+
+export interface CheckSummary {
+    verdict: "clear" | "needs_review" | "insufficient_text";
+    summary: string;
+    pattern_score: number;
+    provenance_flags_count: number;
+    evidence_score: number | null;
+    reasons: string[];
+    top_fixes: CheckFix[];
+    disclaimer: string;
+}
+
+/** Combines ai_analysis + evidence_analysis into one verdict. Adds no new detection. */
+export function buildCheckSummary(aiAnalysis: any, evidenceAnalysis: any): CheckSummary;
 
 export interface CleanupEdit {
     index: number;

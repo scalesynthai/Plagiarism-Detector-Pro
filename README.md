@@ -101,6 +101,11 @@ plag mcp
 # 🧹 11. Deterministic Writing Cleanup (offline, reviewable word swaps)
 # Applies only the flagged predictable-vocabulary suggestions already shown by `plag scan` -- no rewriting, no network
 plag cleanup essay.docx --apply --output essay.clean.txt
+
+# ✅ 12. One Combined Pre-Submission Verdict
+# Merges pattern-score, provenance-flag, and evidence-integrity signals into one clear/needs_review call + top 3 fixes
+plag check essay.docx
+plag check essay.docx --json   # Machine-readable, e.g. for CI or a script that gates on the verdict
 ```
 
 ---
@@ -210,6 +215,7 @@ MAX_CONTENT_LENGTH=33554432 # 32 MB request limit; each document is limited to 8
 - Adds an evidence-integrity profile for claim citation coverage, bibliography linkage, and available source quality.
 - Flags literal AI-tool copy-paste artifacts (unfilled placeholders, leftover chatbot citation markup, AI-tool tracking links) separately from the style score, since those are checkable facts rather than inference.
 - Offers a deterministic, opt-in cleanup: apply the exact word-swap suggestions already shown, reviewed one by one, fully offline. Not a rewrite engine and not built to change how any third-party detector scores the result — see [Deterministic writing cleanup](docs/AI_SCORING.md#deterministic-writing-cleanup-opt-in-offline-reviewable).
+- Combines the pattern score, provenance flags, and evidence-integrity score into one `clear` / `needs_review` verdict with the top 3 fixes (`plag check`, or the `check_summary` field on `/check`) — no new detection, just one answer instead of three separate outputs to reconcile.
 - See [Explainable writing-pattern scoring](docs/AI_SCORING.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
 
 ### 6. 📦 Whole-Class Batch Submissions Gradebook
@@ -221,7 +227,7 @@ MAX_CONTENT_LENGTH=33554432 # 32 MB request limit; each document is limited to 8
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| `POST` | `/check` | Scan text (`query`) or document (`file`) for lexical overlap and writing-pattern signals |
+| `POST` | `/check` | Scan text (`query`) or document (`file`) for lexical overlap and writing-pattern signals; response includes `check_summary`, a single combined verdict |
 | `POST` | `/check/batch` | Scan whole-class `.zip` archive or multiple files |
 | `POST` | `/check/compare-drafts` | Compare Draft v1 vs Draft v2 revision deltas |
 | `POST` | `/api/paraphrase` | Generate 3 academic restructurings for a sentence |
@@ -244,10 +250,10 @@ MAX_CONTENT_LENGTH=33554432 # 32 MB request limit; each document is limited to 8
 Plagiarism Detector Pro includes comprehensive test suites across both Python and Node.js:
 
 ```bash
-# Run Node.js & CLI test suite (13 tests)
+# Run Node.js & CLI test suite (14 tests)
 npm test
 
-# Run Python & Web test suite (28 tests)
+# Run Python & Web test suite (69 tests)
 pytest tests/ -v
 # Or: ./venv/bin/python -m unittest discover tests -v
 

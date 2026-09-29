@@ -16,6 +16,7 @@ from core.sanitizer import TextSanitizer
 from core.phd_auditor import PhdResearchAuditor
 from core.student_coach import AcademicStudentCoach
 from core.evidence_analyzer import EvidenceAnalyzer
+from core.check_summary import build_check_summary
 
 
 class PlagiarismChecker:
@@ -400,6 +401,7 @@ class PlagiarismChecker:
             "citation_analysis": citation_analysis,
             "claim_analysis": claim_analysis,
             "evidence_analysis": evidence_analysis,
+            "check_summary": build_check_summary(ai_analysis, evidence_analysis),
             "readability": readability,
             "obfuscation_info": obfuscation_info,
             "phd_audit": phd_audit,

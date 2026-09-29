@@ -21,6 +21,7 @@ from core.phd_auditor import PhdResearchAuditor
 from core.student_coach import AcademicStudentCoach
 from core.writing_cleanup import WritingCleanup
 from core.evidence_analyzer import EvidenceAnalyzer
+from core.check_summary import build_check_summary
 
 
 class EnterpriseAcademicOriginalityTestSuite(unittest.TestCase):
@@ -527,6 +528,44 @@ class EnterpriseAcademicOriginalityTestSuite(unittest.TestCase):
         self.assertEqual(res3.status_code, 200)
         data3 = res3.get_json()
         self.assertIn("score", data3)
+
+    def test_check_summary_flags_provenance_as_critical_and_needs_review(self):
+        ai_analysis = AIDetector.analyze("Please review this draft, [Your Name], before the growth claim is finalized.")
+        evidence_analysis = EvidenceAnalyzer.analyze([], {"in_text_citations_count": 0}, [])
+        summary = build_check_summary(ai_analysis, evidence_analysis)
+        self.assertEqual(summary["verdict"], "needs_review")
+        self.assertGreater(summary["provenance_flags_count"], 0)
+        self.assertEqual(summary["top_fixes"][0]["kind"], "provenance")
+        self.assertEqual(summary["top_fixes"][0]["priority"], "critical")
+
+    def test_check_summary_clear_when_no_signals_fire(self):
+        ai_analysis = AIDetector.analyze(
+            "Photosynthesis converts light into chemical energy stored in glucose molecules, "
+            "a process first quantified experimentally by Jan Ingenhousz in 1779 through controlled "
+            "observation of oxygen bubbles forming on submerged leaves under sunlight."
+        )
+        evidence_analysis = EvidenceAnalyzer.analyze([], {"in_text_citations_count": 0}, [])
+        summary = build_check_summary(ai_analysis, evidence_analysis)
+        self.assertEqual(summary["verdict"], "clear")
+        self.assertEqual(summary["reasons"], [])
+
+    def test_check_summary_insufficient_text(self):
+        ai_analysis = AIDetector.analyze("")
+        evidence_analysis = EvidenceAnalyzer.analyze([], {}, [])
+        summary = build_check_summary(ai_analysis, evidence_analysis)
+        self.assertEqual(summary["verdict"], "insufficient_text")
+
+    def test_check_endpoint_includes_check_summary(self):
+        res = self.client.post("/check", json={
+            "query": "Studies show that deep learning improves perception. We basically evaluated 500 samples.",
+            "include_web": False,
+            "private_draft": True
+        })
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertIn("check_summary", data)
+        self.assertIn(data["check_summary"]["verdict"], {"clear", "needs_review", "insufficient_text"})
+        self.assertIn("top_fixes", data["check_summary"])
 
     def test_check_includes_student_coach_data(self):
         res = self.client.post("/check", json={

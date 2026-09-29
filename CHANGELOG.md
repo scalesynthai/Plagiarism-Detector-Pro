@@ -7,7 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [v1.4.0] - 2026-09-29
+
+### One combined pre-submission verdict (`plag check`)
+
+- Added `plag check <file|text>` (CLI) and a `check_summary` field on every `/check` response and `scan()`/`analyze()` result: a single `clear` / `needs_review` / `insufficient_text` verdict with the top 3 fixes, built entirely from the existing `pattern_score`, `provenance_flags`, and `evidence_score` signals. No new detection logic — `core/check_summary.py` / `lib/check_summary.js` only prioritize and summarize what those three modules already compute, so a student (or instructor) doesn't have to mentally combine three separate outputs before deciding what to fix.
+- Provenance flags (literal AI-tool copy-paste artifacts) always rank first in `top_fixes` since they're the most concrete, checkable issue; writing-pattern categories and uncited claims fill the remaining slots.
 
 ### Fixed a stale version badge on the live website
 

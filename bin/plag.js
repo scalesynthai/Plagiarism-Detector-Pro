@@ -48,6 +48,7 @@ function printHelp() {
     printBanner();
     console.log(`${colors.bold}USAGE:${colors.reset}`);
     console.log(`  ${colors.green}plag scan <file|text>${colors.reset}               Scan lexical overlap and writing-pattern signals`);
+    console.log(`  ${colors.green}plag check <file|text>${colors.reset}              One combined pre-submission verdict + top 3 fixes`);
     console.log(`  ${colors.green}plag coach <file|text>${colors.reset}              Unsupported claims, tone booster & thesis score`);
     console.log(`  ${colors.green}plag audit <file|text>${colors.reset}              PhD & Conference double-blind pre-flight audit`);
     console.log(`  ${colors.green}plag cleanup <file|text>${colors.reset}            Offline word-swap cleanup (--apply to write the result)`);
@@ -227,6 +228,47 @@ async function main() {
                 console.error(`${colors.red}Scan Error: ${err.message}${colors.reset}`);
                 process.exit(1);
             }
+            break;
+        }
+
+        case "check": {
+            const input = args[1];
+            if (!input) {
+                console.error(`${colors.red}Error: Missing document path or text to check.${colors.reset}`);
+                process.exit(1);
+            }
+            let text = input;
+            if (fs.existsSync(input)) {
+                text = DocumentExtractor.extractFromFile(input);
+            }
+            const res = await scan(text, { excludeQuotes: args.includes("--exclude-quotes"), excludeBibliography: args.includes("--exclude-bibliography") });
+            const check = res.check_summary;
+
+            if (isJson) {
+                console.log(JSON.stringify(check, null, 2));
+                return;
+            }
+
+            printBanner();
+            const verdictColor = check.verdict === "clear" ? colors.green : check.verdict === "insufficient_text" ? colors.yellow : colors.red;
+            const verdictLabel = check.verdict === "clear" ? "CLEAR" : check.verdict === "insufficient_text" ? "INSUFFICIENT TEXT" : "NEEDS REVIEW";
+            console.log(`${colors.bold}VERDICT: ${verdictColor}${verdictLabel}${colors.reset} — ${check.summary}`);
+            console.log(`  • Writing-Pattern Score:  ${check.pattern_score}/100`);
+            console.log(`  • Provenance Flags:       ${check.provenance_flags_count}`);
+            console.log(`  • Evidence Integrity:     ${check.evidence_score == null ? "N/A" : `${check.evidence_score}/100`}`);
+            if (check.reasons.length) {
+                console.log(`\n${colors.bold}Why:${colors.reset}`);
+                check.reasons.forEach(r => console.log(`  • ${r}`));
+            }
+            if (check.top_fixes.length) {
+                console.log(`\n${colors.bold}💡 TOP FIXES:${colors.reset}`);
+                check.top_fixes.forEach((fix, idx) => {
+                    console.log(`  [${idx + 1}] ${colors.yellow}${fix.message}${colors.reset}`);
+                    (fix.examples || []).forEach(ex => console.log(`      • "${ex}"`));
+                });
+            }
+            console.log("");
+            printDisclaimer();
             break;
         }
 

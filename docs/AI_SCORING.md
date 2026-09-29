@@ -90,6 +90,25 @@ Missing components do not become zero. Citation syntax and bibliography links
 do not prove that a source exists or supports the sentence, so the report tells
 the writer to verify each important claim against the cited source.
 
+## Combined pre-submission verdict (`plag check`)
+
+`pattern_score`, `provenance_flags`, and the evidence-integrity score above are
+each independently useful, but reconciling three outputs before deciding
+whether a draft is ready is extra work. `plag check <file|text>` (and the
+`check_summary` field on every `/check` response) reduces that to one verdict:
+
+- `clear` — none of the signals below fired.
+- `needs_review` — one or more of: a provenance flag, a High pattern score
+  (≥ 65/100), or evidence integrity under 60/100.
+- `insufficient_text` — too little text for any signal to be reliable.
+
+`top_fixes` lists at most three items, ordered by how concrete they are:
+provenance flags first (a literal, checkable artifact), then the
+highest-scoring writing-pattern categories, then uncited claims. This is a
+synthesis layer only — `core/check_summary.py` / `lib/check_summary.js` read
+the outputs of `ai_detector` and `evidence_analyzer` and prioritize them;
+neither module's own detection logic changes.
+
 ## Threshold calibration
 
 The Elevated (≥25) and High (≥65) `pattern_score` bands were checked against
