@@ -3,6 +3,7 @@ import logging
 import os
 import io
 import hmac
+import sqlite3
 import zipfile
 from pathlib import Path
 from typing import Optional
@@ -21,6 +22,7 @@ from core.citation_generator import CitationGenerator
 from core.diff_comparator import DraftComparator
 from core.student_coach import AcademicStudentCoach
 from core.writing_cleanup import WritingCleanup
+from core.site_analytics import SiteAnalytics
 
 # Configure standard logging
 logging.basicConfig(
@@ -60,7 +62,8 @@ def create_app(config_class: type = Config) -> Flask:
             if not isinstance(data, dict):
                 raise BadRequest("JSON body must be an object.")
             text_fields = ("query", "sentence", "text", "references", "draft_v1",
-                           "draft_v2", "student_name", "paper_title", "source_name", "source_title")
+                           "draft_v2", "student_name", "paper_title", "source_name", "source_title",
+                           "email", "company")
             for field in text_fields:
                 if field in data and not isinstance(data[field], str):
                     if field in ("source_name", "source_title") and data[field] is None:
@@ -74,7 +77,11 @@ def create_app(config_class: type = Config) -> Flask:
             for field in ("include_web", "exclude_quotes", "private_draft", "exclude_bibliography"):
                 if field in data and not isinstance(data[field], bool):
                     raise BadRequest(f"{field} must be a boolean.")
-        if request.path == "/sources/upload" or (request.method == "DELETE" and request.path.startswith("/sources/")):
+            if "consent" in data and not isinstance(data["consent"], bool):
+                raise BadRequest("consent must be a boolean.")
+        if (request.path == "/sources/upload"
+                or (request.method == "DELETE" and request.path.startswith("/sources/"))
+                or request.path.startswith("/api/admin/")):
             expected = app.config.get("ADMIN_PIN", "")
             provided = request.headers.get("X-Admin-PIN", "")
             if not expected or not hmac.compare_digest(provided.encode(), str(expected).encode()):
@@ -91,7 +98,11 @@ def create_app(config_class: type = Config) -> Flask:
                     if os.path.isfile(file_path):
                         values['v'] = int(os.stat(file_path).st_mtime)
             return flask_url_for(endpoint, **values)
-        return dict(url_for=dated_url_for, app_version=APP_VERSION)
+        try:
+            current_visitor_stats = analytics.summary(30)
+        except (NameError, OSError, sqlite3.Error):
+            current_visitor_stats = {"page_views": 0, "all_time_page_views": 0, "days": 30}
+        return dict(url_for=dated_url_for, app_version=APP_VERSION, visitor_stats=current_visitor_stats)
 
     # Cache control headers to prevent stale reverse proxy / CDN / browser caching
     @app.after_request
@@ -119,10 +130,12 @@ def create_app(config_class: type = Config) -> Flask:
     )
     batch_processor = BatchProcessor(checker)
     report_generator = ReportGenerator()
+    analytics = SiteAnalytics(app.config["ANALYTICS_DB_PATH"])
 
     app.checker = checker
     app.batch_processor = batch_processor
     app.report_generator = report_generator
+    app.analytics = analytics
 
     # Register error handlers
     register_error_handlers(app)
@@ -132,7 +145,39 @@ def create_app(config_class: type = Config) -> Flask:
     def index():
         """Renders the main plagiarism detector dashboard."""
         sources = checker.list_sources()
-        return render_template("index.html", sources_count=len(sources), sources=sources)
+        try:
+            analytics.record_page_view("/")
+            visitor_stats = analytics.summary(30)
+        except (OSError, sqlite3.Error):
+            logger.exception("Site analytics storage is unavailable")
+            visitor_stats = {"page_views": 0, "all_time_page_views": 0, "days": 30}
+        return render_template("index.html", sources_count=len(sources), sources=sources, visitor_stats=visitor_stats)
+
+    @app.route("/api/analytics/summary", methods=["GET"])
+    def analytics_summary():
+        """Return aggregate page-view counts. No visitor identity is exposed."""
+        return jsonify(analytics.summary(30)), 200
+
+    @app.route("/api/visitors/email", methods=["POST"])
+    def visitor_email():
+        """Store an explicitly consented release-update email address."""
+        data = request.get_json() or {}
+        # Quietly accept bot-filled honeypots without retaining their input.
+        if data.get("company"):
+            return jsonify({"message": "Thanks. You're on the update list."}), 200
+        if data.get("consent") is not True:
+            return jsonify({"error": "Please consent to receiving project updates."}), 400
+        try:
+            analytics.subscribe(data.get("email"))
+        except ValueError as error:
+            return jsonify({"error": str(error)}), 400
+        return jsonify({"message": "Thanks. You're on the update list."}), 200
+
+    @app.route("/api/admin/subscribers", methods=["GET"])
+    def admin_subscribers():
+        """List consented email signups for the authenticated site administrator."""
+        subscribers = analytics.subscribers()
+        return jsonify({"count": len(subscribers), "subscribers": subscribers}), 200
 
     @app.route("/", methods=["POST"])
     def legacy_form_submit():

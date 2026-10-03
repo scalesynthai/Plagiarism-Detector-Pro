@@ -15,6 +15,8 @@ const PRESETS = {
 
 document.addEventListener('DOMContentLoaded', () => {
 
+    initVisitorEmailForm();
+
     // 1. Tab Navigation
     const tabBtns = document.querySelectorAll('.tab-btn');
     const tabPanels = document.querySelectorAll('.tab-panel');
@@ -229,6 +231,57 @@ Achiam, J., Adler, S., Agarwal, S., Ahmad, L., Akkaya, I., Aleman, F. L., ... & 
     // 12. Footer links & Integrity Standards actions
     setupFooterLinks();
 });
+
+function initVisitorEmailForm() {
+    const form = document.getElementById('visitor-email-form');
+    if (!form) return;
+    const email = document.getElementById('visitor-email');
+    const consent = document.getElementById('visitor-consent');
+    const status = document.getElementById('visitor-email-status');
+    const button = form.querySelector('button[type="submit"]');
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        status.className = 'visitor-email-status';
+        if (!email.checkValidity()) {
+            status.textContent = 'Enter a valid email address.';
+            status.classList.add('error');
+            email.focus();
+            return;
+        }
+        if (!consent.checked) {
+            status.textContent = 'Please select the email consent checkbox.';
+            status.classList.add('error');
+            consent.focus();
+            return;
+        }
+
+        button.disabled = true;
+        button.textContent = 'Joining…';
+        try {
+            const response = await fetch('/api/visitors/email', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    email: email.value,
+                    consent: consent.checked,
+                    company: document.getElementById('visitor-company').value
+                })
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || 'Unable to save your email.');
+            status.textContent = result.message;
+            status.classList.add('success');
+            form.reset();
+        } catch (error) {
+            status.textContent = error.message;
+            status.classList.add('error');
+        } finally {
+            button.disabled = false;
+            button.textContent = 'Join';
+        }
+    });
+}
 
 /* ==============================================================================
    CLAY INITIALIZATION

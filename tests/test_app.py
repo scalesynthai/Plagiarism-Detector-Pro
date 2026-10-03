@@ -30,7 +30,10 @@ class EnterpriseAcademicOriginalityTestSuite(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         for source in (Path(__file__).resolve().parents[1] / "sources").glob("*.txt"):
             shutil.copy(source, temporary.name)
-        config = type("IsolatedConfig", (TestingConfig,), {"SOURCES_DIR": temporary.name})
+        config = type("IsolatedConfig", (TestingConfig,), {
+            "SOURCES_DIR": temporary.name,
+            "ANALYTICS_DB_PATH": str(Path(temporary.name) / "analytics.db"),
+        })
         self.app_instance = create_app(config)
         self.client = self.app_instance.test_client()
         self.checker = self.app_instance.checker
@@ -310,6 +313,51 @@ class EnterpriseAcademicOriginalityTestSuite(unittest.TestCase):
 
         spec_data = self.client.get("/api/spec.json").get_json()
         self.assertEqual(spec_data["info"]["version"], expected_version)
+
+    def test_page_views_and_consent_based_email_collection(self):
+        first = self.client.get("/")
+        second = self.client.get("/")
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(second.status_code, 200)
+
+        summary = self.client.get("/api/analytics/summary").get_json()
+        self.assertEqual(summary["days"], 30)
+        self.assertEqual(summary["page_views"], 2)
+
+        invalid = self.client.post("/api/visitors/email", json={
+            "email": "not-an-email", "consent": True, "company": ""
+        })
+        self.assertEqual(invalid.status_code, 400)
+
+        no_consent = self.client.post("/api/visitors/email", json={
+            "email": "reader@example.com", "consent": False, "company": ""
+        })
+        self.assertEqual(no_consent.status_code, 400)
+
+        accepted = self.client.post("/api/visitors/email", json={
+            "email": "Reader@Example.com", "consent": True, "company": ""
+        })
+        duplicate = self.client.post("/api/visitors/email", json={
+            "email": "reader@example.com", "consent": True, "company": ""
+        })
+        self.assertEqual(accepted.status_code, 200)
+        self.assertEqual(duplicate.status_code, 200)
+
+        connection = self.app_instance.analytics._connect()
+        try:
+            subscribers = connection.execute("SELECT email FROM email_subscribers").fetchall()
+        finally:
+            connection.close()
+        self.assertEqual(subscribers, [("reader@example.com",)])
+
+        denied = self.client.get("/api/admin/subscribers")
+        listing = self.client.get(
+            "/api/admin/subscribers", headers={"X-Admin-PIN": "test-admin-pin"}
+        )
+        self.assertEqual(denied.status_code, 403)
+        self.assertEqual(listing.status_code, 200)
+        self.assertEqual(listing.get_json()["count"], 1)
+        self.assertEqual(listing.get_json()["subscribers"][0]["email"], "reader@example.com")
 
     def test_extract_latex(self):
         latex_content = rb"""

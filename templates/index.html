@@ -38,6 +38,11 @@
             <p class="brand-subtitle">
                 Get a clear similarity score, highlighted passages, source links, and practical revision guidance.
             </p>
+            <div class="visitor-counter" aria-label="Site activity over the last 30 days">
+                <span class="visitor-counter-dot" aria-hidden="true"></span>
+                <strong id="page-view-count">{{ "{:,}".format(visitor_stats.page_views) }}</strong>
+                <span>page views in the last 30 days</span>
+            </div>
         </section>
 
         <!-- Navigation Tabs (Clay Segmented Sub-Nav) -->
@@ -1019,6 +1024,19 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                             ✉️ Contact Admin: <strong>admin@subba.dev</strong>
                         </a>
                     </div>
+                    <form id="visitor-email-form" class="visitor-email-form" novalidate>
+                        <label for="visitor-email"><strong>Get release updates</strong></label>
+                        <div class="visitor-email-row">
+                            <input type="email" id="visitor-email" name="email" autocomplete="email" maxlength="254" placeholder="you@example.com" required>
+                            <button type="submit">Join</button>
+                        </div>
+                        <input class="visitor-honeypot" type="text" id="visitor-company" name="company" tabindex="-1" autocomplete="off" aria-hidden="true">
+                        <label class="visitor-consent">
+                            <input type="checkbox" id="visitor-consent" required>
+                            <span>Email me occasional product and release updates. I can request removal anytime.</span>
+                        </label>
+                        <p id="visitor-email-status" class="visitor-email-status" role="status" aria-live="polite"></p>
+                    </form>
                 </div>
 
                 <div>
@@ -1054,7 +1072,7 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
 
             <div class="footer-bottom">
                 <div>© 2026 ScaleSynthAI / Plagiarism Detector Pro. Built on the Clay Design Framework.</div>
-                <div>Support & Inquiries: <a href="mailto:admin@subba.dev" style="color: var(--ink); text-decoration: underline; font-weight: 500;">admin@subba.dev</a> • Zero external tracking.</div>
+                <div>Support & Inquiries: <a href="mailto:admin@subba.dev" style="color: var(--ink); text-decoration: underline; font-weight: 500;">admin@subba.dev</a> • First-party aggregate page counts only.</div>
             </div>
         </footer>
     </div>

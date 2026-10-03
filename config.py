@@ -7,6 +7,7 @@ class Config:
     """Base application configuration."""
     BASE_DIR = Path(__file__).resolve().parent
     SOURCES_DIR = os.getenv("SOURCES_DIR", str(BASE_DIR / "sources"))
+    ANALYTICS_DB_PATH = os.getenv("ANALYTICS_DB_PATH", str(BASE_DIR / "data" / "analytics.db"))
     MAX_CONTENT_LENGTH = int(os.getenv("MAX_CONTENT_LENGTH", 32 * 1024 * 1024))  # 32 MB
     WEB_SEARCH_TIMEOUT = int(os.getenv("WEB_SEARCH_TIMEOUT", 4))
     PORT = int(os.getenv("PORT", 5001))

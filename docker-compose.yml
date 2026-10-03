@@ -15,11 +15,13 @@ services:
       - WEB_SEARCH_TIMEOUT=6
       - MAX_CONTENT_LENGTH=33554432
       - SOURCES_DIR=/app/sources
+      - ANALYTICS_DB_PATH=/app/data/analytics.db
       - SECRET_KEY=${SECRET_KEY:?Set SECRET_KEY}
       - ADMIN_PIN=${ADMIN_PIN:?Set ADMIN_PIN}
     volumes:
       # Persistent volume for institutional reference corpus
       - plagiarism_sources:/app/sources
+      - plagiarism_analytics:/app/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5001/sources"]
       interval: 30s
@@ -29,3 +31,5 @@ services:
 volumes:
   plagiarism_sources:
     name: plagiarism_detector_sources_data
+  plagiarism_analytics:
+    name: plagiarism_detector_analytics_data

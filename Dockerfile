@@ -22,7 +22,7 @@ COPY . .
 
 # Ensure storage directories exist and have proper permissions, and keep seed sources for volume initialization
 RUN cp -r /app/sources /app/default_sources && \
-    mkdir -p /app/sources && \
+    mkdir -p /app/sources /app/data && \
     useradd -m -u 1000 appuser && \
     chown -R appuser:appuser /app
 
