@@ -63,6 +63,18 @@ class EnterpriseAcademicOriginalityTestSuite(unittest.TestCase):
         extracted = extract_text_from_file(stream, "test.pdf")
         self.assertIsInstance(extracted, str)
 
+    def test_uploaded_scanned_pdf_requires_ocr_instead_of_clean_report(self):
+        writer = PdfWriter()
+        writer.add_blank_page(width=72, height=72)
+        stream = io.BytesIO()
+        writer.write(stream)
+        stream.seek(0)
+        response = self.client.post("/check", data={"file": (stream, "scan.pdf"), "include_web": "false"}, content_type="multipart/form-data")
+        self.assertEqual(response.status_code, 422)
+        payload = response.get_json()
+        self.assertIn("OCR", payload["error"])
+        self.assertEqual(payload["document_metadata"]["extraction_status"], "empty_requires_ocr")
+
     def test_ai_detector(self):
         detector = AIDetector()
         sample_text = (
@@ -183,6 +195,9 @@ class EnterpriseAcademicOriginalityTestSuite(unittest.TestCase):
         self.assertIn("safeassign_risk", data)
         self.assertIn("ai_analysis", data)
         self.assertIn("evidence_analysis", data)
+        self.assertIn("style_review", data)
+        self.assertIn("citation_quality", data)
+        self.assertEqual(data["style_review"]["ruleset_version"], "1.0.0")
         self.assertIn("diff_matches", data)
         self.assertIn("readability", data)
         self.assertIn("obfuscation_info", data)

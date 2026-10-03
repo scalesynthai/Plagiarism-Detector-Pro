@@ -3,6 +3,8 @@ import os
 import re
 import json
 import zipfile
+import unicodedata
+from datetime import datetime, timezone
 from core.limits import MAX_DOCUMENT_BYTES, validate_text
 import docx
 from pypdf import PdfReader
@@ -66,6 +68,187 @@ def extract_text_from_file(file_input, filename: str = None) -> str:
         return validate_text(_extract_jupyter_notebook(stream))
     else:
         raise ValueError(f"Unsupported file format: {ext}. Supported formats: {', '.join(sorted(ALLOWED_EXTENSIONS))}")
+
+
+def normalize_with_offset_map(text: str):
+    """NFKC-normalize text while mapping every normalized character to its source offset."""
+    normalized = []
+    offsets = []
+    for original_offset, character in enumerate(text):
+        value = unicodedata.normalize('NFKC', character)
+        normalized.append(value)
+        offsets.extend([original_offset] * len(value))
+    return "".join(normalized), offsets
+
+
+def _block(block_id, block_type, text, page=None, metadata=None):
+    return {
+        "id": block_id,
+        "type": block_type,
+        "text": text,
+        "page": page,
+        "start_offset": 0,
+        "end_offset": 0,
+        "metadata": metadata or {},
+    }
+
+
+def _classify_plain_blocks(text: str, extension: str):
+    blocks = []
+    in_code = False
+    reference_mode = False
+    for index, raw in enumerate(re.split(r'\n\s*\n', text)):
+        value = raw.strip()
+        if not value:
+            continue
+        block_type = "paragraph"
+        metadata = {}
+        if extension == '.md' and value.startswith('```'):
+            block_type = "code"
+            in_code = not (value.count('```') % 2 == 0)
+        elif in_code:
+            block_type = "code"
+            if '```' in value:
+                in_code = False
+        elif re.fullmatch(r'(?:#{1,6}\s*)?(?:references|works cited|bibliography)[:#*\s]*', value, re.I):
+            block_type = "heading"
+            reference_mode = True
+            metadata["heading_level"] = len(value) - len(value.lstrip('#')) or 1
+        elif reference_mode:
+            block_type = "reference"
+        elif extension == '.md' and re.match(r'^#{1,6}\s+', value):
+            block_type = "heading"
+            metadata["heading_level"] = len(value) - len(value.lstrip('#'))
+        elif re.match(r'^(?:[-*+] |\d+[.)] )', value):
+            block_type = "list_item"
+        elif re.match(r'^>\s', value):
+            block_type = "quotation"
+        elif value.startswith('```') or (extension in {'.tex', '.ipynb'} and '[Mathematical Formula]' in value):
+            block_type = "code"
+        blocks.append(_block(f"block-{index + 1}", block_type, value, metadata=metadata))
+    return blocks
+
+
+def _docx_blocks(stream: io.BytesIO):
+    stream.seek(0)
+    doc = docx.Document(stream)
+    blocks = []
+    index = 0
+    for paragraph in doc.paragraphs:
+        if not paragraph.text.strip():
+            continue
+        index += 1
+        style = paragraph.style.name if paragraph.style else ""
+        block_type = "heading" if style.lower().startswith('heading') else "list_item" if 'list' in style.lower() else "paragraph"
+        heading_match = re.search(r'(\d+)', style)
+        metadata = {
+            "style": style,
+            "heading_level": int(heading_match.group(1)) if block_type == "heading" and heading_match else None,
+            "bold_spans": [],
+            "italic_spans": [],
+        }
+        cursor = 0
+        for run in paragraph.runs:
+            start, end = cursor, cursor + len(run.text)
+            if run.bold and run.text:
+                metadata["bold_spans"].append([start, end])
+            if run.italic and run.text:
+                metadata["italic_spans"].append([start, end])
+            cursor = end
+        blocks.append(_block(f"block-{index}", block_type, paragraph.text, metadata=metadata))
+    for table_index, table in enumerate(doc.tables, 1):
+        for row_index, row in enumerate(table.rows, 1):
+            for cell_index, cell in enumerate(row.cells, 1):
+                value = cell.text.strip()
+                if value:
+                    index += 1
+                    blocks.append(_block(f"block-{index}", "table_cell", value, metadata={"table": table_index, "row": row_index, "column": cell_index}))
+    return blocks
+
+
+def _pdf_blocks(stream: io.BytesIO):
+    stream.seek(0)
+    reader = PdfReader(stream)
+    blocks, warnings, index = [], [], 0
+    for page_number, page in enumerate(reader.pages, 1):
+        text = page.extract_text() or ""
+        if not text.strip():
+            warnings.append(f"Page {page_number} contains no extractable text; OCR may be required.")
+            continue
+        for paragraph in re.split(r'\n\s*\n|(?<=\.)\n(?=[A-Z])', text):
+            value = paragraph.strip()
+            if value:
+                index += 1
+                blocks.append(_block(f"block-{index}", "paragraph", value, page=page_number))
+    if not blocks:
+        warnings.append("No extractable PDF text was found. This may be a scanned document; OCR is required before style review.")
+    return blocks, warnings
+
+
+def extract_document(file_input, filename: str = None):
+    """Extract a document into typed blocks while retaining a stable analysis-to-block map."""
+    if hasattr(file_input, 'filename') and not filename:
+        filename = file_input.filename
+    elif isinstance(file_input, str) and not filename:
+        filename = os.path.basename(file_input)
+    if not filename:
+        raise ValueError("Filename or extension must be provided.")
+    extension = os.path.splitext(filename)[1].lower()
+    if isinstance(file_input, str):
+        with open(file_input, 'rb') as handle:
+            content = handle.read(MAX_DOCUMENT_BYTES + 1)
+    else:
+        if hasattr(file_input, 'seek'):
+            file_input.seek(0)
+        content = file_input.read(MAX_DOCUMENT_BYTES + 1)
+        if isinstance(content, str):
+            content = content.encode('utf-8')
+    if len(content) > MAX_DOCUMENT_BYTES:
+        raise ValueError('Document exceeds the 8 MB file limit.')
+    stream = io.BytesIO(content)
+    warnings = []
+    if extension == '.docx':
+        blocks = _docx_blocks(stream)
+        pagination = False
+        warnings.append("DOCX pagination is unavailable without rendering; locations use block IDs.")
+    elif extension == '.pdf':
+        blocks, warnings = _pdf_blocks(stream)
+        pagination = True
+    else:
+        text = extract_text_from_file(io.BytesIO(content), filename)
+        blocks = _classify_plain_blocks(text, extension)
+        pagination = False
+    original_parts, analysis_parts, offset_map = [], [], []
+    cursor = 0
+    for block_index, block in enumerate(blocks):
+        if block_index:
+            original_parts.append("\n\n")
+            analysis_parts.append("\n\n")
+            offset_map.extend([max(0, cursor - 1), max(0, cursor - 1)])
+            cursor += 2
+        block["start_offset"] = cursor
+        original_parts.append(block["text"])
+        normalized, local_map = normalize_with_offset_map(block["text"])
+        analysis_parts.append(normalized)
+        offset_map.extend(block["start_offset"] + value for value in local_map)
+        cursor += len(block["text"])
+        block["end_offset"] = cursor
+    original_text = "".join(original_parts)
+    analysis_text = "".join(analysis_parts)
+    status = "empty_requires_ocr" if extension == '.pdf' and not blocks else "ok" if blocks else "empty"
+    return {
+        "filename": filename,
+        "source_format": extension.lstrip('.'),
+        "original_text": original_text,
+        "analysis_text": analysis_text,
+        "analysis_to_original_offsets": offset_map,
+        "blocks": blocks,
+        "extraction_status": status,
+        "warnings": warnings,
+        "pagination_available": pagination,
+        "formatting_available": extension in {'.docx', '.md'},
+        "extracted_at": datetime.now(timezone.utc).isoformat(),
+    }
 
 
 def _extract_plain_text(stream: io.BytesIO) -> str:

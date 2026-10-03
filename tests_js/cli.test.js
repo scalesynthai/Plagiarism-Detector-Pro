@@ -12,6 +12,7 @@ const {
     DraftComparator,
     CertificateGenerator,
     EvidenceAnalyzer,
+    WritingStyleReviewer,
     WritingCleanup,
     buildCheckSummary
 } = require("../lib/index");
@@ -96,6 +97,11 @@ const evidenceRes = EvidenceAnalyzer.analyze(allClaims, { in_text_citations_coun
 assert.strictEqual(evidenceRes.claim_citation_coverage_pct, 50.0);
 assert.strictEqual(evidenceRes.evidence_score, 68.8);
 console.log("✓ AIDetector passed.");
+const styleReview = WritingStyleReviewer.analyze(("Furthermore, this robust result is not just useful, but transformative—when verified. ").repeat(18));
+assert.strictEqual(styleReview.ruleset_version, "1.0.0");
+assert.ok(styleReview.finding_count > 0);
+assert.strictEqual(styleReview.punctuation_metrics.em_dash_count, 18);
+assert.ok(!styleReview.disclaimer.toLowerCase().includes("misconduct"));
 
 // 5b. Test WritingCleanup (deterministic, offline word-swap cleanup)
 console.log("Testing WritingCleanup...");

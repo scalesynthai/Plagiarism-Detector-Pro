@@ -278,15 +278,17 @@ class AIDetector:
         transition_evidence = cls._collect(text, cls.TRANSITION_PATTERNS, "formulaic transition")
         transition_score = cls._score_count(len(transition_evidence), 2, 4)
 
-        em_dash_matches = list(re.finditer(r"—|(?<!-)\s--\s(?!-)", text))
+        em_dash_matches = list(re.finditer(r"—", text))
+        double_dash_matches = list(re.finditer(r"(?<!-)\s--\s(?!-)", text))
         em_dash_rate_300 = len(em_dash_matches) / max(word_count, 1) * 300
         punctuation_evidence = [cls._evidence(m, "em dash") for m in em_dash_matches]
+        punctuation_evidence.extend(cls._evidence(m, "spaced double hyphen") for m in double_dash_matches)
         wrapped = re.search(r"—[^—\n]{2,100}—", text)
         if wrapped:
             punctuation_evidence.append(cls._evidence(wrapped, "wrapped em-dash aside"))
         mid_colons = list(re.finditer(r"\b(?:the (?:problem|answer|reason|rule|point)|what matters)\s*:", text, re.I))
         punctuation_evidence.extend(cls._evidence(m, "announcement colon") for m in mid_colons)
-        if not em_dash_matches and not mid_colons:
+        if not em_dash_matches and not double_dash_matches and not mid_colons:
             punctuation_score = 0
         elif wrapped or em_dash_rate_300 > 3 or len(mid_colons) >= 2:
             punctuation_score = 2

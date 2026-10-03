@@ -13,7 +13,7 @@ from werkzeug.exceptions import HTTPException, BadRequest
 from config import Config, DevelopmentConfig
 from core.limits import validate_text
 from core.checker import PlagiarismChecker
-from core.extractor import extract_text_from_file, is_allowed_file
+from core.extractor import extract_text_from_file, extract_document, is_allowed_file
 from core.batch_processor import BatchProcessor
 from core.report_generator import ReportGenerator
 from core.paraphraser import AcademicParaphraser
@@ -167,6 +167,8 @@ def create_app(config_class: type = Config) -> Flask:
         exclude_quotes = False
         private_draft = True
         exclude_bibliography = False
+        document_context = None
+        style_profile = "academic_report"
 
         if "file" in request.files and request.files["file"].filename:
             file_obj = request.files["file"]
@@ -175,7 +177,8 @@ def create_app(config_class: type = Config) -> Flask:
                     "error": "Unsupported file format. Please upload .docx, .pdf, .txt, or .md."
                 }), 400
             try:
-                query_text = extract_text_from_file(file_obj)
+                document_context = extract_document(file_obj)
+                query_text = document_context["analysis_text"]
             except Exception as e:
                 logger.error("Failed to extract file text: %s", e)
                 return jsonify({"error": f"Failed to extract document text: {str(e)}"}), 400
@@ -183,6 +186,7 @@ def create_app(config_class: type = Config) -> Flask:
             exclude_quotes = request.form.get("exclude_quotes", "false").lower() in ("true", "1", "yes")
             private_draft = request.form.get("private_draft", "true").lower() in ("true", "1", "yes")
             exclude_bibliography = request.form.get("exclude_bibliography", "false").lower() in ("true", "1", "yes")
+            style_profile = request.form.get("style_profile", "academic_report")
         elif request.is_json:
             data = request.get_json() or {}
             query_text = data.get("query", "")
@@ -190,25 +194,31 @@ def create_app(config_class: type = Config) -> Flask:
             exclude_quotes = bool(data.get("exclude_quotes", False))
             private_draft = bool(data.get("private_draft", True))
             exclude_bibliography = data.get("exclude_bibliography", False)
+            style_profile = data.get("style_profile", "academic_report")
         else:
             query_text = request.form.get("query", "")
             include_web = request.form.get("include_web", "true").lower() in ("true", "1", "yes")
             exclude_quotes = request.form.get("exclude_quotes", "false").lower() in ("true", "1", "yes")
             private_draft = request.form.get("private_draft", "true").lower() in ("true", "1", "yes")
             exclude_bibliography = request.form.get("exclude_bibliography", "false").lower() in ("true", "1", "yes")
+            style_profile = request.form.get("style_profile", "academic_report")
 
         if not query_text or not query_text.strip():
+            if document_context and document_context.get("extraction_status") == "empty_requires_ocr":
+                return jsonify({"error": "No extractable PDF text was found; OCR is required.", "document_metadata": document_context}), 422
             return jsonify({"error": "No text or document provided for analysis."}), 400
 
         try:
-            logger.info("Executing plagiarism & AI scan (Words: %d, Include Web: %s, Exclude Quotes: %s, Private Draft: %s)",
+            logger.info("Executing similarity and writing-style scan (Words: %d, Include Web: %s, Exclude Quotes: %s, Private Draft: %s)",
                         len(query_text.split()), include_web, exclude_quotes, private_draft)
             analysis = checker.analyze(
                 query_text,
                 include_web_sources=include_web,
                 exclude_quotes=exclude_quotes,
                 private_draft=private_draft,
-                exclude_bibliography=exclude_bibliography
+                exclude_bibliography=exclude_bibliography,
+                document_context=document_context,
+                style_profile=style_profile,
             )
 
             # Add Student Writing & Academic Integrity Coach Insights

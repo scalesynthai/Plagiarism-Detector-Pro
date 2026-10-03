@@ -1676,6 +1676,72 @@ textarea:focus, input:focus, select:focus {
     font-size: 11px;
 }
 
+.style-findings-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+
+.style-category-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-end;
+}
+
+.style-filter-btn {
+    border: 1px solid var(--border-color);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    border-radius: 999px;
+    padding: 5px 9px;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.style-filter-btn.active {
+    border-color: var(--primary);
+    background: color-mix(in srgb, var(--primary) 12%, transparent);
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.style-findings-list {
+    display: grid;
+    gap: 9px;
+    margin-top: 12px;
+    max-height: 440px;
+    overflow: auto;
+}
+
+.style-finding {
+    display: grid;
+    grid-template-columns: minmax(120px, .34fr) minmax(0, 1fr);
+    gap: 12px;
+    border: 1px solid var(--border-color);
+    border-left: 4px solid var(--primary);
+    border-radius: 9px;
+    padding: 11px;
+    background: var(--bg-primary);
+}
+
+.style-finding.excluded { border-left-color: var(--text-muted); opacity: .82; }
+.style-finding-meta { font-size: 11px; color: var(--text-secondary); }
+.style-finding-meta strong { display: block; color: var(--text-primary); font-size: 12px; margin-bottom: 3px; }
+.style-finding blockquote { margin: 0 0 6px; padding: 7px 9px; background: var(--bg-secondary); border-radius: 6px; font-size: 13px; }
+.style-finding p { margin: 0; color: var(--text-secondary); font-size: 12px; }
+.style-finding button { margin-top: 7px; border: 0; background: none; color: var(--primary); padding: 0; cursor: pointer; font-weight: 700; font-size: 11px; }
+
+@media (max-width: 700px) {
+    .style-findings-toolbar { align-items: flex-start; flex-direction: column; }
+    .style-category-filters { justify-content: flex-start; }
+    .style-finding { grid-template-columns: 1fr; }
+}
+
 .cleanup-edit-list {
     display: grid;
     gap: 6px;

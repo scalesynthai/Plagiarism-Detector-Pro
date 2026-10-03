@@ -16,6 +16,8 @@ from core.sanitizer import TextSanitizer
 from core.phd_auditor import PhdResearchAuditor
 from core.student_coach import AcademicStudentCoach
 from core.evidence_analyzer import EvidenceAnalyzer
+from core.style_review import WritingStyleReviewer
+from core.citation_quality import CitationQualityReviewer
 from core.check_summary import build_check_summary
 
 
@@ -298,7 +300,7 @@ class PlagiarismChecker:
         else:
             return "Moderate terminology overlap. If keeping specialized phrasing, place quotation marks or cite the source authority."
 
-    def analyze(self, query_text: str, include_web_sources: bool = True, exclude_quotes: bool = False, private_draft: bool = False, exclude_bibliography: bool = False) -> Dict[str, Any]:
+    def analyze(self, query_text: str, include_web_sources: bool = True, exclude_quotes: bool = False, private_draft: bool = False, exclude_bibliography: bool = False, document_context: Dict[str, Any] = None, style_profile: str = "academic_report") -> Dict[str, Any]:
         """
         Analyze exact lexical overlap and attach advisory writing diagnostics.
         """
@@ -316,6 +318,12 @@ class PlagiarismChecker:
 
         # 1. Run Citation and Bibliography Validator
         citation_analysis = self.citation_validator.validate_citations(cleaned_text)
+        citation_quality = CitationQualityReviewer.analyze(cleaned_text, citation_analysis)
+        style_review = WritingStyleReviewer().analyze(
+            query_text,
+            document=document_context,
+            profile=style_profile,
+        )
 
         # 2. Pair empirical claims with recognized citations, then pass the
         # unsupported subset into the explainable writing-pattern review.
@@ -399,6 +407,14 @@ class PlagiarismChecker:
             "total_corpus_searched": len(active_pool),
             "ai_analysis": ai_analysis,
             "citation_analysis": citation_analysis,
+            "citation_quality": citation_quality,
+            "style_review": style_review,
+            "document_metadata": {
+                "extraction_status": (document_context or {}).get("extraction_status", "text_input"),
+                "source_format": (document_context or {}).get("source_format", "text"),
+                "block_count": len((document_context or {}).get("blocks", [])),
+                "warnings": (document_context or {}).get("warnings", []),
+            },
             "claim_analysis": claim_analysis,
             "evidence_analysis": evidence_analysis,
             "check_summary": build_check_summary(ai_analysis, evidence_analysis),

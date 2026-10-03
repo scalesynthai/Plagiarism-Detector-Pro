@@ -45,6 +45,7 @@ export interface PlagiarismResult {
         provenance_note: string;
     };
     evidence_analysis?: EvidenceAnalysis;
+    style_review?: StyleReview;
     check_summary?: CheckSummary;
     student_coach?: {
         unsupported_claims: Array<{
@@ -135,6 +136,36 @@ export interface EvidenceAnalysis {
     limitation: string;
 }
 
+export interface StyleFinding {
+    id: string;
+    rule_id: string;
+    category: string;
+    evidence_strength: "weak" | "moderate" | "stronger";
+    detector_type: "exact" | "heuristic" | "externally_verified";
+    block_id: string;
+    page: number | null;
+    start_offset: number;
+    end_offset: number;
+    matched_text: string;
+    explanation: string;
+    context: string;
+    excluded_from_score: boolean;
+    exclusion_reason: string | null;
+}
+
+export interface StyleReview {
+    ruleset_version: string;
+    ruleset_status: string;
+    source_review_date: string;
+    eligible_word_count: number;
+    excluded_word_count: number;
+    style_pattern_index: number | null;
+    category_breakdown: Array<{category: string; points: number; cap: number; finding_count: number}>;
+    findings: StyleFinding[];
+    finding_count: number;
+    disclaimer: string;
+}
+
 export class AcademicParaphraser {
     static synthesizeSentence(sentence: string, sourceName?: string, sourceTitle?: string): {
         original_sentence: string;
@@ -153,6 +184,10 @@ export class AcademicStudentCoach {
 
 export class EvidenceAnalyzer {
     static analyze(claims?: any[], citationAnalysis?: any, sources?: any[]): EvidenceAnalysis;
+}
+
+export class WritingStyleReviewer {
+    static analyze(text: string, options?: {profile?: "academic_report" | "business_report" | "general_essay" | "technical_documentation"}): StyleReview;
 }
 
 export interface CheckFix {

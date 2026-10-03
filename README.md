@@ -217,6 +217,7 @@ MAX_CONTENT_LENGTH=33554432 # 32 MB request limit; each document is limited to 8
 - Offers a deterministic, opt-in cleanup: apply the exact word-swap suggestions already shown, reviewed one by one, fully offline. Not a rewrite engine and not built to change how any third-party detector scores the result — see [Deterministic writing cleanup](docs/AI_SCORING.md#deterministic-writing-cleanup-opt-in-offline-reviewable).
 - Combines the pattern score, provenance flags, and evidence-integrity score into one `clear` / `needs_review` verdict with the top 3 fixes (`plag check`, or the `check_summary` field on `/check`) — no new detection, just one answer instead of three separate outputs to reconcile.
 - See [Explainable writing-pattern scoring](docs/AI_SCORING.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
+- See the end-to-end [AI Writing Style Review architecture and coverage matrix](docs/AI_WRITING_STYLE_REVIEW.md).
 
 ### 6. 📦 Whole-Class Batch Submissions Gradebook
 - Upload a `.zip` archive or multiple files to scan all submissions concurrently and produce an aggregated **Instructor Gradebook Table**.

@@ -45,7 +45,7 @@ def sentence_markup(sentence):
 def validate_report(data):
     if not isinstance(data, dict):
         raise ValueError("Report data must be an object.")
-    for key in ("ai_analysis", "citation_analysis", "readability", "scoring"):
+    for key in ("ai_analysis", "citation_analysis", "citation_quality", "style_review", "readability", "scoring"):
         if key in data and not isinstance(data[key], dict):
             raise ValueError(f"{key} must be an object.")
     for key in ("highlighted_sentences", "sources_breakdown"):
@@ -104,8 +104,21 @@ class ReportGenerator:
         ai_data = data.get("ai_analysis", {})
         citation_data = data.get("citation_analysis", {})
         evidence_data = data.get("evidence_analysis", {})
+        style_review = data.get("style_review", {})
+        citation_quality = data.get("citation_quality", {})
         pattern_score = ai_data.get("pattern_score", ai_data.get("ai_probability", 0))
         em_dash_count = ai_data.get("style_metrics", {}).get("em_dash_count", 0)
+        style_index = style_review.get("style_pattern_index")
+        style_index_display = "Insufficient text" if style_index is None else f"{style_index}/100"
+        style_findings = []
+        for finding in style_review.get("findings", [])[:40]:
+            exclusion = finding.get("exclusion_reason") or ("Excluded from index" if finding.get("excluded_from_score") else "Included in index")
+            style_findings.append(f'''<tr><td>{finding.get("category", "")}</td><td>{finding.get("matched_text", "")}</td><td>{finding.get("explanation", "")}</td><td>{exclusion}</td></tr>''')
+        style_findings_html = "".join(style_findings)
+        citation_issue_rows = "".join(
+            f'''<tr><td>{issue.get("type", "")}</td><td>{issue.get("code", "")}</td><td>{issue.get("value", "")}</td><td>{issue.get("message", "")}</td></tr>'''
+            for issue in citation_quality.get("issues", [])[:30]
+        )
         provenance_flags = ai_data.get("provenance_flags", []) or []
         if provenance_flags:
             provenance_kinds = "; ".join(html.escape(str(row.get("kind", ""))) for row in provenance_flags[:20])
@@ -214,6 +227,14 @@ class ReportGenerator:
     <p><strong>Writing review:</strong> {em_dash_count} em dash(es) detected; evidence integrity
     {evidence_data.get('evidence_score', 'N/A')}/100; claim citation coverage
     {evidence_data.get('claim_citation_coverage_pct', 'N/A')}%. The writing-pattern score identifies configured style signals and does not determine authorship.</p>
+    <div class="section-hdr">AI Writing Style Review</div>
+    <p><strong>Style-pattern index:</strong> {style_index_display}; <strong>eligible words:</strong> {style_review.get('eligible_word_count', 0)};
+    <strong>ruleset:</strong> {style_review.get('ruleset_version', 'N/A')}; <strong>profile:</strong> {style_review.get('profile', 'N/A')}.</p>
+    <p>{style_review.get('disclaimer', 'These findings identify writing patterns that can occur in both human and AI-assisted text. They do not establish authorship.')}</p>
+    <table><thead><tr><th>Category</th><th>Passage</th><th>Explanation</th><th>Score status</th></tr></thead><tbody>{style_findings_html}</tbody></table>
+    <div class="section-hdr">Citation Quality Review</div>
+    <p>Citation quality is reported separately from writing style. Network verification: {citation_quality.get('network_verification', {}).get('status', 'not requested')}. A resolving identifier does not prove claim support.</p>
+    <table><thead><tr><th>Status</th><th>Check</th><th>Value</th><th>Explanation</th></tr></thead><tbody>{citation_issue_rows}</tbody></table>
     {provenance_html}
     <!-- Manuscript -->
     <div class="section-hdr">1. Color-Annotated Manuscript</div>

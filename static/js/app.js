@@ -2,6 +2,7 @@ let currentAnalysisData = null;
 let currentSentenceObj = null;
 let allSourcesData = [];
 let targetDeleteFilename = null;
+const dismissedStyleFindings = new Map();
 
 // Academic Preset Samples
 const PRESETS = {
@@ -66,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const privateDraft = document.getElementById('text-private-draft') ? document.getElementById('text-private-draft').checked : true;
             const includeWeb = document.getElementById('text-live-search') ? document.getElementById('text-live-search').checked : true;
             const excludeQuotes = document.getElementById('text-exclude-quotes') ? document.getElementById('text-exclude-quotes').checked : false;
-            await runScan({ query: text, include_web: includeWeb, exclude_quotes: excludeQuotes, exclude_bibliography: document.getElementById("text-exclude-bibliography").checked, private_draft: privateDraft });
+            await runScan({ query: text, include_web: includeWeb, exclude_quotes: excludeQuotes, exclude_bibliography: document.getElementById("text-exclude-bibliography").checked, private_draft: privateDraft, style_profile: document.getElementById('text-style-profile').value });
         });
     }
 
@@ -89,6 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
             formData.append('exclude_quotes', excludeQuotes);
             formData.append('exclude_bibliography', document.getElementById('file-exclude-bibliography').checked);
             formData.append('private_draft', privateDraft);
+            formData.append('style_profile', document.getElementById('file-style-profile').value);
             await runScan(formData, true);
         });
     }
@@ -564,19 +566,25 @@ function renderScoreDetails(data) {
 
 function renderPatternAnalysis(data) {
     const ai = data.ai_analysis || {};
+    const styleReview = data.style_review || {};
     const evidence = data.evidence_analysis || {};
-    const categories = Array.isArray(ai.categories) ? ai.categories : [];
+    const legacyCategories = Array.isArray(ai.categories) ? ai.categories : [];
+    const categories = Array.isArray(styleReview.category_breakdown) && styleReview.category_breakdown.length
+        ? styleReview.category_breakdown.map(row => ({ id: row.category, label: String(row.category).replaceAll('_', ' '), score: row.points, max_score: row.cap, evidence_count: row.finding_count }))
+        : legacyCategories;
     const metrics = ai.style_metrics || {};
     const explanation = document.getElementById('pattern-score-explanation');
     const reliability = document.getElementById('pattern-reliability');
     const categoryGrid = document.getElementById('pattern-category-grid');
     const evidenceList = document.getElementById('pattern-evidence-list');
 
-    if (explanation) explanation.textContent = ai.score_explanation || 'Nine signal groups are scored from 0 to 3 using visible evidence.';
+    if (explanation) explanation.textContent = styleReview.style_pattern_index == null
+        ? `Ruleset ${styleReview.ruleset_version || '—'} • insufficient eligible text for an index.`
+        : `Style-pattern index ${styleReview.style_pattern_index}/100 • ruleset ${styleReview.ruleset_version || '—'} • ${styleReview.eligible_word_count || 0} eligible words.`;
     if (reliability) {
-        const limited = ai.reliability !== 'standard';
+        const limited = styleReview.style_pattern_index == null;
         reliability.className = `badge-pill ${limited ? 'warning' : 'success'}`;
-        reliability.textContent = limited ? `Limited sample • ${metrics.word_count || 0} words` : `Standard sample • ${metrics.word_count || 0} words`;
+        reliability.textContent = limited ? `Limited sample • ${styleReview.eligible_word_count || metrics.word_count || 0} words` : `Standard sample • ${styleReview.eligible_word_count || metrics.word_count || 0} words`;
     }
 
     const provenanceAlert = document.getElementById('pattern-provenance-alert');
@@ -625,9 +633,11 @@ function renderPatternAnalysis(data) {
             const label = document.createElement('strong');
             label.textContent = category.label || category.id || 'Signal';
             const score = document.createElement('span');
-            const numericScore = Math.max(0, Math.min(3, Number(category.score) || 0));
-            score.className = `pattern-category-score score-${numericScore}`;
-            score.textContent = `${numericScore}/3`;
+            const maximum = Number(category.max_score) || 3;
+            const points = Math.max(0, Math.min(maximum, Number(category.score) || 0));
+            const displayClass = Math.min(3, Math.round(points / Math.max(1, maximum) * 3));
+            score.className = `pattern-category-score score-${displayClass}`;
+            score.textContent = `${points}/${maximum}`;
             const detail = document.createElement('small');
             detail.textContent = `${Number(category.evidence_count) || 0} finding${Number(category.evidence_count) === 1 ? '' : 's'}`;
             item.append(label, score, detail);
@@ -637,7 +647,7 @@ function renderPatternAnalysis(data) {
 
     if (evidenceList) {
         evidenceList.replaceChildren();
-        const active = categories.filter(category => Number(category.score) > 0);
+        const active = legacyCategories.filter(category => Number(category.score) > 0);
         if (!active.length) {
             const clean = document.createElement('p');
             clean.textContent = 'No configured writing-pattern findings were detected in this sample.';
@@ -670,6 +680,119 @@ function renderPatternAnalysis(data) {
     }
 
     renderCleanupEdits(categories);
+}
+
+function renderStyleReview(data) {
+    const review = data.style_review || {};
+    const findings = Array.isArray(review.findings) ? review.findings : [];
+    const filters = document.getElementById('style-category-filters');
+    const list = document.getElementById('style-findings-list');
+    const warning = document.getElementById('style-coverage-warning');
+    if (!filters || !list) return;
+
+    const categories = [...new Set(findings.map(row => row.category).filter(Boolean))].sort();
+    let selected = 'all';
+    const renderRows = () => {
+        list.replaceChildren();
+        const visible = findings.filter(row => selected === 'all' || row.category === selected);
+        if (!visible.length) {
+            const empty = document.createElement('p');
+            empty.textContent = 'No findings in this category.';
+            list.appendChild(empty);
+            return;
+        }
+        for (const finding of visible.slice(0, 100)) {
+            const item = document.createElement('article');
+            item.className = `style-finding${finding.excluded_from_score ? ' excluded' : ''}`;
+            item.dataset.category = finding.category;
+            const meta = document.createElement('div');
+            meta.className = 'style-finding-meta';
+            const title = document.createElement('strong');
+            title.textContent = String(finding.category || '').replaceAll('_', ' ');
+            const status = document.createElement('span');
+            status.textContent = `${finding.detector_type} • ${finding.evidence_strength}${finding.excluded_from_score ? ' • excluded' : ''}`;
+            const location = document.createElement('span');
+            location.textContent = finding.page ? `Page ${finding.page} • ${finding.block_id}` : finding.block_id || 'Text';
+            meta.append(title, status, document.createElement('br'), location);
+            const body = document.createElement('div');
+            const quote = document.createElement('blockquote');
+            quote.textContent = finding.matched_text || finding.context || '';
+            const explanation = document.createElement('p');
+            explanation.textContent = finding.exclusion_reason ? `${finding.explanation} ${finding.exclusion_reason}` : finding.explanation;
+            const locate = document.createElement('button');
+            locate.type = 'button';
+            locate.textContent = 'Locate passage';
+            locate.addEventListener('click', () => {
+                const editor = document.getElementById('query-text');
+                if (editor && editor.value && Number.isInteger(finding.start_offset)) {
+                    editor.focus();
+                    editor.setSelectionRange(finding.start_offset, finding.end_offset);
+                    editor.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else {
+                    document.getElementById('highlighted-text')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+            const dismiss = document.createElement('button');
+            dismiss.type = 'button';
+            dismiss.textContent = dismissedStyleFindings.has(finding.id) ? `Dismissed: ${dismissedStyleFindings.get(finding.id)}` : 'Dismiss with reason';
+            dismiss.addEventListener('click', () => {
+                const reason = window.prompt('Reason for dismissing this finding:');
+                if (reason && reason.trim()) {
+                    dismissedStyleFindings.set(finding.id, reason.trim());
+                    item.classList.add('excluded');
+                    dismiss.textContent = `Dismissed: ${reason.trim()}`;
+                }
+            });
+            body.append(quote, explanation, locate, document.createTextNode(' '), dismiss);
+            item.append(meta, body);
+            list.appendChild(item);
+        }
+    };
+    filters.replaceChildren();
+    for (const category of ['all', ...categories]) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `style-filter-btn${category === 'all' ? ' active' : ''}`;
+        button.textContent = category === 'all' ? `All (${findings.length})` : `${category.replaceAll('_', ' ')} (${findings.filter(row => row.category === category).length})`;
+        button.addEventListener('click', () => {
+            selected = category;
+            filters.querySelectorAll('button').forEach(row => row.classList.toggle('active', row === button));
+            renderRows();
+        });
+        filters.appendChild(button);
+    }
+    renderRows();
+    const messages = [...(review.extraction_warnings || []), ...(review.unavailable_checks || [])];
+    if (warning) {
+        warning.hidden = messages.length === 0 && review.language_coverage?.coverage !== 'limited';
+        warning.textContent = messages.join(' ') || 'English-only rules provide limited coverage for this document.';
+    }
+    const legacyDetails = document.getElementById('legacy-pattern-details');
+    if (legacyDetails) legacyDetails.hidden = Array.isArray(styleReview.findings) && styleReview.findings.length > 0;
+}
+
+function renderCitationQuality(data) {
+    const review = data.citation_quality || {};
+    const status = document.getElementById('citation-quality-status');
+    const list = document.getElementById('citation-quality-list');
+    const note = document.getElementById('citation-quality-note');
+    if (!status || !list) return;
+    const issues = Array.isArray(review.issues) ? review.issues : [];
+    status.className = `badge-pill ${issues.length ? 'warning' : 'success'}`;
+    status.textContent = issues.length ? `${issues.length} local issue${issues.length === 1 ? '' : 's'}` : 'No local syntax issues';
+    list.replaceChildren();
+    if (!issues.length) {
+        const item = document.createElement('li');
+        item.textContent = 'No malformed identifiers, duplicate references, or local citation-link issues were found.';
+        list.appendChild(item);
+    } else {
+        for (const issue of issues.slice(0, 20)) {
+            const item = document.createElement('li');
+            item.textContent = `${String(issue.type || 'unverified').toUpperCase()}: ${issue.message || issue.code}${issue.value ? ` — ${issue.value}` : ''}`;
+            list.appendChild(item);
+        }
+    }
+    if (note) note.textContent = `${review.network_verification?.note || 'Network verification was not requested.'} ${review.claim_support?.note || 'Claim support requires human review.'}`;
 }
 
 /** Deterministic, offline word-swap edits derived the same way the server's
@@ -730,7 +853,8 @@ function renderSuggestions(data) {
     const unlinked = Number(citations.unlinked_citations_count) || 0;
     const sources = Number(data.total_corpus_searched) || 0;
     const aiData = data.ai_analysis || {};
-    const aiScore = finiteScore(aiData.pattern_score ?? aiData.ai_probability);
+    const styleReview = data.style_review || {};
+    const aiScore = finiteScore(styleReview.style_pattern_index ?? aiData.pattern_score ?? aiData.ai_probability);
     const evidence = data.evidence_analysis || {};
     const emDashCount = Number(aiData.style_metrics && aiData.style_metrics.em_dash_count) || 0;
     const emDashRate = Number(aiData.style_metrics && aiData.style_metrics.em_dashes_per_300_words) || 0;
@@ -787,6 +911,8 @@ function renderSuggestions(data) {
 function renderResults(data) {
     renderScoreDetails(data);
     renderPatternAnalysis(data);
+    renderStyleReview(data);
+    renderCitationQuality(data);
     renderSuggestions(data);
     const scope = document.getElementById('scan-sources-meta');
     if (scope) scope.textContent = `${data.total_corpus_searched || 0} sources compared • ${data.live_sources_queried || 0} online results`;
@@ -812,7 +938,8 @@ function renderResults(data) {
     // 3. Score gauges: text similarity + writing-pattern heuristic
     const plagScore = finiteScore(data.overall_similarity);
     const aiData = data.ai_analysis || {};
-    const aiScore = finiteScore(aiData.pattern_score ?? aiData.ai_probability);
+    const styleReview = data.style_review || {};
+    const aiScore = finiteScore(styleReview.style_pattern_index ?? aiData.pattern_score ?? aiData.ai_probability);
 
     const circlePlag = document.getElementById('score-circle-plag');
     const numPlag = document.getElementById('score-number-plag');
@@ -827,12 +954,12 @@ function renderResults(data) {
     document.getElementById('score-band-plag').textContent = plagBand.label;
     document.getElementById('score-formula-plag').textContent = `${data.flagged_word_count || 0} matched ÷ ${data.scored_word_count || 0} eligible words`;
 
-    numAi.textContent = `${aiScore.toFixed(1)}/100`;
+    numAi.textContent = styleReview.style_pattern_index == null ? 'N/A' : `${aiScore.toFixed(1)}/100`;
     const aiStatus = aiScore >= 65 ? 'danger' : (aiScore >= 25 ? 'warning' : 'success');
     circleAi.className = `score-circle ${aiStatus}`;
-    circleAi.style.setProperty('--score-angle', `${aiScore * 3.6}deg`);
-    const aiBand = aiScore >= 65 ? 'High pattern band' : aiScore >= 25 ? 'Elevated pattern band' : 'Low pattern band';
-    circleAi.setAttribute('aria-label', `${aiScore.toFixed(1)} out of 100 writing-pattern heuristic, ${aiBand}`);
+    circleAi.style.setProperty('--score-angle', `${styleReview.style_pattern_index == null ? 0 : aiScore * 3.6}deg`);
+    const aiBand = styleReview.style_pattern_index == null ? 'Insufficient text' : aiScore >= 65 ? 'High pattern band' : aiScore >= 25 ? 'Elevated pattern band' : 'Low pattern band';
+    circleAi.setAttribute('aria-label', `${aiScore.toFixed(1)} out of 100 style-pattern index, ${aiBand}`);
     document.getElementById('score-band-ai').textContent = aiBand;
 
     // Verdict Card
@@ -956,7 +1083,8 @@ function renderManuscriptInspector(data) {
 function renderChecklist(data) {
     const plagScore = finiteScore(data.overall_similarity);
     const aiData = data.ai_analysis || {};
-    const aiScore = finiteScore(aiData.pattern_score ?? aiData.ai_probability);
+    const styleReview = data.style_review || {};
+    const aiScore = finiteScore(styleReview.style_pattern_index ?? aiData.pattern_score ?? aiData.ai_probability);
     const citeData = data.citation_analysis || {};
     const readability = data.readability || {};
     const matchedWords = Number(data.flagged_word_count) || 0;

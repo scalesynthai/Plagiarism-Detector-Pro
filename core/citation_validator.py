@@ -147,6 +147,7 @@ class CitationValidator:
             "linked_citations": matched_citations,
             "unlinked_citations": unmatched_citations,
             "bibliography_entries": bib_entries[:10],
+            "bibliography_entries_all": bib_entries,
             "body_text": body_text,
             "has_unlinked_citations": len(unmatched_citations) > 0,
             "unlinked_citations_count": len(unmatched_citations),

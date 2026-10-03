@@ -129,6 +129,12 @@
                     </div>
 
                     <div class="toggle-container">
+                        <label class="switch-label">
+                            <span class="toggle-text"><strong>Document profile</strong></span>
+                            <select id="text-style-profile" class="budget-select">
+                                <option value="academic_report" selected>Academic report</option><option value="business_report">Business report</option><option value="general_essay">General essay</option><option value="technical_documentation">Technical documentation</option>
+                            </select>
+                        </label>
                         <label class="switch-label" style="margin-bottom: 8px;">
                             <input type="checkbox" id="text-private-draft" checked>
                             <span class="toggle-text">🛡️ <strong>Student Private Draft Shield</strong> (Not added to the local corpus; web search sends queries externally)</span>
@@ -201,6 +207,12 @@
                             <span class="settings-summary">Web search on · Full document</span>
                         </summary>
                         <div class="scan-options-grid">
+                            <label class="option-row">
+                                <span><strong>Document profile</strong><small>Adjusts genre-sensitive thresholds; rules remain visible.</small></span>
+                                <select id="file-style-profile" class="budget-select">
+                                    <option value="academic_report" selected>Academic report</option><option value="business_report">Business report</option><option value="general_essay">General essay</option><option value="technical_documentation">Technical documentation</option>
+                                </select>
+                            </label>
                             <label class="option-row">
                                 <input type="checkbox" id="file-private-draft" checked>
                                 <span><strong>Private draft</strong><small>Do not add this document to the institutional corpus.</small></span>
@@ -703,8 +715,8 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                 <section class="pattern-review-card" aria-labelledby="pattern-review-title">
                     <div class="pattern-review-header">
                         <div>
-                            <span class="upload-eyebrow">Explainable writing review</span>
-                            <h3 id="pattern-review-title">Why the pattern score changed</h3>
+                            <span class="upload-eyebrow">Evidence-first review</span>
+                            <h3 id="pattern-review-title">AI Writing Style Review</h3>
                             <p id="pattern-score-explanation">Nine signal groups are scored from 0 to 3 using visible evidence.</p>
                         </div>
                         <span id="pattern-reliability" class="badge-pill info">Not assessed</span>
@@ -732,7 +744,15 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                         </div>
                     </div>
                     <div id="pattern-category-grid" class="pattern-category-grid" aria-label="Writing-pattern signal categories"></div>
-                    <details class="pattern-evidence-details">
+                    <div class="style-findings-toolbar">
+                        <strong>Passage findings</strong>
+                        <div id="style-category-filters" class="style-category-filters" aria-label="Filter writing-style findings"></div>
+                    </div>
+                    <div id="style-coverage-warning" class="pattern-provenance-alert" hidden></div>
+                    <div id="style-findings-list" class="style-findings-list">
+                        <p>Run a scan to inspect finding-level passages, exclusions, and explanations.</p>
+                    </div>
+                    <details id="legacy-pattern-details" class="pattern-evidence-details">
                         <summary>Review quoted evidence and category guidance</summary>
                         <div id="pattern-evidence-list" class="pattern-evidence-list">
                             <p>Run a scan to see the phrases and sentences that affected each category.</p>
@@ -753,6 +773,15 @@ Brown, T. et al. (2020). Language models are few-shot learners. arXiv:2005.14165
                         </div>
                     </details>
                     <p class="pattern-disclaimer">These signals describe writing style and evidence structure. They cannot determine whether a person or an AI wrote the document.</p>
+                </section>
+
+                <section class="suggestions-card" aria-labelledby="citation-quality-title">
+                    <div class="suggestions-header">
+                        <div><h3 id="citation-quality-title">Citation Quality Review</h3><p>Identifier syntax and reference linkage are separate from writing style and plagiarism.</p></div>
+                        <span id="citation-quality-status" class="badge-pill info">Not assessed</span>
+                    </div>
+                    <ul id="citation-quality-list" class="suggestions-list"><li>Run a scan to review DOI, ISBN, URL, and reference-link issues.</li></ul>
+                    <p id="citation-quality-note" class="pattern-disclaimer">Network availability and claim support are not inferred from local syntax.</p>
                 </section>
 
                 <section class="suggestions-card" aria-labelledby="suggestions-title">

@@ -1,0 +1,132 @@
+{
+  "ruleset_version": "1.0.0",
+  "reviewed_source": "https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing",
+  "review_date": "2026-10-03",
+  "status": "experimental_unvalidated",
+  "default_profile": "academic_report",
+  "minimum_eligible_words": 120,
+  "strong_review_min_categories": 3,
+  "profiles": {
+    "academic_report": {"label": "Academic report", "heading_tolerance": 1.0, "promotional_weight": 1.0},
+    "business_report": {"label": "Business report", "heading_tolerance": 1.25, "promotional_weight": 0.75},
+    "general_essay": {"label": "General essay", "heading_tolerance": 0.75, "promotional_weight": 1.0},
+    "technical_documentation": {"label": "Technical documentation", "heading_tolerance": 1.25, "promotional_weight": 0.6}
+  },
+  "rules": [
+    {
+      "id": "inflated_vocabulary", "category": "language", "display_name": "Inflated or abstract vocabulary",
+      "description": "Editable starter dictionary of stock abstract wording; isolated ordinary words remain weak evidence.",
+      "examples": ["delve", "pivotal", "intricate", "tapestry", "testament", "robust", "transformative"],
+      "detector_type": "exact", "applicable_block_types": ["paragraph", "heading", "list_item", "table_cell", "caption"],
+      "language": "en", "patterns": ["delv(?:e|es|ed|ing)", "pivotal", "intricate", "tapestr(?:y|ies)", "testament", "robust", "transformative", "ever[- ]changing landscape"],
+      "minimum_occurrences": 2, "frequency_per_1000": 4, "evidence_strength": "weak", "category_contribution_cap": 12,
+      "contextual_exclusions": ["quotation", "reference", "code", "template"], "source": "Wikipedia field guide + project starter dictionary", "review_date": "2026-10-03", "enabled": true
+    },
+    {
+      "id": "promotional_praise", "category": "promotional_language", "display_name": "Promotional praise",
+      "description": "Repeated advertising-like praise or travel-guide language.",
+      "examples": ["vibrant", "cutting-edge", "game-changing", "remarkable journey"],
+      "detector_type": "exact", "applicable_block_types": ["paragraph", "heading", "list_item", "caption"], "language": "en",
+      "patterns": ["vibrant", "cutting[- ]edge", "game[- ]chang(?:ing|er)", "remarkable journey", "powerful reminder", "unlock(?:s|ed|ing)? (?:the )?potential", "showcas(?:e|es|ed|ing)", "seamless(?:ly)?"],
+      "minimum_occurrences": 2, "frequency_per_1000": 3, "evidence_strength": "moderate", "category_contribution_cap": 14,
+      "contextual_exclusions": ["quotation", "reference", "code", "template"], "source": "Wikipedia field guide + project starter dictionary", "review_date": "2026-10-03", "enabled": true
+    },
+    {
+      "id": "formulaic_transitions", "category": "discourse", "display_name": "Formulaic transitions",
+      "description": "Repeated stock transitions, especially at sentence openings.", "examples": ["Furthermore", "Moreover", "In conclusion"],
+      "detector_type": "exact", "applicable_block_types": ["paragraph", "list_item"], "language": "en",
+      "patterns": ["furthermore", "moreover", "additionally", "in conclusion", "to summarize", "in summary", "it is (?:important|worthwhile) to note"],
+      "minimum_occurrences": 2, "frequency_per_1000": 3, "evidence_strength": "weak", "category_contribution_cap": 12,
+      "contextual_exclusions": ["quotation", "reference", "code", "template"], "source": "Wikipedia field guide + project heuristic", "review_date": "2026-10-03", "enabled": true
+    },
+    {
+      "id": "significance_legacy", "category": "content", "display_name": "Generic significance or legacy claim",
+      "description": "Importance and broader-trend claims with limited concrete support.",
+      "examples": ["a testament to", "pivotal role", "underscores its importance"], "detector_type": "heuristic",
+      "applicable_block_types": ["paragraph", "list_item"], "language": "en",
+      "patterns": ["(?:stands|serves) as", "(?:a )?(?:testament|reminder) to", "(?:crucial|pivotal|vital|significant|key) role", "underscor(?:e|es|ed|ing) (?:its|the) (?:importance|significance)", "reflect(?:s|ed|ing)? broader", "enduring legacy", "shap(?:e|es|ed|ing) the (?:future|landscape)"],
+      "minimum_occurrences": 2, "frequency_per_1000": 2, "evidence_strength": "moderate", "category_contribution_cap": 14,
+      "contextual_exclusions": ["quotation", "reference", "code", "template"], "source": "Wikipedia field guide", "review_date": "2026-10-03", "enabled": true
+    },
+    {
+      "id": "generic_analytical_verbs", "category": "content", "display_name": "Generic analytical verbs",
+      "description": "Repeated vague analytical clauses that may substitute for specific analysis.",
+      "examples": ["highlighting", "reflecting", "contributing to"], "detector_type": "heuristic",
+      "applicable_block_types": ["paragraph", "list_item"], "language": "en",
+      "patterns": ["highlight(?:s|ed|ing)", "emphasiz(?:e|es|ed|ing)", "reflect(?:s|ed|ing)", "symboliz(?:e|es|ed|ing)", "contribut(?:e|es|ed|ing) to", "foster(?:s|ed|ing)", "enhanc(?:e|es|ed|ing)"],
+      "minimum_occurrences": 3, "frequency_per_1000": 5, "evidence_strength": "weak", "category_contribution_cap": 10,
+      "contextual_exclusions": ["quotation", "reference", "code", "template"], "source": "Wikipedia field guide", "review_date": "2026-10-03", "enabled": true
+    },
+    {
+      "id": "vague_authority", "category": "evidence_language", "display_name": "Unnamed authority or consensus",
+      "description": "Authorities or consensus claims that are not named in the same passage.",
+      "examples": ["experts suggest", "widely regarded", "research shows"], "detector_type": "heuristic",
+      "applicable_block_types": ["paragraph", "list_item"], "language": "en",
+      "patterns": ["experts? suggest", "widely regarded", "studies show", "research (?:shows|suggests|indicates)", "it is widely (?:known|accepted|recognized)", "many (?:believe|argue|consider)"],
+      "minimum_occurrences": 1, "frequency_per_1000": 1, "evidence_strength": "moderate", "category_contribution_cap": 16,
+      "contextual_exclusions": ["quotation", "reference", "code", "template"], "source": "Wikipedia field guide + citation coverage check", "review_date": "2026-10-03", "enabled": true
+    },
+    {
+      "id": "negative_parallelism", "category": "rhetoric", "display_name": "Repeated contrast construction",
+      "description": "Repeated not-X-but-Y, not-only-but-also, or rather-than frames.",
+      "examples": ["not just X, but Y", "X rather than Y"], "detector_type": "exact",
+      "applicable_block_types": ["paragraph", "list_item"], "language": "en",
+      "patterns": ["not (?:just|only) [^.!?]{2,90}?[,;]? but (?:also )?[^.!?]{2,100}", "not [^.!?]{2,80}?[,;]? but [^.!?]{2,100}", "[^.!?]{2,60}? rather than [^.!?]{2,60}"],
+      "minimum_occurrences": 2, "frequency_per_1000": 1, "evidence_strength": "moderate", "category_contribution_cap": 14,
+      "contextual_exclusions": ["quotation", "reference", "code", "template"], "source": "Wikipedia field guide", "review_date": "2026-10-03", "enabled": true
+    },
+    {
+      "id": "rule_of_three", "category": "rhetoric", "display_name": "Repeated three-part enumeration",
+      "description": "Repeated triples joined by commas and a final conjunction.", "examples": ["clarity, consistency, and control"],
+      "detector_type": "heuristic", "applicable_block_types": ["paragraph", "list_item"], "language": "en",
+      "patterns": ["\\b[\"'’A-Za-z][^,.;:]{1,35}, [^,.;:]{1,35}, (?:and|or) [^,.;:]{1,35}"],
+      "minimum_occurrences": 2, "frequency_per_1000": 1, "evidence_strength": "weak", "category_contribution_cap": 8,
+      "contextual_exclusions": ["quotation", "reference", "code", "template"], "source": "Wikipedia field guide", "review_date": "2026-10-03", "enabled": true
+    },
+    {
+      "id": "trailing_participial", "category": "rhetoric", "display_name": "Trailing interpretive participial clause",
+      "description": "Sentence-final -ing clauses that add generic significance or interpretation.",
+      "examples": ["..., highlighting its importance."], "detector_type": "heuristic",
+      "applicable_block_types": ["paragraph", "list_item"], "language": "en",
+      "patterns": [", (?:highlighting|underscoring|reflecting|symbolizing|demonstrating|ensuring|fostering|contributing|enhancing) .{5,100}[.!?]"],
+      "minimum_occurrences": 2, "frequency_per_1000": 1, "evidence_strength": "moderate", "category_contribution_cap": 12,
+      "contextual_exclusions": ["quotation", "reference", "code", "template"], "source": "Wikipedia field guide", "review_date": "2026-10-03", "enabled": true
+    },
+    {
+      "id": "future_outlook", "category": "structure", "display_name": "Generic challenge or future-outlook ending",
+      "description": "Canned ending language about challenges, prospects, or an inevitably bright future.",
+      "examples": ["Despite these challenges", "the future looks bright"], "detector_type": "heuristic",
+      "applicable_block_types": ["paragraph"], "language": "en",
+      "patterns": ["despite (?:these|the) challenges", "looking ahead", "future prospects", "the future (?:looks|remains) bright", "only time will tell", "continued (?:growth|success|innovation)"],
+      "minimum_occurrences": 1, "frequency_per_1000": 1, "evidence_strength": "weak", "category_contribution_cap": 8,
+      "contextual_exclusions": ["quotation", "reference", "code", "template"], "source": "Wikipedia field guide", "review_date": "2026-10-03", "enabled": true
+    },
+    {
+      "id": "chatbot_residue", "category": "generation_residue", "display_name": "Possible generation residue",
+      "description": "Assistant offers, model self-identification, cutoff disclaimers, refusal text, or prompt references left in prose.",
+      "examples": ["I hope this helps", "as an AI language model", "knowledge cutoff"], "detector_type": "exact",
+      "applicable_block_types": ["paragraph", "heading", "list_item", "table_cell", "quotation", "code", "reference"], "language": "en",
+      "patterns": ["i hope this helps", "let me know if you have any questions", "as an ai (?:language )?model", "my knowledge cutoff", "i (?:cannot|can't) comply with", "(?:your|the) prompt (?:asks|requested|instructs)", "here (?:is|are) (?:a|the|some) (?:revised|draft|requested)"],
+      "minimum_occurrences": 1, "frequency_per_1000": 1, "evidence_strength": "stronger", "category_contribution_cap": 22,
+      "contextual_exclusions": ["quotation", "code", "template"], "source": "Wikipedia field guide + project artifact list", "review_date": "2026-10-03", "enabled": true
+    },
+    {
+      "id": "internal_tokens", "category": "generation_residue", "display_name": "Internal citation or rendering token",
+      "description": "Known internal tokens from chatbot citation and rendering systems.",
+      "examples": ["turn0search0", "contentReference", "oaicite"], "detector_type": "exact",
+      "applicable_block_types": ["paragraph", "heading", "list_item", "table_cell", "reference", "quotation", "code"], "language": "any",
+      "patterns": ["contentReference", "oaicite", "oai_citation", "turn\\d+(?:search|view|fetch)\\d+", "attributableIndex", "\\[cite:\\s*\\d+\\]", "span_\\d+\\(start_span\\)", "grok_(?:card|render_citation_card_json)", "ppl-ai-file-upload", ":::writing"],
+      "minimum_occurrences": 1, "frequency_per_1000": 1, "evidence_strength": "stronger", "category_contribution_cap": 24,
+      "contextual_exclusions": ["quotation", "code", "template"], "source": "Wikipedia field guide", "review_date": "2026-10-03", "enabled": true
+    },
+    {
+      "id": "unfilled_placeholder", "category": "generation_residue", "display_name": "Unfilled template instruction",
+      "description": "Bracketed drafting placeholders or unfinished instructions.",
+      "examples": ["[insert name]", "[add source]"], "detector_type": "exact",
+      "applicable_block_types": ["paragraph", "heading", "list_item", "table_cell"], "language": "en",
+      "patterns": ["\\[(?:insert|add|replace|provide|describe|summarize|cite)[^\\]\\n]{0,80}\\]", "<INSERT[^>]{0,80}>"],
+      "minimum_occurrences": 1, "frequency_per_1000": 1, "evidence_strength": "stronger", "category_contribution_cap": 20,
+      "contextual_exclusions": ["quotation", "code", "template"], "source": "Wikipedia field guide + project heuristic", "review_date": "2026-10-03", "enabled": true
+    }
+  ]
+}
