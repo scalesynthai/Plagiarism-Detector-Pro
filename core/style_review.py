@@ -115,7 +115,7 @@ class WritingStyleReviewer:
     def _finding(rule: Dict[str, Any], block: Dict[str, Any], start: int, end: int, matched: str, text: str, excluded: bool, reason: Optional[str], strength: Optional[str] = None, detector: Optional[str] = None, explanation: Optional[str] = None) -> Dict[str, Any]:
         absolute_start = block["start_offset"] + start
         absolute_end = block["start_offset"] + end
-        digest = hashlib.sha1(f"{rule['id']}:{block['id']}:{absolute_start}:{absolute_end}".encode()).hexdigest()[:12]
+        digest = hashlib.sha1(f"{rule['id']}:{block['id']}:{absolute_start}:{absolute_end}".encode(), usedforsecurity=False).hexdigest()[:12]
         return {
             "id": f"finding-{digest}", "rule_id": rule["id"], "category": rule["category"],
             "evidence_strength": strength or rule["evidence_strength"], "detector_type": detector or rule["detector_type"],

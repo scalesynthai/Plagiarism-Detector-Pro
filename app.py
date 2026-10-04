@@ -49,6 +49,20 @@ def _read_app_version(default: str = "0.0.0") -> str:
 
 APP_VERSION = _read_app_version()
 
+APP_CSP = (
+    "default-src 'self'; script-src 'self'; "
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+    "font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; "
+    "object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+)
+# Swagger UI is loaded from a CDN (pinned version) and needs inline bootstrap script/styles.
+SWAGGER_UI_VERSION = "5.17.14"
+DOCS_CSP = (
+    "default-src 'self'; script-src 'unsafe-inline' https://unpkg.com; "
+    "style-src 'unsafe-inline' https://unpkg.com; img-src 'self' data: https:; "
+    "connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"
+)
+
 
 def create_app(config_class: type = Config) -> Flask:
     """Application factory for Plagiarism Detector Pro."""
@@ -118,6 +132,12 @@ def create_app(config_class: type = Config) -> Flask:
         if not request.path.startswith("/static/"):
             response.headers["Cache-Control"] = "no-store"
         response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "no-referrer"
+        response.headers.setdefault(
+            "Content-Security-Policy",
+            DOCS_CSP if request.path == "/docs" else APP_CSP,
+        )
         return response
 
     # Ensure sources directory exists
@@ -190,7 +210,7 @@ def create_app(config_class: type = Config) -> Flask:
                     query_text = extract_text_from_file(uploaded_file)
                 except Exception as e:
                     logger.error("File extraction error: %s", e)
-                    return render_template("index.html", error=f"File error: {e}", sources_count=len(checker.sources))
+                    return render_template("index.html", error="The file could not be read. Check the format and try again.", sources_count=len(checker.sources))
         else:
             query_text = request.form.get("query", "")
 
@@ -226,7 +246,7 @@ def create_app(config_class: type = Config) -> Flask:
                 query_text = document_context["analysis_text"]
             except Exception as e:
                 logger.error("Failed to extract file text: %s", e)
-                return jsonify({"error": f"Failed to extract document text: {str(e)}"}), 400
+                return jsonify({"error": "Failed to extract document text. Check that the file is a valid, unencrypted document."}), 400
             include_web = request.form.get("include_web", "true").lower() in ("true", "1", "yes")
             exclude_quotes = request.form.get("exclude_quotes", "false").lower() in ("true", "1", "yes")
             private_draft = request.form.get("private_draft", "true").lower() in ("true", "1", "yes")
@@ -418,12 +438,12 @@ def create_app(config_class: type = Config) -> Flask:
 <html>
 <head>
     <title>Plagiarism Detector Pro - API Documentation</title>
-    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" />
+    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@{v}/swagger-ui.css" />
     <style>body { margin: 0; background: #0f172a; } .swagger-ui { filter: invert(88%) hue-rotate(180deg); }</style>
 </head>
 <body>
     <div id="swagger-ui"></div>
-    <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@{v}/swagger-ui-bundle.js"></script>
     <script>
         window.onload = () => {
             SwaggerUIBundle({
@@ -436,7 +456,7 @@ def create_app(config_class: type = Config) -> Flask:
         };
     </script>
 </body>
-</html>"""
+</html>""".replace("{v}", SWAGGER_UI_VERSION)
 
     @app.route("/sources", methods=["GET"])
     def get_sources():
@@ -586,9 +606,14 @@ def create_app(config_class: type = Config) -> Flask:
         if not text or not text.strip():
             return jsonify({"error": "No text provided for cleanup."}), 400
         accept = data.get("accept")
+        if accept is not None and (
+            not isinstance(accept, list) or not all(isinstance(i, int) and not isinstance(i, bool) for i in accept)
+        ):
+            return jsonify({"error": "accept must be a list of integer edit indices."}), 400
 
         all_edits = WritingCleanup.suggest_edits(text)
-        selected = all_edits if accept is None else [e for e in all_edits if e["index"] in set(accept)]
+        accepted = set(accept or [])
+        selected = all_edits if accept is None else [e for e in all_edits if e["index"] in accepted]
         cleaned_text = WritingCleanup.apply_edits(text, selected)
         return jsonify({"cleaned_text": cleaned_text, "applied_count": len(selected)}), 200
 
