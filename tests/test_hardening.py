@@ -23,6 +23,30 @@ class HardeningTests(unittest.TestCase):
         self.client = self.app.test_client()
         self.headers = {'X-Admin-PIN': config.ADMIN_PIN}
 
+    def test_security_headers_present(self):
+        for path in ('/', '/sources', '/docs'):
+            response = self.client.get(path)
+            self.assertEqual(response.headers['X-Frame-Options'], 'DENY')
+            self.assertEqual(response.headers['Referrer-Policy'], 'no-referrer')
+            self.assertIn("object-src 'none'", response.headers['Content-Security-Policy'])
+        app_csp = self.client.get('/').headers['Content-Security-Policy']
+        self.assertIn("script-src 'self'", app_csp)
+        self.assertNotIn('unpkg.com', app_csp)
+        self.assertNotIn('swagger-ui-dist@5/', self.client.get('/docs').get_data(as_text=True))
+
+    def test_extraction_errors_do_not_leak_internals(self):
+        response = self.client.post('/check', data={'file': (io.BytesIO(b'%PDF-1.4 garbage'), 'bad.pdf')},
+                                    content_type='multipart/form-data')
+        self.assertEqual(response.status_code, 400)
+        self.assertNotIn('pypdf', response.get_data(as_text=True).lower())
+
+    def test_cleanup_apply_validates_accept(self):
+        for accept in ('1', {'a': 1}, [[1]], [{}], [True], ['x']):
+            response = self.client.post('/api/writing-cleanup/apply', json={'text': 'We delve into it.', 'accept': accept})
+            self.assertEqual(response.status_code, 400, accept)
+        ok = self.client.post('/api/writing-cleanup/apply', json={'text': 'We delve into it.', 'accept': [0]})
+        self.assertEqual(ok.status_code, 200)
+
     def test_json_shapes_return_client_errors(self):
         endpoints = ['/check', '/api/cite', '/api/paraphrase', '/check/compare-drafts',
                      '/api/student-coach/evaluate-thesis', '/reports/html', '/reports/certificate']
