@@ -120,5 +120,7 @@ const { scan, DocumentExtractor, PlagiarismApiClient, CitationGenerator } = requ
     }
     assert.ok(timed(() => DocumentExtractor.extractFromLatex("\\begin{equation}".repeat(250000))) < 2000);
     assert.strictEqual(DocumentExtractor.extractFromLatex("a $$x$$ b $y$ c \\begin{equation}z\\end{equation} d"), "a [Equation] b [Math] c [Equation] d".replace(/ +/g, " "));
+    assert.strictEqual(DocumentExtractor.extractFromLatex("keep % drop\nnext%x\r\nend"), "keep next end");
+    assert.ok(timed(() => DocumentExtractor.extractFromLatex("%".repeat(1000000))) < 1000);
     console.log("JavaScript regex-performance regressions passed.");
 }
