@@ -4,6 +4,7 @@ import os
 import zipfile
 import concurrent.futures
 from typing import Dict, List, Any
+from core.public_errors import public_message
 from core.extractor import extract_text_from_file, is_allowed_file
 
 
@@ -20,26 +21,23 @@ class BatchProcessor:
     def __init__(self, checker):
         self.checker = checker
 
-    def process_zip_archive(self, zip_stream_or_path, include_web: bool = True, exclude_quotes: bool = False, exclude_bibliography: bool = False) -> Dict[str, Any]:
+    def process_zip_archive(self, zip_stream, include_web: bool = True, exclude_quotes: bool = False, exclude_bibliography: bool = False) -> Dict[str, Any]:
         """
         Unpacks a ZIP archive and analyzes all contained documents.
         """
         submissions = []
-        if isinstance(zip_stream_or_path, str):
-            with open(zip_stream_or_path, 'rb') as f:
-                stream = io.BytesIO(f.read())
-        elif isinstance(zip_stream_or_path, (bytes, bytearray)):
-            stream = io.BytesIO(zip_stream_or_path)
-        elif hasattr(zip_stream_or_path, 'read'):
-            if hasattr(zip_stream_or_path, 'seek'):
+        if isinstance(zip_stream, (bytes, bytearray)):
+            stream = io.BytesIO(zip_stream)
+        elif hasattr(zip_stream, 'read'):
+            if hasattr(zip_stream, 'seek'):
                 try:
-                    zip_stream_or_path.seek(0)
+                    zip_stream.seek(0)
                 except Exception:
                     pass
-            content = zip_stream_or_path.read()
+            content = zip_stream.read()
             stream = io.BytesIO(content) if isinstance(content, bytes) else io.BytesIO(content.encode('utf-8'))
         else:
-            stream = zip_stream_or_path
+            stream = zip_stream
 
         with zipfile.ZipFile(stream, 'r') as zf:
             infos = zf.infolist()
@@ -61,15 +59,15 @@ class BatchProcessor:
 
     def process_multiple_files(self, file_tuples: List[tuple], include_web: bool = True, exclude_quotes: bool = False, exclude_bibliography: bool = False) -> Dict[str, Any]:
         """
-        Processes a list of (filename, file_stream_or_path) concurrently.
+        Processes a list of (filename, file_stream) concurrently.
         """
         if len(file_tuples) > self.MAX_FILES:
             raise ValueError("Too many documents (maximum 100).")
         results = []
 
-        def analyze_single(name, stream_or_path):
+        def analyze_single(name, file_stream):
             try:
-                text = extract_text_from_file(stream_or_path, filename=name)
+                text = extract_text_from_file(file_stream, filename=name)
                 if not text.strip():
                     return {
                         "filename": name,
@@ -100,7 +98,7 @@ class BatchProcessor:
                 return {
                     "filename": name,
                     "status": "error",
-                    "error": str(e) if isinstance(e, ValueError) else "Document could not be analyzed",
+                    "error": public_message(e, "Document could not be analyzed"),
                 }
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:

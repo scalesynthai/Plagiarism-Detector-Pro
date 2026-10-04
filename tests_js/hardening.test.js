@@ -113,5 +113,12 @@ const { scan, DocumentExtractor, PlagiarismApiClient, CitationGenerator } = requ
     assert.ok(timed(() => WritingStyleReviewer.analyze("a ".repeat(50000))) < 3000);
     assert.ok(timed(() => new PlagiarismApiClient("/".repeat(100000) + "a")) < 500);
     assert.strictEqual(new PlagiarismApiClient("https://x.test///").baseUrl, "https://x.test");
+    const { selectOpening, frontMatter } = require("../lib/diagnostics.js");
+    const { DocumentExtractor } = require("../lib/extractor.js");
+    for (const text of ["abstract" + " ".repeat(100000) + "x", "references" + "\t".repeat(100000) + "x", "abstract:" + " ".repeat(100000) + "x"]) {
+        assert.ok(timed(() => { selectOpening(text); frontMatter(text); }) < 1000);
+    }
+    assert.ok(timed(() => DocumentExtractor.extractFromLatex("\\begin{equation}".repeat(250000))) < 2000);
+    assert.strictEqual(DocumentExtractor.extractFromLatex("a $$x$$ b $y$ c \\begin{equation}z\\end{equation} d"), "a [Equation] b [Math] c [Equation] d".replace(/ +/g, " "));
     console.log("JavaScript regex-performance regressions passed.");
 }

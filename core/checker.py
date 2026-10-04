@@ -8,7 +8,7 @@ import threading
 from typing import Dict, List, Tuple, Any, Optional, Set
 from core.limits import validate_text
 from core.matching import match_document
-from core.extractor import extract_text_from_file, is_allowed_file
+from core.extractor import extract_text_from_file, extract_text_from_path, is_allowed_file
 from core.web_searcher import LiveWebSearcher
 from core.ai_detector import AIDetector
 from core.citation_validator import CitationValidator
@@ -91,7 +91,7 @@ class PlagiarismChecker:
             fpath = os.path.join(self.sources_dir, fname)
             if not os.path.islink(fpath) and os.path.isfile(fpath) and is_allowed_file(fname):
                 try:
-                    text = extract_text_from_file(fpath)
+                    text = extract_text_from_path(fpath)
                     if text.strip():
                         words = self.tokenize(text)
                         sentences = self.split_into_sentences(text)

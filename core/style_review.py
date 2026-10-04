@@ -24,7 +24,7 @@ def _words(text: str) -> List[str]:
 
 def _sentences(text: str) -> List[Tuple[int, int, str]]:
     output = []
-    for match in re.finditer(r"[^.!?\n]+(?:[.!?]+|(?=\n|$))", text):
+    for match in re.finditer(r"[^.!?\n]+[.!?]*", text):
         value = match.group(0).strip()
         if value:
             leading = len(match.group(0)) - len(match.group(0).lstrip())
