@@ -98,7 +98,7 @@ class WritingStyleReviewTests(unittest.TestCase):
         self.assertFalse(extracted["pagination_available"])
         self.assertTrue(any(block["type"] == "heading" for block in extracted["blocks"]))
         self.assertTrue(any(block["metadata"].get("bold_spans") for block in extracted["blocks"]))
-        self.assertTrue(extracted["warnings"])
+        self.assertFalse(any("pagination" in warning.lower() for warning in extracted["warnings"]))
 
     def test_scanned_pdf_requires_ocr(self):
         writer = PdfWriter()

@@ -210,7 +210,6 @@ def extract_document(file_input, filename: str = None):
     if extension == '.docx':
         blocks = _docx_blocks(stream)
         pagination = False
-        warnings.append("DOCX pagination is unavailable without rendering; locations use block IDs.")
     elif extension == '.pdf':
         blocks, warnings = _pdf_blocks(stream)
         pagination = True
