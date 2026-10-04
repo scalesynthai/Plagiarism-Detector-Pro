@@ -176,7 +176,9 @@ class RegexPerformanceTests(unittest.TestCase):
         import time
         from core.sections import select_opening, front_matter
         from core.matching import BIB_HEADER
-        for text in ("\n" * 100000, " \n" * 50000, "a" + "\n \n" * 33000, ("   \n" * 25000) + "zz"):
+        for text in ("\n" * 100000, " \n" * 50000, "a" + "\n \n" * 33000, ("   \n" * 25000) + "zz",
+                     "abstract" + " " * 100000 + "x", "abstract" + "\t" * 100000 + "x",
+                     "references" + " " * 100000 + "x", "abstract:" + " " * 100000 + "x"):
             started = time.monotonic()
             select_opening(text)
             front_matter(text)
