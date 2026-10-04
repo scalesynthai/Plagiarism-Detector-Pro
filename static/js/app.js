@@ -821,7 +821,7 @@ function renderStyleReview(data) {
         warning.textContent = messages.join(' ') || 'English-only rules provide limited coverage for this document.';
     }
     const legacyDetails = document.getElementById('legacy-pattern-details');
-    if (legacyDetails) legacyDetails.hidden = Array.isArray(styleReview.findings) && styleReview.findings.length > 0;
+    if (legacyDetails) legacyDetails.hidden = findings.length > 0;
 }
 
 function renderCitationQuality(data) {
