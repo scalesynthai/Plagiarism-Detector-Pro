@@ -1,6 +1,7 @@
 import math
 import os
 import re
+from urllib.parse import urlparse
 import io
 import tempfile
 import threading
@@ -19,6 +20,15 @@ from core.evidence_analyzer import EvidenceAnalyzer
 from core.style_review import WritingStyleReviewer
 from core.citation_quality import CitationQualityReviewer
 from core.check_summary import build_check_summary
+
+
+def _url_host_matches(url: Optional[str], domain: str) -> bool:
+    """True when the URL's hostname is `domain` or one of its subdomains."""
+    try:
+        host = (urlparse(url).hostname or "").lower() if url else ""
+    except ValueError:
+        return False
+    return host == domain or host.endswith("." + domain)
 
 
 class PlagiarismChecker:
@@ -270,11 +280,11 @@ class PlagiarismChecker:
         url_text = f", {source_url}" if source_url else ""
         year = "2024"
 
-        if source_url and "arxiv.org" in source_url:
+        if _url_host_matches(source_url, "arxiv.org"):
             apa = f"Author et al. ({year}). {clean_title}. arXiv preprint {source_url}."
             mla = f'"{clean_title}." arXiv, {year}, {source_url}.'
             ieee = f'[1] "{clean_title}," arXiv preprint, {year}, {source_url}.'
-        elif source_url and "wikipedia.org" in source_url:
+        elif _url_host_matches(source_url, "wikipedia.org"):
             apa = f"Wikipedia contributors. ({year}). {clean_title}. In Wikipedia, The Free Encyclopedia."
             mla = f'"{clean_title}." Wikipedia, Wikimedia Foundation, 2024, {source_url}.'
             ieee = f'[1] "{clean_title}," Wikipedia, The Free Encyclopedia, 2024. [Online]. Available: {source_url}.'

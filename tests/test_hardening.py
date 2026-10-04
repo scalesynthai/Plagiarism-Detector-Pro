@@ -157,3 +157,15 @@ class HardeningTests(unittest.TestCase):
     def test_missing_corpus_directory_is_empty(self):
         checker = PlagiarismChecker(str(Path(self.directory) / 'missing'))
         self.assertEqual(checker.list_sources(), [])
+
+
+class CitationHostTests(unittest.TestCase):
+    def test_source_type_uses_hostname_not_substring(self):
+        gen = PlagiarismChecker.generate_smart_citations
+        self.assertIn("arXiv", gen("p.txt", "https://arxiv.org/abs/1")["apa"])
+        self.assertIn("Wikipedia", gen("p.txt", "https://en.wikipedia.org/wiki/X")["apa"])
+        for url in ("https://evil.com/?q=wikipedia.org", "https://wikipedia.org.evil.com/x",
+                    "https://evilarxiv.org/x", "not a url arxiv.org"):
+            apa = gen("p.txt", url)["apa"]
+            self.assertNotIn("Wikipedia", apa)
+            self.assertNotIn("arXiv", apa)
