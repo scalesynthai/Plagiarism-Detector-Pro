@@ -169,3 +169,16 @@ class CitationHostTests(unittest.TestCase):
             apa = gen("p.txt", url)["apa"]
             self.assertNotIn("Wikipedia", apa)
             self.assertNotIn("arXiv", apa)
+
+
+class RegexPerformanceTests(unittest.TestCase):
+    def test_heading_regexes_are_linear_on_whitespace_heavy_input(self):
+        import time
+        from core.sections import select_opening, front_matter
+        from core.matching import BIB_HEADER
+        for text in ("\n" * 100000, " \n" * 50000, "a" + "\n \n" * 33000, ("   \n" * 25000) + "zz"):
+            started = time.monotonic()
+            select_opening(text)
+            front_matter(text)
+            BIB_HEADER.search(text)
+            self.assertLess(time.monotonic() - started, 2.0)

@@ -254,7 +254,7 @@ class AIDetector:
         structure_evidence: List[Dict[str, Any]] = []
         for kind, pattern in cls.STRUCTURE_PATTERNS:
             structure_evidence.extend(cls._evidence(m, kind) for m in pattern.finditer(text))
-        bullet_count = len(re.findall(r"(?m)^\s*(?:[-*•]|\d+[.)])\s+", text))
+        bullet_count = len(re.findall(r"(?m)^[ \t]*(?:[-*•]|\d+[.)])\s+", text))
         if bullet_count >= 5:
             structure_evidence.append({"text": f"{bullet_count} list items", "start": 0, "end": 0, "kind": "list-heavy structure"})
         structure_evidence = cls._dedupe_evidence(structure_evidence)

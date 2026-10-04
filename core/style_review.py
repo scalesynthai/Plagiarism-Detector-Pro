@@ -225,10 +225,10 @@ class WritingStyleReviewer:
         for block in blocks:
             value = block["text"]
             checks = [
-                ("emoji_section_marker", r"^\s*[\U0001F300-\U0001FAFF]", "Emoji used as a section marker."),
-                ("decorative_separator", r"^\s*(?:[-*_]\s*){3,}$", "Decorative horizontal separator."),
+                ("emoji_section_marker", r"^[ \t]*[\U0001F300-\U0001FAFF]", "Emoji used as a section marker."),
+                ("decorative_separator", r"^[ \t]*(?:[-*_]\s*){3,}$", "Decorative horizontal separator."),
                 ("leftover_markdown", r"(?:^|\s)(?:#{1,6}\s+|\*\*[^*]+\*\*|```)", "Markdown syntax remains in extracted prose."),
-                ("bold_label_bullet", r"^\s*(?:[-*+]\s+)?\*\*[^*]{1,60}:\*\*", "Bold label plus colon in a list item."),
+                ("bold_label_bullet", r"^[ \t]*(?:[-*+]\s+)?\*\*[^*]{1,60}:\*\*", "Bold label plus colon in a list item."),
             ]
             for rule_id, pattern, description in checks:
                 for match in re.finditer(pattern, value, re.M):
