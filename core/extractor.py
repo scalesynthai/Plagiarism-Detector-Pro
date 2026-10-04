@@ -7,8 +7,10 @@ import unicodedata
 from datetime import datetime, timezone
 from core.limits import MAX_DOCUMENT_BYTES, validate_text
 import docx
+import logging
 from pypdf import PdfReader
 
+logger = logging.getLogger(__name__)
 
 ALLOWED_EXTENSIONS = {'.txt', '.md', '.docx', '.pdf', '.rtf', '.csv', '.tex', '.bib', '.ipynb'}
 
@@ -277,8 +279,11 @@ def _extract_docx(stream: io.BytesIO) -> str:
                 if row_text:
                     paragraphs.append(row_text)
         return "\n\n".join(paragraphs).strip()
+    except ValueError:
+        raise  # Our own limit messages are safe to show.
     except Exception as e:
-        raise ValueError(f"Failed to read DOCX file: {str(e)}")
+        logger.warning("Failed to read DOCX file: %s", e)
+        raise ValueError("Failed to read DOCX file. It may be corrupt, encrypted, or unsupported.")
 
 
 def _extract_pdf(stream: io.BytesIO) -> str:
@@ -292,7 +297,8 @@ def _extract_pdf(stream: io.BytesIO) -> str:
                 pages_text.append(text.strip())
         return "\n\n".join(pages_text).strip()
     except Exception as e:
-        raise ValueError(f"Failed to read PDF file: {str(e)}")
+        logger.warning("Failed to read PDF file: %s", e)
+        raise ValueError("Failed to read PDF file. It may be corrupt, encrypted, or unsupported.")
 
 
 def _extract_latex(stream: io.BytesIO) -> str:

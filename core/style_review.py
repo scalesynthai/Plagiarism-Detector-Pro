@@ -95,11 +95,13 @@ class WritingStyleReviewer:
     @staticmethod
     def _plain_blocks(text: str) -> List[Dict[str, Any]]:
         blocks, cursor = [], 0
-        for index, match in enumerate(re.finditer(r"\S(?:.*?\S)?(?=\n\s*\n|\Z)", text, re.S), 1):
-            value = match.group(0)
+        # A block runs from a non-space character to the next blank line. Lines are consumed
+        # without lazy matching so trailing whitespace cannot cause quadratic backtracking.
+        for index, match in enumerate(re.finditer(r"\S[^\n]*(?:\n(?!\s*\n)[^\n]*)*", text), 1):
+            value = match.group(0).rstrip()
             block_type = "quotation" if re.match(r"^\s*[>\"“]", value) else "reference" if re.match(r"^\s*(?:references|works cited|bibliography)\b", value, re.I) else "paragraph"
-            blocks.append({"id": f"block-{index}", "type": block_type, "text": value, "start_offset": match.start(), "end_offset": match.end(), "page": None, "metadata": {}})
-            cursor = match.end()
+            blocks.append({"id": f"block-{index}", "type": block_type, "text": value, "start_offset": match.start(), "end_offset": match.start() + len(value), "page": None, "metadata": {}})
+            cursor = match.start() + len(value)
         if not blocks and text:
             blocks.append({"id": "block-1", "type": "paragraph", "text": text, "start_offset": 0, "end_offset": len(text), "page": None, "metadata": {}})
         return blocks
@@ -225,10 +227,10 @@ class WritingStyleReviewer:
         for block in blocks:
             value = block["text"]
             checks = [
-                ("emoji_section_marker", r"^\s*[\U0001F300-\U0001FAFF]", "Emoji used as a section marker."),
-                ("decorative_separator", r"^\s*(?:[-*_]\s*){3,}$", "Decorative horizontal separator."),
+                ("emoji_section_marker", r"^[ \t]*[\U0001F300-\U0001FAFF]", "Emoji used as a section marker."),
+                ("decorative_separator", r"^[ \t]*(?:[-*_]\s*){3,}$", "Decorative horizontal separator."),
                 ("leftover_markdown", r"(?:^|\s)(?:#{1,6}\s+|\*\*[^*]+\*\*|```)", "Markdown syntax remains in extracted prose."),
-                ("bold_label_bullet", r"^\s*(?:[-*+]\s+)?\*\*[^*]{1,60}:\*\*", "Bold label plus colon in a list item."),
+                ("bold_label_bullet", r"^[ \t]*(?:[-*+]\s+)?\*\*[^*]{1,60}:\*\*", "Bold label plus colon in a list item."),
             ]
             for rule_id, pattern, description in checks:
                 for match in re.finditer(pattern, value, re.M):

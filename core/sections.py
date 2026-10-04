@@ -1,8 +1,8 @@
 """Conservative section selection for writing diagnostics (not semantic grading)."""
 import re
 
-OPENING = re.compile(r'^\s*(?:#+\s*|\d+\.?\s*)?(abstract|introduction)\s*:?[ \t]*$', re.I | re.M)
-NEXT = re.compile(r'^\s*(?:#+\s*|\d+\.?\s*)?(?:keywords|introduction|background|related work|modeling approach|methods?|methodology|results(?: and comparison)?|discussion|conclusion|references)\s*:?[ \t]*$', re.I | re.M)
+OPENING = re.compile(r'^[ \t]*(?:#+[ \t]*|\d+\.?[ \t]*)?(abstract|introduction)[ \t]*:?[ \t]*$', re.I | re.M)
+NEXT = re.compile(r'^[ \t]*(?:#+[ \t]*|\d+\.?[ \t]*)?(?:keywords|introduction|background|related work|modeling approach|methods?|methodology|results(?: and comparison)?|discussion|conclusion|references)[ \t]*:?[ \t]*$', re.I | re.M)
 PROSE = re.compile(r'\b(?:this (?:paper|study|work)|we (?:hypothesi[sz]e|argue|propose|evaluate|investigate)|the central (?:claim|hypothesis|question)|model selection is)\b', re.I)
 
 

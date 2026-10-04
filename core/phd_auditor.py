@@ -61,7 +61,7 @@ class PhdResearchAuditor:
         front_patterns = [
             (r'\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b', "Author email in front matter"),
             (r'\b(?:Department of|University of|School of|College of|Institute of)\b[^\n.!?]{0,120}', "Possible author affiliation in front matter"),
-            (r'(?m)^\s*(?:By\s+|Author:\s*)[A-Z][a-z]+(?:[ \t]+[A-Z][a-z]+){1,3}\s*$', "Author byline in front matter"),
+            (r'(?m)^[ \t]*(?:By\s+|Author:\s*)[A-Z][a-z]+(?:[ \t]+[A-Z][a-z]+){1,3}\s*$', "Author byline in front matter"),
         ]
         for pattern, label in front_patterns:
             for match in re.finditer(pattern, front):

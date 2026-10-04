@@ -5,7 +5,7 @@ from collections import defaultdict
 TOKEN = re.compile(r'\w+', re.UNICODE)
 MIN_MATCH_WORDS = 4
 COMMON = set('a an the and or but if then of in on at to for from by with as is are was were be been this that these those it its we our they their'.split())
-BIB_HEADER = re.compile(r'^\s*(?:#+\s*|\d+\.\s*)?(?:references|bibliography|works cited|reference list)\s*:?[ \t]*$', re.I | re.M)
+BIB_HEADER = re.compile(r'^[ \t]*(?:#+[ \t]*|\d+\.[ \t]*)?(?:references|bibliography|works cited|reference list)[ \t]*:?[ \t]*$', re.I | re.M)
 QUOTE = re.compile(r'"[^"\n]+"|“[^”]+”|«[^»]+»')
 
 
