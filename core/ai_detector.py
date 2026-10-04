@@ -122,7 +122,7 @@ class AIDetector:
     @staticmethod
     def sentence_spans(text: str) -> List[Tuple[int, int, str]]:
         spans: List[Tuple[int, int, str]] = []
-        for match in re.finditer(r"[^.!?\n]+(?:[.!?]+|(?=\n|$))", text):
+        for match in re.finditer(r"[^.!?\n]+[.!?]*", text):
             raw = match.group(0)
             stripped = raw.strip()
             if len(stripped) < 4:

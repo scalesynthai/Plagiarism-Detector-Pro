@@ -220,3 +220,43 @@ class ErrorAndBlockTests(unittest.TestCase):
                                    content_type='multipart/form-data')
         self.assertEqual(response.status_code, 400)
         self.assertNotIn('/', response.get_json()['error'].replace('.', ''))
+
+
+class PublicErrorTests(unittest.TestCase):
+    def setUp(self):
+        self.client = create_app(type('C', (TestingConfig,), {'SOURCES_DIR': tempfile.mkdtemp()})).test_client()
+
+    def test_public_message_maps_known_and_hides_unknown(self):
+        from core.public_errors import public_message, GENERIC
+        self.assertEqual(public_message(ValueError('Enter a valid email address.')), 'Enter a valid email address.')
+        self.assertEqual(public_message(ValueError('/srv/app/secret.txt: boom')), GENERIC)
+        self.assertEqual(public_message(ValueError('Unsupported file format: .exe. Supported formats: x')), 'Unsupported file format.')
+        self.assertEqual(public_message(ValueError('ai_analysis must be an object.')), 'Report data has an invalid structure.')
+        self.assertEqual(public_message(zipfile.BadZipFile('File is not a zip file')), 'The uploaded file is not a valid ZIP archive.')
+
+    def test_user_facing_limit_messages_survive(self):
+        too_long = self.client.post('/check', json={'query': 'word ' * 30000})
+        self.assertEqual(too_long.status_code, 400)
+        self.assertIn('100,000 character', too_long.get_json()['error'])
+        bad_email = self.client.post('/api/visitors/email', json={'email': 'nope', 'consent': True})
+        self.assertEqual(bad_email.get_json()['error'], 'Enter a valid email address.')
+        bad_zip = self.client.post('/check/batch', data={'files': (io.BytesIO(b'not a zip'), 'x.zip')},
+                                   content_type='multipart/form-data')
+        self.assertEqual(bad_zip.status_code, 400)
+        self.assertNotIn('File is not a zip', bad_zip.get_data(as_text=True))
+
+    def test_extractors_do_not_accept_filesystem_paths(self):
+        from core.extractor import extract_text_from_file, extract_document
+        for call in (lambda: extract_text_from_file('/etc/hostname'), lambda: extract_document('/etc/hostname')):
+            with self.assertRaises(ValueError):
+                call()
+
+    def test_report_values_are_escaped_and_scalars_preserved(self):
+        payload = '<img src=x onerror=alert(1)>"'
+        data = {'overall_similarity': 5, 'highlighted_sentences': [{'text': payload, 'start': 0}],
+                'sources_breakdown': [{'filename': payload, 'url': 'https://a.test/"><script>', 'similarity': 3.5,
+                                       'source_word_count': 4, 'badge': payload}]}
+        html_out = self.client.post('/reports/html', json=data).get_data(as_text=True)
+        self.assertNotIn('<img src=x', html_out)
+        self.assertNotIn('"><script>', html_out)
+        self.assertIn('3.5%', html_out)

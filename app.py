@@ -13,6 +13,7 @@ from werkzeug.exceptions import HTTPException, BadRequest
 
 from config import Config, DevelopmentConfig
 from core.limits import validate_text
+from core.public_errors import public_message
 from core.checker import PlagiarismChecker
 from core.extractor import extract_text_from_file, extract_document, is_allowed_file
 from core.batch_processor import BatchProcessor
@@ -87,7 +88,7 @@ def create_app(config_class: type = Config) -> Flask:
                     try:
                         validate_text(data[field])
                     except ValueError as e:
-                        raise BadRequest(str(e))
+                        raise BadRequest(public_message(e))
             for field in ("include_web", "exclude_quotes", "private_draft", "exclude_bibliography"):
                 if field in data and not isinstance(data[field], bool):
                     raise BadRequest(f"{field} must be a boolean.")
@@ -190,7 +191,7 @@ def create_app(config_class: type = Config) -> Flask:
         try:
             analytics.subscribe(data.get("email"))
         except ValueError as error:
-            return jsonify({"error": str(error)}), 400
+            return jsonify({"error": public_message(error)}), 400
         return jsonify({"message": "Thanks. You're on the update list."}), 200
 
     @app.route("/api/admin/subscribers", methods=["GET"])
@@ -304,7 +305,7 @@ def create_app(config_class: type = Config) -> Flask:
 
             return jsonify(analysis), 200
         except ValueError as e:
-            return jsonify({"error": str(e)}), 400
+            return jsonify({"error": public_message(e)}), 400
         except Exception as e:
             logger.exception("Internal analysis error: %s", e)
             return jsonify({"error": "Unable to complete the request. See server logs for details."}), 500
@@ -331,7 +332,7 @@ def create_app(config_class: type = Config) -> Flask:
                 )
                 return jsonify(batch_result), 200
             except (ValueError, zipfile.BadZipFile) as e:
-                return jsonify({"error": str(e)}), 400
+                return jsonify({"error": public_message(e)}), 400
             except Exception as e:
                 logger.exception("Failed to process ZIP archive: %s", e)
                 return jsonify({"error": "Unable to complete the request. See server logs for details."}), 500
@@ -351,7 +352,7 @@ def create_app(config_class: type = Config) -> Flask:
             )
             return jsonify(batch_result), 200
         except ValueError as e:
-            return jsonify({"error": str(e)}), 400
+            return jsonify({"error": public_message(e)}), 400
         except Exception as e:
             logger.exception("Batch processing error: %s", e)
             return jsonify({"error": "Unable to complete the request. See server logs for details."}), 500
@@ -363,7 +364,7 @@ def create_app(config_class: type = Config) -> Flask:
         try:
             html_content = report_generator.generate_html_report(data)
         except ValueError as e:
-            raise BadRequest(str(e))
+            raise BadRequest(public_message(e))
         response = make_response(html_content)
         response.headers["Content-Type"] = "text/html"
         return response
@@ -380,7 +381,7 @@ def create_app(config_class: type = Config) -> Flask:
                 data, student_name=student_name, paper_title=paper_title
             )
         except ValueError as e:
-            raise BadRequest(str(e))
+            raise BadRequest(public_message(e))
         response = make_response(html_content)
         response.headers["Content-Type"] = "text/html"
         return response
@@ -489,7 +490,7 @@ def create_app(config_class: type = Config) -> Flask:
         except FileExistsError:
             return jsonify({"error": "A reference source with this name already exists."}), 400
         except ValueError as e:
-            return jsonify({"error": str(e)}), 400
+            return jsonify({"error": public_message(e)}), 400
         except Exception as e:
             logger.exception("Failed to add reference source: %s", e)
             return jsonify({"error": "Unable to complete the request. See server logs for details."}), 500

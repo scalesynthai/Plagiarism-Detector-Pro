@@ -14,7 +14,14 @@ def _safe_data(value):
         return {key: _safe_data(item) for key, item in value.items()}
     if isinstance(value, list):
         return [_safe_data(item) for item in value]
-    return value
+    # JSON scalars are rebuilt (never passed through) so only escaped strings or plain numbers reach HTML.
+    if isinstance(value, bool):
+        return bool(value)
+    if isinstance(value, int):
+        return int(value)
+    if isinstance(value, float):
+        return float(value)
+    return None
 
 
 def sentence_markup(sentence):

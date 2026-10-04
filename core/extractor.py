@@ -21,32 +21,35 @@ def is_allowed_file(filename: str) -> bool:
     return ext in ALLOWED_EXTENSIONS
 
 
+def extract_text_from_path(path: str) -> str:
+    """Extract text from a trusted local file (e.g. the server's own sources directory).
+
+    Request-derived data must never reach this function; uploads go through
+    extract_text_from_file() as in-memory streams.
+    """
+    with open(path, 'rb') as handle:
+        content = handle.read(MAX_DOCUMENT_BYTES + 1)
+    return extract_text_from_file(io.BytesIO(content), os.path.basename(path))
+
+
 def extract_text_from_file(file_input, filename: str = None) -> str:
     """
     Extracts text content from academic manuscripts across diverse formats
     including LaTeX (.tex, .bib), Jupyter Notebooks (.ipynb), Word (.docx), Adobe PDF (.pdf), and Plain Text.
     
-    :param file_input: Either a file path (str), binary stream, or Werkzeug FileStorage.
+    :param file_input: A binary stream or Werkzeug FileStorage. Use extract_text_from_path() for trusted local paths.
     :param filename: Optional filename (used to detect extension if file_input is a stream).
     :return: Extracted plain text string.
     """
     if hasattr(file_input, 'filename') and not filename:
         filename = file_input.filename
-    elif isinstance(file_input, str) and not filename:
-        filename = os.path.basename(file_input)
 
     if not filename:
         raise ValueError("Filename or extension must be provided.")
 
     ext = os.path.splitext(filename)[1].lower()
 
-    # If file_input is a path
-    if isinstance(file_input, str):
-        if not os.path.exists(file_input):
-            raise FileNotFoundError(f"File not found: {file_input}")
-        with open(file_input, 'rb') as f:
-            stream = io.BytesIO(f.read(MAX_DOCUMENT_BYTES + 1))
-    elif hasattr(file_input, 'read'):
+    if hasattr(file_input, 'read'):
         # Reset stream position if possible
         if hasattr(file_input, 'seek'):
             file_input.seek(0)
@@ -191,20 +194,16 @@ def extract_document(file_input, filename: str = None):
     """Extract a document into typed blocks while retaining a stable analysis-to-block map."""
     if hasattr(file_input, 'filename') and not filename:
         filename = file_input.filename
-    elif isinstance(file_input, str) and not filename:
-        filename = os.path.basename(file_input)
     if not filename:
         raise ValueError("Filename or extension must be provided.")
     extension = os.path.splitext(filename)[1].lower()
-    if isinstance(file_input, str):
-        with open(file_input, 'rb') as handle:
-            content = handle.read(MAX_DOCUMENT_BYTES + 1)
-    else:
-        if hasattr(file_input, 'seek'):
-            file_input.seek(0)
-        content = file_input.read(MAX_DOCUMENT_BYTES + 1)
-        if isinstance(content, str):
-            content = content.encode('utf-8')
+    if not hasattr(file_input, 'read'):
+        raise ValueError("Invalid file input type.")
+    if hasattr(file_input, 'seek'):
+        file_input.seek(0)
+    content = file_input.read(MAX_DOCUMENT_BYTES + 1)
+    if isinstance(content, str):
+        content = content.encode('utf-8')
     if len(content) > MAX_DOCUMENT_BYTES:
         raise ValueError('Document exceeds the 8 MB file limit.')
     stream = io.BytesIO(content)
