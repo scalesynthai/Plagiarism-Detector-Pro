@@ -486,7 +486,9 @@ def create_app(config_class: type = Config) -> Flask:
                 "filename": safe_name,
                 "word_count": source_data.get("word_count", 0)
             }), 201
-        except (ValueError, FileExistsError) as e:
+        except FileExistsError:
+            return jsonify({"error": "A reference source with this name already exists."}), 400
+        except ValueError as e:
             return jsonify({"error": str(e)}), 400
         except Exception as e:
             logger.exception("Failed to add reference source: %s", e)

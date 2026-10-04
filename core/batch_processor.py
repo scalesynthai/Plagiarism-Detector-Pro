@@ -1,4 +1,5 @@
 import io
+import logging
 import os
 import zipfile
 import concurrent.futures
@@ -95,10 +96,11 @@ class BatchProcessor:
                     "analysis": analysis,
                 }
             except Exception as e:
+                logging.getLogger(__name__).warning("Batch document %s failed: %s", name, e)
                 return {
                     "filename": name,
                     "status": "error",
-                    "error": str(e),
+                    "error": str(e) if isinstance(e, ValueError) else "Document could not be analyzed",
                 }
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:

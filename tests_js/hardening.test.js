@@ -103,3 +103,15 @@ const { scan, DocumentExtractor, PlagiarismApiClient, CitationGenerator } = requ
     assert.equal(responses.find(r => r.id === 3).result.isError, true);
     console.log('JavaScript hardening regressions passed.');
 })().catch(error => { console.error(error); process.exitCode = 1; });
+
+// Regression: linear-time handling of adversarial input (CodeQL polynomial-regex alerts).
+{
+    const assert = require("assert");
+    const { WritingStyleReviewer } = require("../lib/style_review.js");
+    const { PlagiarismApiClient } = require("../lib/api_client.js");
+    const timed = (fn) => { const t = Date.now(); fn(); return Date.now() - t; };
+    assert.ok(timed(() => WritingStyleReviewer.analyze("a ".repeat(50000))) < 3000);
+    assert.ok(timed(() => new PlagiarismApiClient("/".repeat(100000) + "a")) < 500);
+    assert.strictEqual(new PlagiarismApiClient("https://x.test///").baseUrl, "https://x.test");
+    console.log("JavaScript regex-performance regressions passed.");
+}

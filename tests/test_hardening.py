@@ -182,3 +182,39 @@ class RegexPerformanceTests(unittest.TestCase):
             front_matter(text)
             BIB_HEADER.search(text)
             self.assertLess(time.monotonic() - started, 2.0)
+
+
+class ErrorAndBlockTests(unittest.TestCase):
+    def test_plain_blocks_linear_and_equivalent(self):
+        import time
+        from core.style_review import WritingStyleReviewer
+        text = "First para line one.\nstill first.  \n\n  > quoted\n\nReferences\nA. B.\n"
+        blocks = WritingStyleReviewer._plain_blocks(text)
+        self.assertEqual([b["text"] for b in blocks],
+                         ["First para line one.\nstill first.", "> quoted", "References\nA. B."])
+        self.assertEqual([b["type"] for b in blocks], ["paragraph", "quotation", "reference"])
+        for b in blocks:
+            self.assertEqual(text[b["start_offset"]:b["end_offset"]], b["text"])
+        for big in ("a " * 50000, "word\n" * 20000, "a\n \n" * 20000):
+            started = time.monotonic()
+            WritingStyleReviewer._plain_blocks(big)
+            self.assertLess(time.monotonic() - started, 2.0)
+
+    def test_corrupt_documents_do_not_leak_library_errors(self):
+        from core.extractor import extract_text_from_file
+        for name in ("x.pdf", "x.docx"):
+            with self.assertRaises(ValueError) as ctx:
+                extract_text_from_file(io.BytesIO(b"garbage"), name)
+            self.assertNotIn("pypdf", str(ctx.exception).lower())
+            self.assertNotIn("zip", str(ctx.exception).lower().replace("unsupported", ""))
+
+    def test_duplicate_upload_does_not_leak_paths(self):
+        app = create_app(type('C', (TestingConfig,), {'SOURCES_DIR': tempfile.mkdtemp()}))
+        client = app.test_client()
+        headers = {'X-Admin-PIN': TestingConfig.ADMIN_PIN}
+        for _ in range(2):
+            response = client.post('/sources/upload', headers=headers,
+                                   data={'file': (io.BytesIO(b'Some reference text about science.'), 'dup.txt')},
+                                   content_type='multipart/form-data')
+        self.assertEqual(response.status_code, 400)
+        self.assertNotIn('/', response.get_json()['error'].replace('.', ''))
