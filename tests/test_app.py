@@ -548,6 +548,15 @@ class EnterpriseAcademicOriginalityTestSuite(unittest.TestCase):
         self.assertIn("robust", partial)
         self.assertIn("use a", partial)
 
+    def test_writing_cleanup_protects_content_and_controls_length(self):
+        text = 'We leverage a "robust framework". References\nA holistic approach is documented.'
+        review = WritingCleanup.review(text, protected_terms=["leverage"], length_mode="no_increase")
+        self.assertFalse(any(edit["original"].lower() == "leverage" for edit in review["edits"]))
+        reasons = [edit.get("excluded_reason", "") for edit in review["excluded_edits"]]
+        self.assertTrue(any("protected term" in reason for reason in reasons))
+        self.assertTrue(any(reason in {"quotation", "reference section"} for reason in reasons))
+        self.assertTrue(all(edit["word_delta"] <= 0 for edit in review["edits"]))
+
     def test_writing_cleanup_endpoints(self):
         text = "This holistic approach plays a pivotal role and we leverage a robust framework."
         suggest_res = self.client.post("/api/writing-cleanup", json={"text": text})
@@ -562,6 +571,20 @@ class EnterpriseAcademicOriginalityTestSuite(unittest.TestCase):
         applied = apply_res.get_json()
         self.assertEqual(applied["applied_count"], 2)
         self.assertNotEqual(applied["cleaned_text"], text)
+        self.assertIn("before", applied)
+        self.assertIn("after", applied)
+        self.assertIn("local_similarity", applied["after"])
+        self.assertIn("comparison_note", applied)
+
+        protected_res = self.client.post("/api/writing-cleanup", json={
+            "text": text,
+            "protected_terms": ["robust"],
+            "length_mode": "no_increase",
+        })
+        protected = protected_res.get_json()
+        self.assertEqual(protected_res.status_code, 200)
+        self.assertFalse(any(edit["original"].lower() == "robust" for edit in protected["edits"]))
+        self.assertGreater(protected["excluded_count"], 0)
 
         empty_res = self.client.post("/api/writing-cleanup", json={"text": ""})
         self.assertEqual(empty_res.status_code, 400)

@@ -119,6 +119,13 @@ assert.ok(cleanupResult.includes("it is important to note"), "judgment-call phra
 assert.ok(!cleanupResult.includes("leverage") && !cleanupResult.includes("robust"));
 const cleanupPartial = WritingCleanup.applyEdits(cleanupText, cleanupEdits.filter(e => e.original === "leverage"));
 assert.ok(cleanupPartial.includes("robust") && cleanupPartial.includes("use a"));
+const protectedCleanup = WritingCleanup.review('We leverage a "robust framework" and use a robust method.', {
+    protectedTerms: ['leverage'], lengthMode: 'no_increase'
+});
+assert.ok(!protectedCleanup.edits.some(e => e.original.toLowerCase() === 'leverage'));
+assert.ok(protectedCleanup.excluded_edits.some(e => e.excluded_reason.startsWith('protected term')));
+assert.ok(protectedCleanup.excluded_edits.some(e => e.excluded_reason === 'quotation'));
+assert.ok(protectedCleanup.edits.every(e => e.word_delta <= 0));
 console.log("✓ WritingCleanup passed.");
 
 // 5c. Test buildCheckSummary (combines ai_analysis + evidence_analysis into one verdict)

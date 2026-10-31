@@ -220,11 +220,28 @@ export interface CleanupEdit {
     original: string;
     replacement: string;
     category: "predictability";
+    word_delta?: number;
+    excluded_reason?: string;
+}
+
+export interface CleanupOptions {
+    protectedTerms?: string[];
+    protected_terms?: string[];
+    lengthMode?: "any" | "same" | "no_increase" | "shorter";
+    length_mode?: "any" | "same" | "no_increase" | "shorter";
 }
 
 export class WritingCleanup {
     /** Deterministic, offline predictable-vocabulary swap suggestions. Never rewrites text itself. */
-    static suggestEdits(text: string): CleanupEdit[];
+    static suggestEdits(text: string, options?: CleanupOptions): CleanupEdit[];
+    static review(text: string, options?: CleanupOptions): {
+        edits: CleanupEdit[];
+        excluded_edits: CleanupEdit[];
+        edits_count: number;
+        excluded_count: number;
+        length_mode: string;
+        protected_terms: string[];
+    };
     /** Applies the given edits (absolute offsets into `text`) with a minimal a/an fix-up. */
     static applyEdits(text: string, edits: CleanupEdit[]): string;
 }

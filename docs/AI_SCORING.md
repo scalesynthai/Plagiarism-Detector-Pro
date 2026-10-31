@@ -50,12 +50,29 @@ result.
 - The web app's apply endpoint (`POST /api/writing-cleanup/apply`) never
   trusts client-supplied replacement text: it re-derives the edit list from
   the submitted text server-side and only accepts which indices to apply.
+- The guided revision workspace automatically locks quotations, citations,
+  references, URLs/DOIs, inline code, LaTeX citations/equations, and up to 50
+  writer-supplied protected terms. Locked edits remain inspectable in the API
+  with an exclusion reason and are never applied.
+- Length control supports exact word-count swaps, non-expanding swaps,
+  shorter-only swaps, or all fixed swaps. Each edit includes its word delta.
+- After the writer applies selected edits, the server reports before/after
+  word count, local-corpus similarity, style-pattern index, citation count,
+  and reading grade. Local rescoring is labeled as such; a full scan remains
+  necessary for external-source coverage.
 
 What this deliberately does not do: generate new prose, paraphrase a sentence,
 or optimize for a lower score on GPTZero, Turnitin, Pangram, or any other
 external detector. That would make an academic-integrity tool double as
 detection-evasion tooling, which is out of scope for this project regardless
 of what an upstream project's own rewrite skill does.
+
+The proprietary Turnitout Humanizer implementation and API are not included,
+copied, or called. Its advertised detector-evasion, watermark removal,
+metadata stripping, and placeholder-citation behavior are outside this
+project's purpose. The protected-content, length-control, and before/after
+review workflow here is an independent implementation around this project's
+existing fixed, attributed cleanup table.
 
 ## Em dashes
 

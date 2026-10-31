@@ -3,6 +3,7 @@ let currentSentenceObj = null;
 let allSourcesData = [];
 let targetDeleteFilename = null;
 const dismissedStyleFindings = new Map();
+let currentCleanupReview = { edits: [], excluded_edits: [] };
 
 // Academic Preset Samples
 const PRESETS = {
@@ -457,6 +458,8 @@ function initCleanupTool() {
     const resultEl = document.getElementById('cleanup-result');
     const resultText = document.getElementById('cleanup-result-text');
     const statusEl = document.getElementById('cleanup-apply-status');
+    const comparisonEl = document.getElementById('cleanup-comparison');
+    const refreshBtn = document.getElementById('cleanup-refresh-btn');
     if (!applyBtn || !listEl) return;
 
     applyBtn.addEventListener('click', async () => {
@@ -475,16 +478,18 @@ function initCleanupTool() {
         applyBtn.textContent = 'Applying…';
         if (statusEl) statusEl.textContent = '';
         try {
+            const options = getCleanupOptions();
             const res = await fetch('/api/writing-cleanup/apply', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: currentAnalysisData.normalized_text, accept })
+                body: JSON.stringify({ text: currentAnalysisData.normalized_text, accept, ...options })
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed to apply cleanup.');
             if (resultText) resultText.value = data.cleaned_text || '';
             if (resultEl) resultEl.hidden = false;
             if (statusEl) statusEl.textContent = `Applied ${data.applied_count} of ${accept.length} selected edit${accept.length === 1 ? '' : 's'}.`;
+            renderCleanupComparison(data, comparisonEl);
         } catch (err) {
             if (statusEl) statusEl.textContent = err.message || 'Failed to apply cleanup.';
         } finally {
@@ -492,6 +497,8 @@ function initCleanupTool() {
             applyBtn.textContent = originalLabel;
         }
     });
+
+    if (refreshBtn) refreshBtn.addEventListener('click', () => refreshCleanupEdits());
 
     if (copyBtn && resultText) {
         copyBtn.addEventListener('click', async () => {
@@ -506,6 +513,38 @@ function initCleanupTool() {
             setTimeout(() => { copyBtn.textContent = originalLabel; }, 2000);
         });
     }
+}
+
+function getCleanupOptions() {
+    const protectedValue = document.getElementById('cleanup-protected-terms')?.value || '';
+    return {
+        protected_terms: protectedValue.split(',').map(term => term.trim()).filter(Boolean),
+        length_mode: document.getElementById('cleanup-length-mode')?.value || 'no_increase'
+    };
+}
+
+function renderCleanupComparison(data, container) {
+    if (!container || !data.before || !data.after) return;
+    const metric = (label, before, after) => {
+        const item = document.createElement('div');
+        item.className = 'cleanup-comparison-item';
+        const title = document.createTextNode(label);
+        const value = document.createElement('strong');
+        value.textContent = `${before ?? '—'} → ${after ?? '—'}`;
+        item.append(title, value);
+        return item;
+    };
+    container.replaceChildren(
+        metric('Words', data.before.word_count, data.after.word_count),
+        metric('Local similarity', `${data.before.local_similarity}%`, `${data.after.local_similarity}%`),
+        metric('Style index', data.before.style_pattern_index, data.after.style_pattern_index),
+        metric('Reading grade', data.before.reading_grade, data.after.reading_grade)
+    );
+    const note = document.createElement('div');
+    note.className = 'cleanup-comparison-note';
+    note.textContent = `${data.comparison_note || ''} Citations detected: ${data.before.citations_detected ?? 0} → ${data.after.citations_detected ?? 0}.`;
+    container.appendChild(note);
+    container.hidden = false;
 }
 
 /* ==============================================================================
@@ -861,16 +900,38 @@ function getCleanupEdits(categories) {
         .map((row, index) => ({ index, start: row.start, end: row.end, original: row.text, replacement: row.suggestion }));
 }
 
-function renderCleanupEdits(categories) {
+async function refreshCleanupEdits(fallbackCategories = []) {
     const details = document.getElementById('cleanup-details');
     const countEl = document.getElementById('cleanup-count');
     const listEl = document.getElementById('cleanup-edit-list');
     const resultEl = document.getElementById('cleanup-result');
     const statusEl = document.getElementById('cleanup-apply-status');
+    const protectionEl = document.getElementById('cleanup-protection-status');
     if (!details || !listEl) return;
 
-    const edits = getCleanupEdits(categories);
-    details.hidden = edits.length === 0;
+    let edits = getCleanupEdits(fallbackCategories);
+    let excludedCount = 0;
+    if (currentAnalysisData?.normalized_text) {
+        if (protectionEl) protectionEl.textContent = 'Checking protected content…';
+        try {
+            const response = await fetch('/api/writing-cleanup', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({text: currentAnalysisData.normalized_text, ...getCleanupOptions()})
+            });
+            const review = await response.json();
+            if (!response.ok) throw new Error(review.error || 'Unable to load revision suggestions.');
+            currentCleanupReview = review;
+            edits = review.edits || [];
+            excludedCount = Number(review.excluded_count) || 0;
+            if (protectionEl) protectionEl.textContent = excludedCount
+                ? `${excludedCount} candidate edit${excludedCount === 1 ? ' was' : 's were'} locked by protected content or length control.`
+                : 'Citations, quotations, code, equations, URLs, references, and protected terms are locked.';
+        } catch (error) {
+            if (protectionEl) protectionEl.textContent = error.message;
+        }
+    }
+    details.hidden = edits.length === 0 && excludedCount === 0;
     if (countEl) countEl.textContent = String(edits.length);
     if (resultEl) resultEl.hidden = true;
     if (statusEl) statusEl.textContent = '';
@@ -892,6 +953,10 @@ function renderCleanupEdits(categories) {
         row.appendChild(label);
         listEl.appendChild(row);
     }
+}
+
+function renderCleanupEdits(categories) {
+    refreshCleanupEdits(categories);
 }
 
 function renderSuggestions(data) {

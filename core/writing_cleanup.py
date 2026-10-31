@@ -15,18 +15,90 @@ locally, with every change shown for the writer to accept or reject.
 """
 
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Tuple
 
 from core.ai_detector import AIDetector
 
 _ARTICLE_RE = re.compile(r"\b([Aa]n?)\s+$")
+_PROTECTED_PATTERNS = (
+    ("quotation", re.compile(r'["“][^"”\n]{1,2000}["”]')),
+    ("inline code", re.compile(r"`[^`\n]+`|```[\s\S]*?```")),
+    ("URL or DOI", re.compile(r"https?://\S+|\bdoi:\s*10\.\d{4,9}/\S+|\b10\.\d{4,9}/\S+", re.I)),
+    ("LaTeX command or equation", re.compile(r"\\(?:cite|ref|eqref|url|doi)\{[^}]+\}|\$[^$\n]+\$")),
+    ("citation", re.compile(r"\([^()\n]{0,100}\b(?:19|20)\d{2}[a-z]?[^()\n]{0,100}\)|\[\d+(?:\s*[-,]\s*\d+)*\]", re.I)),
+)
+_LENGTH_MODES = {"any", "same", "no_increase", "shorter"}
 
 
 class WritingCleanup:
     """Builds and applies a reviewable list of predictable-vocabulary swaps."""
 
     @classmethod
-    def suggest_edits(cls, text: str) -> List[Dict[str, Any]]:
+    def _protected_spans(cls, text: str, protected_terms: Optional[List[str]] = None) -> List[Tuple[int, int, str]]:
+        spans: List[Tuple[int, int, str]] = []
+        for reason, pattern in _PROTECTED_PATTERNS:
+            spans.extend((match.start(), match.end(), reason) for match in pattern.finditer(text))
+
+        reference_heading = re.search(r"(?im)^\s*(references|bibliography|works cited)\s*$", text)
+        if reference_heading:
+            spans.append((reference_heading.start(), len(text), "reference section"))
+
+        for raw_term in protected_terms or []:
+            term = str(raw_term).strip()
+            if not term:
+                continue
+            pattern = re.compile(rf"(?<!\w){re.escape(term)}(?!\w)", re.I)
+            spans.extend((match.start(), match.end(), f'protected term: {term}') for match in pattern.finditer(text))
+        return sorted(spans)
+
+    @staticmethod
+    def _length_allowed(edit: Dict[str, Any], length_mode: str) -> bool:
+        original_words = len(re.findall(r"\b\w+\b", edit["original"]))
+        replacement_words = len(re.findall(r"\b\w+\b", edit["replacement"]))
+        edit["word_delta"] = replacement_words - original_words
+        if length_mode == "same":
+            return replacement_words == original_words
+        if length_mode == "no_increase":
+            return replacement_words <= original_words
+        if length_mode == "shorter":
+            return replacement_words < original_words
+        return True
+
+    @classmethod
+    def review(cls, text: str, protected_terms: Optional[List[str]] = None,
+               length_mode: str = "any") -> Dict[str, Any]:
+        """Return eligible and excluded edits with explicit protection reasons."""
+        if not isinstance(length_mode, str) or length_mode not in _LENGTH_MODES:
+            raise ValueError("length_mode must be any, same, no_increase, or shorter.")
+        spans = cls._protected_spans(text, protected_terms)
+        candidates = cls._candidate_edits(text)
+        eligible: List[Dict[str, Any]] = []
+        excluded: List[Dict[str, Any]] = []
+        for edit in candidates:
+            overlap = next((reason for start, end, reason in spans
+                            if edit["start"] < end and edit["end"] > start), None)
+            if overlap:
+                edit["excluded_reason"] = overlap
+                excluded.append(edit)
+                continue
+            if not cls._length_allowed(edit, length_mode):
+                edit["excluded_reason"] = f"excluded by {length_mode} length mode"
+                excluded.append(edit)
+                continue
+            eligible.append(edit)
+        for index, edit in enumerate(eligible):
+            edit["index"] = index
+        return {
+            "edits": eligible,
+            "excluded_edits": excluded,
+            "edits_count": len(eligible),
+            "excluded_count": len(excluded),
+            "length_mode": length_mode,
+            "protected_terms": [str(term).strip() for term in protected_terms or [] if str(term).strip()],
+        }
+
+    @classmethod
+    def _candidate_edits(cls, text: str) -> List[Dict[str, Any]]:
         """Return the edit-eligible predictable-vocabulary findings for `text`.
 
         Deterministic: the same text always produces the same list, in the
@@ -50,9 +122,12 @@ class WritingCleanup:
                 "category": "predictability",
             })
         edits.sort(key=lambda e: e["start"])
-        for index, edit in enumerate(edits):
-            edit["index"] = index
         return edits
+
+    @classmethod
+    def suggest_edits(cls, text: str, protected_terms: Optional[List[str]] = None,
+                      length_mode: str = "any") -> List[Dict[str, Any]]:
+        return cls.review(text or "", protected_terms, length_mode)["edits"]
 
     @staticmethod
     def apply_edits(text: str, edits: List[Dict[str, Any]]) -> str:

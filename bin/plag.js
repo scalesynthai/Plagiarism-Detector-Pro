@@ -67,6 +67,8 @@ function printHelp() {
     console.log(`  ${colors.yellow}--source <name>${colors.reset}                 Source attribution key for paraphrasing`);
     console.log(`  ${colors.yellow}--apply${colors.reset}                         Write the cleaned text (plag cleanup)`);
     console.log(`  ${colors.yellow}--output <path>${colors.reset}                 Save cleaned text to a file instead of stdout`);
+    console.log(`  ${colors.yellow}--protect <a,b,c>${colors.reset}                Preserve exact terms during cleanup`);
+    console.log(`  ${colors.yellow}--length <mode>${colors.reset}                  any, same, no_increase, or shorter`);
     console.log(`\n${colors.bold}EXAMPLES:${colors.reset}`);
     console.log(`  ${colors.gray}$ plag scan essay.docx${colors.reset}`);
     console.log(`  ${colors.gray}$ plag cleanup essay.docx --apply --output essay.clean.txt${colors.reset}`);
@@ -322,12 +324,15 @@ async function main() {
             if (fs.existsSync(input)) {
                 text = DocumentExtractor.extractFromFile(input);
             }
-            const edits = WritingCleanup.suggestEdits(text);
+            const protectedTerms = (getOption("--protect") || "").split(",").map(value => value.trim()).filter(Boolean);
+            const lengthMode = getOption("--length") || "no_increase";
+            const review = WritingCleanup.review(text, { protectedTerms, lengthMode });
+            const edits = review.edits;
             const apply = args.includes("--apply");
             const cleanedText = apply ? WritingCleanup.applyEdits(text, edits) : null;
 
             if (isJson) {
-                const payload = { edits, edits_count: edits.length };
+                const payload = review;
                 if (apply) payload.cleaned_text = cleanedText;
                 console.log(JSON.stringify(payload, null, 2));
                 return;

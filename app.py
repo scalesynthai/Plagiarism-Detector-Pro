@@ -94,6 +94,15 @@ def create_app(config_class: type = Config) -> Flask:
                     raise BadRequest(f"{field} must be a boolean.")
             if "consent" in data and not isinstance(data["consent"], bool):
                 raise BadRequest("consent must be a boolean.")
+            if "protected_terms" in data:
+                terms = data["protected_terms"]
+                if (not isinstance(terms, list) or len(terms) > 50
+                        or any(not isinstance(term, str) or len(term) > 120 for term in terms)):
+                    raise BadRequest("protected_terms must be a list of up to 50 short strings.")
+            if "accept" in data:
+                accepted = data["accept"]
+                if not isinstance(accepted, list) or any(not isinstance(index, int) or index < 0 for index in accepted):
+                    raise BadRequest("accept must be a list of non-negative edit indices.")
         if (request.path == "/sources/upload"
                 or (request.method == "DELETE" and request.path.startswith("/sources/"))
                 or request.path.startswith("/api/admin/")):
@@ -593,8 +602,13 @@ def create_app(config_class: type = Config) -> Flask:
         if not text or not text.strip():
             return jsonify({"error": "No text provided for cleanup."}), 400
 
-        edits = WritingCleanup.suggest_edits(text)
-        return jsonify({"edits": edits, "edits_count": len(edits)}), 200
+        protected_terms = data.get("protected_terms") or []
+        length_mode = data.get("length_mode", "no_increase")
+        try:
+            review = WritingCleanup.review(text, protected_terms, length_mode)
+        except ValueError as error:
+            return jsonify({"error": str(error)}), 400
+        return jsonify(review), 200
 
     @app.route("/api/writing-cleanup/apply", methods=["POST"])
     def apply_writing_cleanup():
@@ -613,12 +627,45 @@ def create_app(config_class: type = Config) -> Flask:
             not isinstance(accept, list) or not all(isinstance(i, int) and not isinstance(i, bool) for i in accept)
         ):
             return jsonify({"error": "accept must be a list of integer edit indices."}), 400
-
-        all_edits = WritingCleanup.suggest_edits(text)
+        protected_terms = data.get("protected_terms") or []
+        length_mode = data.get("length_mode", "no_increase")
+        try:
+            review = WritingCleanup.review(text, protected_terms, length_mode)
+        except ValueError as error:
+            return jsonify({"error": str(error)}), 400
+        all_edits = review["edits"]
         accepted = set(accept or [])
         selected = all_edits if accept is None else [e for e in all_edits if e["index"] in accepted]
         cleaned_text = WritingCleanup.apply_edits(text, selected)
-        return jsonify({"cleaned_text": cleaned_text, "applied_count": len(selected)}), 200
+
+        def revision_metrics(value):
+            analysis = checker.analyze(
+                value, include_web_sources=False, private_draft=True,
+                exclude_quotes=False, exclude_bibliography=False,
+            )
+            citations = analysis.get("citation_analysis") or {}
+            style = analysis.get("style_review") or {}
+            readability = analysis.get("readability") or {}
+            return {
+                "word_count": len(value.split()),
+                "local_similarity": analysis.get("overall_similarity", 0),
+                "style_pattern_index": style.get("style_pattern_index"),
+                "citations_detected": citations.get("citation_count", len(citations.get("citations", []))),
+                "reading_grade": readability.get("fk_grade_level", readability.get("grade_level")),
+            }
+
+        before = revision_metrics(text)
+        after = revision_metrics(cleaned_text)
+        return jsonify({
+            "cleaned_text": cleaned_text,
+            "applied_count": len(selected),
+            "excluded_count": review["excluded_count"],
+            "applied_edits": selected,
+            "before": before,
+            "after": after,
+            "word_delta": after["word_count"] - before["word_count"],
+            "comparison_note": "Similarity is rescored against the local corpus only; run a full scan for external-source coverage.",
+        }), 200
 
     return app
 
