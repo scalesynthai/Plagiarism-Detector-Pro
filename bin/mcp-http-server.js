@@ -55,8 +55,10 @@ function loadConfig() {
 }
 
 const PORT    = parseInt(process.env.MCP_PORT    || "3456", 10);
-const cfg     = loadConfig();
+const cfg     = process.env.MCP_API_KEY ? null : loadConfig();
 const API_KEY = process.env.MCP_API_KEY || cfg.api_key;
+const MAX_REQUEST_BYTES = 1024 * 1024;
+const MAX_TEXT_CHARS = 100000;
 
 // ── MCP Tool Definitions ─────────────────────────────────────────────────────
 const TOOLS = [
@@ -159,6 +161,14 @@ async function handleToolCall(name, args) {
             throw new Error(`${key} must be a non-empty string`);
         }
     }
+    for (const [key, value] of Object.entries(args)) {
+        const property = tool.inputSchema.properties[key];
+        if (!property) throw new Error(`Unknown argument: ${key}`);
+        if (typeof value !== property.type) throw new Error(`Invalid type for ${key}`);
+        if (typeof value === "string" && value.length > MAX_TEXT_CHARS) {
+            throw new Error(`${key} exceeds the 100,000 character limit`);
+        }
+    }
 
     switch (name) {
         case "plag_scan_text":
@@ -211,11 +221,16 @@ async function handleToolCall(name, args) {
 const PKG = require("../package.json");
 
 async function routeRpc(request) {
-    if (!request || typeof request !== "object" || request.jsonrpc !== "2.0") {
+    if (!request || typeof request !== "object" || Array.isArray(request)
+            || request.jsonrpc !== "2.0" || typeof request.method !== "string") {
         return { jsonrpc: "2.0", id: null, error: { code: -32600, message: "Invalid Request" } };
     }
 
     const { id, method, params } = request;
+    if (id === undefined) return null;
+    if (params !== undefined && (!params || typeof params !== "object" || Array.isArray(params))) {
+        return { jsonrpc: "2.0", id, error: { code: -32602, message: "Invalid params" } };
+    }
 
     switch (method) {
         case "initialize":
@@ -245,7 +260,7 @@ async function routeRpc(request) {
             } catch (err) {
                 return {
                     jsonrpc: "2.0", id,
-                    result: { isError: true, content: [{ type: "text", text: `Error: ${err.message}` }] }
+                    result: { isError: true, content: [{ type: "text", text: "Check the tool name and arguments." }] }
                 };
             }
         }
@@ -289,7 +304,9 @@ const server = http.createServer(async (req, res) => {
     const apiKeyHeader= req.headers["x-api-key"] || "";
     const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : apiKeyHeader;
 
-    if (token !== API_KEY) {
+    const supplied = Buffer.from(String(token));
+    const expected = Buffer.from(String(API_KEY));
+    if (supplied.length !== expected.length || !crypto.timingSafeEqual(supplied, expected)) {
         res.writeHead(401, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: "Unauthorized", hint: "Pass your API key as: Authorization: Bearer <key>" }));
         return;
@@ -298,8 +315,18 @@ const server = http.createServer(async (req, res) => {
     // ── MCP endpoint: POST /mcp ──────────────────────────────────────────────
     if (req.method === "POST" && (pathname === "/mcp" || pathname === "/")) {
         let body = "";
-        req.on("data", chunk => { body += chunk; });
+        let tooLarge = false;
+        req.on("data", chunk => {
+            if (tooLarge) return;
+            body += chunk;
+            if (Buffer.byteLength(body) > MAX_REQUEST_BYTES) {
+                tooLarge = true;
+                res.writeHead(413, { "Content-Type": "application/json" });
+                res.end(JSON.stringify({ error: "Request body exceeds the 1 MB limit" }));
+            }
+        });
         req.on("end", async () => {
+            if (tooLarge) return;
             let request;
             try {
                 request = JSON.parse(body);
@@ -311,16 +338,21 @@ const server = http.createServer(async (req, res) => {
 
             // Handle batch requests (array of JSON-RPC)
             if (Array.isArray(request)) {
-                const responses = await Promise.all(request.map(routeRpc));
-                res.writeHead(200, { "Content-Type": "application/json" });
-                res.end(JSON.stringify(responses));
+                if (request.length === 0) {
+                    res.writeHead(400, { "Content-Type": "application/json" });
+                    res.end(JSON.stringify({ jsonrpc: "2.0", id: null, error: { code: -32600, message: "Invalid Request" } }));
+                    return;
+                }
+                const responses = (await Promise.all(request.map(routeRpc))).filter(Boolean);
+                res.writeHead(responses.length ? 200 : 202, { "Content-Type": "application/json" });
+                res.end(responses.length ? JSON.stringify(responses) : "");
                 return;
             }
 
             // Single request
             const response = await routeRpc(request);
-            res.writeHead(200, { "Content-Type": "application/json" });
-            res.end(JSON.stringify(response));
+            res.writeHead(response ? 200 : 202, { "Content-Type": "application/json" });
+            res.end(response ? JSON.stringify(response) : "");
         });
         return;
     }
@@ -338,7 +370,7 @@ server.listen(PORT, "0.0.0.0", () => {
     console.error(divider);
     console.error(`\n${C.bold} Local URL   :${C.reset}  ${C.green}http://localhost:${PORT}/mcp${C.reset}`);
     console.error(`${C.bold} API Key     :${C.reset}  ${C.yellow}${API_KEY}${C.reset}`);
-    console.error(`${C.gray} Key saved at: ${CONFIG_PATH}${C.reset}`);
+    if (cfg) console.error(`${C.gray} Key saved at: ${CONFIG_PATH}${C.reset}`);
     console.error(`${C.bold} Health      :${C.reset}  ${C.green}http://localhost:${PORT}/health${C.reset}\n`);
     console.error(`${C.bold}${C.magenta} ─── Expose via Cloudflare Tunnel (Free, No Account Needed) ───${C.reset}`);
     console.error(`${C.gray}  brew install cloudflare/cloudflare/cloudflared${C.reset}`);

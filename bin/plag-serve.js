@@ -1,7 +1,16 @@
 #!/usr/bin/env node
 /**
- * plag-serve.js — One-command launcher
+ * plag-serve.js — One-command personal MCP launcher
  * Starts the MCP HTTP server + Cloudflare Tunnel and prints your live URL.
+ *
+ * Requirements:
+ *   - Node.js 18+  (macOS: already installed; Linux: see below)
+ *   - cloudflared  (macOS: brew install cloudflare/cloudflare/cloudflared)
+ *                  (Linux: https://pkg.cloudflare.com/index.html)
+ *
+ * NOTE: On the deployed server (plag.subba.dev) the Flask app already serves
+ * /mcp natively — you do NOT need this script there. This launcher is only
+ * needed for local development or a personal VirtualBox/desktop session.
  *
  * Usage:
  *   node bin/plag-serve.js
@@ -139,3 +148,4 @@ setTimeout(() => {
     });
 
 }, 1500);
+

@@ -15,6 +15,7 @@ class Config:
     DEBUG = os.getenv("FLASK_DEBUG", "False").lower() in ("true", "1", "yes")
     SECRET_KEY = os.getenv("SECRET_KEY", secrets.token_hex(32))
     ADMIN_PIN = os.getenv("ADMIN_PIN", "")
+    MCP_API_KEY = os.getenv("MCP_API_KEY", "")
 
 
 class DevelopmentConfig(Config):

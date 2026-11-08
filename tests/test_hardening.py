@@ -6,7 +6,7 @@ import zipfile
 from pathlib import Path
 from unittest.mock import patch
 
-from app import create_app
+from app import APP_VERSION, create_app
 from config import TestingConfig
 from core.checker import PlagiarismChecker
 from core.batch_processor import BatchProcessor
@@ -46,6 +46,60 @@ class HardeningTests(unittest.TestCase):
             self.assertEqual(response.status_code, 400, accept)
         ok = self.client.post('/api/writing-cleanup/apply', json={'text': 'We delve into it.', 'accept': [0]})
         self.assertEqual(ok.status_code, 200)
+
+    def test_mcp_http_protocol_auth_notifications_and_batches(self):
+        self.app.config['MCP_API_KEY'] = 'mcp-test-key'
+        unauthorized = self.client.post('/mcp', json={
+            'jsonrpc': '2.0', 'id': 1, 'method': 'ping',
+        })
+        self.assertEqual(unauthorized.status_code, 401)
+
+        headers = {'Authorization': 'Bearer mcp-test-key'}
+        initialized = self.client.post('/mcp', headers=headers, json={
+            'jsonrpc': '2.0', 'id': 1, 'method': 'initialize', 'params': {},
+        })
+        self.assertEqual(initialized.status_code, 200)
+        self.assertEqual(initialized.get_json()['result']['serverInfo']['version'], APP_VERSION)
+
+        notification = self.client.post('/mcp', headers=headers, json={
+            'jsonrpc': '2.0', 'method': 'notifications/initialized',
+        })
+        self.assertEqual(notification.status_code, 202)
+        self.assertEqual(notification.get_data(), b'')
+
+        batch = self.client.post('/mcp', headers=headers, json=[
+            {'jsonrpc': '2.0', 'id': 2, 'method': 'ping'},
+            {'jsonrpc': '2.0', 'method': 'notifications/initialized'},
+            None,
+        ])
+        self.assertEqual(batch.status_code, 200)
+        payload = batch.get_json()
+        self.assertEqual(len(payload), 2)
+        self.assertEqual(payload[0], {'jsonrpc': '2.0', 'id': 2, 'result': {}})
+        self.assertEqual(payload[1]['error']['code'], -32600)
+
+        empty_batch = self.client.post('/mcp', headers=headers, json=[])
+        self.assertEqual(empty_batch.status_code, 400)
+        self.assertEqual(empty_batch.get_json()['error']['code'], -32600)
+
+    def test_mcp_http_validates_arguments_limits_and_hides_internal_errors(self):
+        headers = {'Content-Type': 'application/json'}
+
+        def call(arguments):
+            return self.client.post('/mcp', headers=headers, json={
+                'jsonrpc': '2.0', 'id': 3, 'method': 'tools/call',
+                'params': {'name': 'plag_scan_text', 'arguments': arguments},
+            }).get_json()['result']
+
+        for arguments in ({'text': 123}, {'text': 'ok', 'include_web': 'yes'},
+                          {'text': 'ok', 'unexpected': True}, {'text': 'x' * 100001}):
+            result = call(arguments)
+            self.assertTrue(result['isError'])
+
+        with patch.object(self.app.checker, 'analyze', side_effect=RuntimeError('/secret/mcp/path')):
+            result = call({'text': 'valid sentence.'})
+        self.assertTrue(result['isError'])
+        self.assertNotIn('/secret/mcp/path', result['content'][0]['text'])
 
     def test_json_shapes_return_client_errors(self):
         endpoints = ['/check', '/api/cite', '/api/paraphrase', '/check/compare-drafts',
