@@ -8,13 +8,17 @@
     "plag": "bin/plag.js",
     "plagiarism-detector": "bin/plag.js",
     "plagiarism-detector-pro": "bin/plag.js",
-    "plag-mcp": "bin/mcp-server.js"
+    "plag-mcp": "bin/mcp-server.js",
+    "plag-mcp-http": "bin/mcp-http-server.js",
+    "plag-serve": "bin/plag-serve.js"
   },
   "scripts": {
     "test": "node tests_js/cli.test.js && node tests_js/hardening.test.js && node tests_js/accuracy.test.js",
     "prepublishOnly": "npm test",
     "start": "node bin/plag.js",
     "mcp": "node bin/mcp-server.js",
+    "mcp:http": "node bin/mcp-http-server.js",
+    "serve": "node bin/plag-serve.js",
     "benchmark": "python3 benchmarks/run.py"
   },
   "repository": {
