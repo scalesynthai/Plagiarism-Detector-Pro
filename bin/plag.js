@@ -59,6 +59,7 @@ function printHelp() {
     console.log(`  ${colors.green}plag batch <dir|file1 file2...>${colors.reset}    Process class batch & print gradebook table`);
     console.log(`  ${colors.green}plag certificate <file|text>${colors.reset}        Generate an advisory analysis summary`);
     console.log(`  ${colors.green}plag mcp${colors.reset}                           Launch Model Context Protocol (MCP) server for Claude/Codex`);
+    console.log(`  ${colors.green}plag mcp-http${colors.reset}                       Launch personal HTTP MCP server for Claude Web (claude.ai)`);
     console.log(`\n${colors.bold}OPTIONS:${colors.reset}`);
     console.log(`  ${colors.yellow}--json${colors.reset}                          Output results in raw JSON`);
     console.log(`  ${colors.yellow}--verbose${colors.reset}                       Show side-by-side matching sentence passages`);
@@ -569,6 +570,19 @@ async function main() {
 
         case "mcp": {
             require("./mcp-server");
+            break;
+        }
+
+        case "mcp-http":
+        case "mcp:http":
+        case "serve": {
+            require("./mcp-http-server");
+            break;
+        }
+
+        case "start":
+        case "launch": {
+            require("./plag-serve");
             break;
         }
 
