@@ -8,6 +8,9 @@ services:
     restart: unless-stopped
     ports:
       - "5001:5001"
+    env_file:
+      - path: .env
+        required: false
     environment:
       - PORT=5001
       - HOST=0.0.0.0

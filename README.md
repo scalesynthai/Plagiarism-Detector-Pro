@@ -206,6 +206,7 @@ Export these variables before running Python. Docker Compose reads a local `.env
 FLASK_ENV=production
 SECRET_KEY=your-secure-random-secret-key
 ADMIN_PIN=replace-with-a-long-random-secret # Required for corpus uploads and deletions
+MCP_API_KEY=your-secure-mcp-api-key # Optional bearer token for MCP server (plag.subba.dev/mcp)
 PORT=5001
 MAX_CONTENT_LENGTH=33554432 # 32 MB request limit; each document is limited to 8 MB
 ```
