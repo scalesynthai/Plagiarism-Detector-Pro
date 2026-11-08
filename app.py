@@ -74,7 +74,7 @@ def create_app(config_class: type = Config) -> Flask:
     def validate_request():
         if request.is_json:
             # MCP endpoint handles its own JSON validation (supports batch arrays)
-            if request.path == "/mcp":
+            if request.path.startswith("/mcp"):
                 return
             data = request.get_json()
             if not isinstance(data, dict):
@@ -883,6 +883,7 @@ def create_app(config_class: type = Config) -> Flask:
                 "error": {"code": -32601, "message": "Method not found"}}
 
     @app.route("/mcp", methods=["GET", "POST", "OPTIONS"])
+    @app.route("/mcp/", methods=["GET", "POST", "OPTIONS"])
     def mcp_endpoint():
         """
         MCP Streamable HTTP endpoint (spec 2024-11-05).
@@ -894,7 +895,9 @@ def create_app(config_class: type = Config) -> Flask:
             resp = make_response("", 204)
             resp.headers["Access-Control-Allow-Origin"]  = "*"
             resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
-            resp.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Api-Key, Mcp-Session-Id"
+            req_headers = request.headers.get("Access-Control-Request-Headers", "Content-Type, Authorization, X-Api-Key, Mcp-Session-Id, mcp-protocol-version, *")
+            resp.headers["Access-Control-Allow-Headers"] = req_headers
+            resp.headers["Access-Control-Expose-Headers"] = "*"
             resp.headers["Access-Control-Max-Age"]       = "86400"
             return resp
 
@@ -902,11 +905,13 @@ def create_app(config_class: type = Config) -> Flask:
             resp = jsonify(data)
             resp.status_code = status
             resp.headers["Access-Control-Allow-Origin"] = "*"
+            resp.headers["Access-Control-Expose-Headers"] = "*"
             return resp
 
         def _mcp_accepted():
             resp = make_response("", 202)
             resp.headers["Access-Control-Allow-Origin"] = "*"
+            resp.headers["Access-Control-Expose-Headers"] = "*"
             return resp
 
         # GET /mcp — public info, no auth required
@@ -922,14 +927,28 @@ def create_app(config_class: type = Config) -> Flask:
             })
 
         # POST /mcp — authenticate when MCP_API_KEY is set
-        mcp_key = app.config.get("MCP_API_KEY", "")
+        mcp_key = str(app.config.get("MCP_API_KEY") or "").strip("'\" \t\r\n")
         if mcp_key:
-            auth_header = request.headers.get("Authorization", "")
-            api_key_hdr = request.headers.get("X-Api-Key", "")
-            provided    = auth_header[7:] if auth_header.startswith("Bearer ") else api_key_hdr
-            if not hmac.compare_digest(provided.encode("utf-8"), mcp_key.encode("utf-8")):
-                return _mcp_json({"error": "Unauthorized",
+            auth_header = (request.headers.get("Authorization") or "").strip()
+            api_key_hdr = (request.headers.get("X-Api-Key") or "").strip()
+            query_key   = (request.args.get("key") or request.args.get("api_key") or request.args.get("token") or "").strip()
+
+            provided = ""
+            if auth_header:
+                if auth_header.lower().startswith("bearer "):
+                    provided = auth_header[7:].strip()
+                else:
+                    provided = auth_header
+            elif api_key_hdr:
+                provided = api_key_hdr
+            elif query_key:
+                provided = query_key
+
+            if not provided or not hmac.compare_digest(provided.encode("utf-8"), mcp_key.encode("utf-8")):
+                resp = _mcp_json({"error": "Unauthorized",
                                   "hint":  "Pass your MCP API key as: Authorization: Bearer <key>"}, 401)
+                resp.headers["WWW-Authenticate"] = 'Bearer realm="mcp"'
+                return resp
 
         body = request.get_json(force=True, silent=True)
         if body is None:
@@ -964,7 +983,7 @@ def register_error_handlers(app: Flask):
 
     @app.errorhandler(404)
     def not_found(error):
-        if request.path.startswith("/sources") or request.path.startswith("/check") or request.path.startswith("/reports") or request.path == "/mcp":
+        if request.path.startswith("/sources") or request.path.startswith("/check") or request.path.startswith("/reports") or request.path.startswith("/mcp"):
             return jsonify({"error": "Resource not found."}), 404
         return render_template("index.html", error="Page not found."), 404
 
