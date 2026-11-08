@@ -73,6 +73,9 @@ def create_app(config_class: type = Config) -> Flask:
     @app.before_request
     def validate_request():
         if request.is_json:
+            # MCP endpoint handles its own JSON validation (supports batch arrays)
+            if request.path == "/mcp":
+                return
             data = request.get_json()
             if not isinstance(data, dict):
                 raise BadRequest("JSON body must be an object.")
@@ -667,6 +670,241 @@ def create_app(config_class: type = Config) -> Flask:
             "comparison_note": "Similarity is rescored against the local corpus only; run a full scan for external-source coverage.",
         }), 200
 
+    # ── MCP (Model Context Protocol) HTTP endpoint ───────────────────────────
+    # Implements Streamable HTTP transport (spec 2024-11-05) so Claude Web,
+    # Claude Desktop, Cursor, and any MCP-aware client can call plag tools
+    # directly at https://plag.subba.dev/mcp
+    # Auth: Bearer token via Authorization or X-Api-Key header.
+    # Set MCP_API_KEY env var on the server. Leave blank to disable auth.
+
+    _MCP_TOOLS = [
+        {
+            "name": "plag_scan_text",
+            "description": "Measures lexical overlap against configured sources and reports an uncalibrated writing-pattern score, evidence integrity, and student-coaching signals.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "text":                 {"type": "string",  "description": "The academic text or essay to scan."},
+                    "exclude_bibliography": {"type": "boolean", "description": "Exclude the References section from scoring."},
+                    "exclude_quotes":       {"type": "boolean", "description": "Exclude only quoted text from similarity scoring."},
+                    "include_web":          {"type": "boolean", "description": "Include web search results (default true)."},
+                },
+                "required": ["text"],
+            },
+        },
+        {
+            "name": "plag_paraphrase",
+            "description": "Restructures overlapping sentences into 3 distinct academic formulations with formal attribution (Active Inversion, Methodological, Conceptual).",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "sentence":     {"type": "string", "description": "The sentence to restructure."},
+                    "source_title": {"type": "string", "description": "Author name or reference publication for citation attribution."},
+                },
+                "required": ["sentence"],
+            },
+        },
+        {
+            "name": "plag_academic_coach",
+            "description": "Scans an essay for unsupported empirical claims, conversational phrases with scholarly alternatives, and thesis strength (0–100).",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "text": {"type": "string", "description": "Manuscript text or excerpt to evaluate."},
+                },
+                "required": ["text"],
+            },
+        },
+        {
+            "name": "plag_generate_citation",
+            "description": "Generates BibTeX, APA 7th, MLA 9th, and IEEE citations from a DOI, arXiv ID, or paper title.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "DOI (e.g. 10.1145/...), arXiv ID (e.g. 1706.03762), or Paper Title."},
+                },
+                "required": ["query"],
+            },
+        },
+        {
+            "name": "plag_alphabetize_references",
+            "description": "Alphabetizes an unorganized bibliography by primary author last name, validates publication years, and checks for DOIs.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "references_text": {"type": "string", "description": "Raw bibliography or list of references (one per line)."},
+                },
+                "required": ["references_text"],
+            },
+        },
+        {
+            "name": "plag_compare_drafts",
+            "description": "Compares Draft 1 against Draft 2 to calculate revision delta percentages, newly added sections, and retained phrasing.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "draft_v1": {"type": "string", "description": "Original draft text."},
+                    "draft_v2": {"type": "string", "description": "Revised draft text."},
+                },
+                "required": ["draft_v1", "draft_v2"],
+            },
+        },
+    ]
+
+    def _mcp_run_tool(name: str, args: dict) -> dict:
+        """Execute a named MCP tool synchronously and return its result dict."""
+        tool = next((t for t in _MCP_TOOLS if t["name"] == name), None)
+        if tool is None:
+            raise ValueError(f"Unknown tool: {name}")
+        for key in tool["inputSchema"].get("required", []):
+            if not isinstance(args.get(key), str) or not args[key].strip():
+                raise ValueError(f"'{key}' must be a non-empty string")
+
+        if name == "plag_scan_text":
+            analysis = checker.analyze(
+                args["text"],
+                include_web_sources=args.get("include_web", True),
+                exclude_quotes=args.get("exclude_quotes", False),
+                exclude_bibliography=args.get("exclude_bibliography", False),
+            )
+            # Attach student coach (mirrors /check route)
+            claim_analysis    = analysis.get("claim_analysis") or AcademicStudentCoach.scan_claims(args["text"])
+            unsupported_claims = [c for c in claim_analysis if not c.get("has_citation")]
+            analysis["student_coach"] = {
+                "unsupported_claims":       unsupported_claims,
+                "unsupported_claims_count": len(unsupported_claims),
+                "claims":                   claim_analysis,
+                "claims_count":             len(claim_analysis),
+                "cited_claims_count":       sum(1 for c in claim_analysis if c.get("has_citation")),
+                "tone_suggestions":         AcademicStudentCoach.analyze_tone_and_vocabulary(args["text"]),
+                "tone_suggestions_count":   len(AcademicStudentCoach.analyze_tone_and_vocabulary(args["text"])),
+                "thesis_evaluation":        AcademicStudentCoach.evaluate_thesis_abstract(args["text"]),
+            }
+            return analysis
+
+        if name == "plag_paraphrase":
+            return AcademicParaphraser.synthesize_sentence(
+                args["sentence"],
+                args.get("source_title"),
+                args.get("source_title"),
+            )
+
+        if name == "plag_academic_coach":
+            claims = AcademicStudentCoach.scan_unsupported_claims(args["text"])
+            tone   = AcademicStudentCoach.analyze_tone_and_vocabulary(args["text"])
+            thesis = AcademicStudentCoach.evaluate_thesis_abstract(args["text"])
+            return {
+                "unsupported_claims":       claims,
+                "unsupported_claims_count": len(claims),
+                "tone_suggestions":         tone,
+                "tone_suggestions_count":   len(tone),
+                "thesis_evaluation":        thesis,
+            }
+
+        if name == "plag_generate_citation":
+            return CitationGenerator.generate_from_identifier(args["query"])
+
+        if name == "plag_alphabetize_references":
+            return AcademicStudentCoach.alphabetize_and_format_references(args["references_text"])
+
+        if name == "plag_compare_drafts":
+            return DraftComparator.compare_drafts(args["draft_v1"], args["draft_v2"])
+
+        raise ValueError(f"No handler for tool: {name}")
+
+    def _mcp_route_rpc(payload: dict) -> dict:
+        """Route a single JSON-RPC 2.0 request and return the response dict."""
+        rpc_id = payload.get("id")
+        method = payload.get("method", "")
+        params = payload.get("params") or {}
+
+        if method == "initialize":
+            return {"jsonrpc": "2.0", "id": rpc_id, "result": {
+                "protocolVersion": "2024-11-05",
+                "serverInfo":      {"name": "plagiarism-detector-pro-mcp", "version": APP_VERSION},
+                "capabilities":    {"tools": {}},
+            }}
+
+        if method == "ping":
+            return {"jsonrpc": "2.0", "id": rpc_id, "result": {}}
+
+        if method == "tools/list":
+            return {"jsonrpc": "2.0", "id": rpc_id, "result": {"tools": _MCP_TOOLS}}
+
+        if method == "tools/call":
+            tool_name = params.get("name", "")
+            tool_args = params.get("arguments") or {}
+            try:
+                result = _mcp_run_tool(tool_name, tool_args)
+                return {"jsonrpc": "2.0", "id": rpc_id, "result": {
+                    "content": [{"type": "text", "text": json.dumps(result)}]
+                }}
+            except Exception as exc:  # noqa: BLE001
+                return {"jsonrpc": "2.0", "id": rpc_id, "result": {
+                    "isError": True,
+                    "content": [{"type": "text", "text": f"Error: {exc}"}],
+                }}
+
+        return {"jsonrpc": "2.0", "id": rpc_id,
+                "error": {"code": -32601, "message": "Method not found"}}
+
+    @app.route("/mcp", methods=["GET", "POST", "OPTIONS"])
+    def mcp_endpoint():
+        """
+        MCP Streamable HTTP endpoint (spec 2024-11-05).
+        GET  /mcp  → server info (no auth, liveness probe)
+        POST /mcp  → JSON-RPC 2.0 (single or batch), requires Bearer token auth
+        """
+        # CORS preflight
+        if request.method == "OPTIONS":
+            resp = make_response("", 204)
+            resp.headers["Access-Control-Allow-Origin"]  = "*"
+            resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+            resp.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Api-Key, Mcp-Session-Id"
+            resp.headers["Access-Control-Max-Age"]       = "86400"
+            return resp
+
+        def _mcp_json(data, status=200):
+            resp = jsonify(data)
+            resp.status_code = status
+            resp.headers["Access-Control-Allow-Origin"] = "*"
+            return resp
+
+        # GET /mcp — public info, no auth required
+        if request.method == "GET":
+            return _mcp_json({
+                "status":    "ok",
+                "server":    "plagiarism-detector-pro-mcp",
+                "version":   APP_VERSION,
+                "url":       "https://plag.subba.dev/mcp",
+                "tools":     len(_MCP_TOOLS),
+                "transport": "streamable-http",
+                "spec":      "2024-11-05",
+            })
+
+        # POST /mcp — authenticate when MCP_API_KEY is set
+        mcp_key = app.config.get("MCP_API_KEY", "")
+        if mcp_key:
+            auth_header = request.headers.get("Authorization", "")
+            api_key_hdr = request.headers.get("X-Api-Key", "")
+            provided    = auth_header[7:] if auth_header.startswith("Bearer ") else api_key_hdr
+            if not hmac.compare_digest(provided.encode("utf-8"), mcp_key.encode("utf-8")):
+                return _mcp_json({"error": "Unauthorized",
+                                  "hint":  "Pass your MCP API key as: Authorization: Bearer <key>"}, 401)
+
+        body = request.get_json(force=True, silent=True)
+        if body is None:
+            return _mcp_json({"jsonrpc": "2.0", "id": None,
+                               "error": {"code": -32700, "message": "Parse error"}}, 400)
+
+        # Batch or single JSON-RPC request
+        if isinstance(body, list):
+            return _mcp_json([_mcp_route_rpc(item) for item in body])
+
+        return _mcp_json(_mcp_route_rpc(body))
+
+    # ── End MCP block ─────────────────────────────────────────────────────────
+
     return app
 
 
@@ -682,7 +920,7 @@ def register_error_handlers(app: Flask):
 
     @app.errorhandler(404)
     def not_found(error):
-        if request.path.startswith("/sources") or request.path.startswith("/check") or request.path.startswith("/reports"):
+        if request.path.startswith("/sources") or request.path.startswith("/check") or request.path.startswith("/reports") or request.path == "/mcp":
             return jsonify({"error": "Resource not found."}), 404
         return render_template("index.html", error="Page not found."), 404
 
