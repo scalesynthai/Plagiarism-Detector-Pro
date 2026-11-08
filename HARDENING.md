@@ -9,6 +9,7 @@
 - Unexpected scan errors no longer expose internal exception messages. API responses are not cached. Debug mode is off by default.
 - Node API calls and citation lookups have deadlines. Unsupported local binary files fail explicitly instead of being scanned as UTF-8. Literal prose ending in a filename extension is not automatically treated as a path.
 - MCP rejects malformed requests, returns JSON-RPC error envelopes, ignores notifications, supports ping, and validates tool arguments.
+- Streamable HTTP MCP uses constant-time bearer-token checks, enforces request and text limits, filters notification responses from batches, and does not expose internal tool errors.
 - Batch UI uses Python response fields, shows extraction failures, and opens individual results. Node batch averages exclude failed documents.
 - Failed citation lookups use unknown metadata and an explicit warning instead of invented author/year/publication values.
 - Removed the npm self-dependency and regenerated its lockfile. CI covers Python and Node. Deployment requires successful push CI and treats failed webhooks as failures.

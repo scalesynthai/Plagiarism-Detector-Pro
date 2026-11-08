@@ -136,11 +136,28 @@ Add this configuration to your Claude Desktop config file:
 claude mcp add plagiarism-detector-pro npx -y plagiarism-detector-pro mcp
 ```
 
+### Web and Remote MCP Setup
+
+The deployed Flask application exposes Streamable HTTP at `https://plag.subba.dev/mcp`.
+Set `MCP_API_KEY` in the server environment, then configure the client with that URL
+and `Authorization: Bearer <MCP_API_KEY>`. Text scans are private-draft scans and web
+search is disabled unless the caller explicitly sets `include_web: true`.
+
+For a personal local server, run:
+
+```bash
+npx -y plagiarism-detector-pro mcp-http
+```
+
+The command prints a local `/mcp` URL and generates a persistent API key in
+`~/.plag-mcp.json`. `plag-serve` can additionally start a temporary Cloudflare tunnel
+for local development. The hosted Flask application does not require that tunnel.
+
 ### Available MCP Tools for AI Assistants:
 
 | Tool Name | Parameters | Purpose |
 | :--- | :--- | :--- |
-| `plag_scan_text` | `text`, `exclude_quotes`, `exclude_bibliography` | Measures lexical overlap and reports advisory writing-pattern diagnostics |
+| `plag_scan_text` | `text`, `exclude_quotes`, `exclude_bibliography`, `include_web` (hosted HTTP only) | Measures lexical overlap and reports advisory writing-pattern diagnostics |
 | `plag_scan_file` | `file_path`, `exclude_quotes`, `exclude_bibliography` | Ingests `.docx`, `.pdf`, `.tex`, `.ipynb`, `.md`, or `.txt` from disk |
 | `plag_academic_coach` | `text` | Scans unsupported claims, tone booster formal synonyms, and thesis score |
 | `plag_paraphrase` | `sentence`, `source_title` | Restructures overlapping text into 3 scholarly formulations with attribution |
@@ -164,6 +181,10 @@ cd Plagiarism-Detector-Pro
 docker compose up -d --build
 ```
 Open **`http://localhost:5001`** in your browser.
+
+Set `MCP_API_KEY` in your `.env` file to require bearer-token authentication on
+`POST /mcp`. Leaving it empty disables MCP authentication and is suitable only for
+an instance that is not publicly reachable.
 
 ### Option B: Local Python Setup
 ```bash

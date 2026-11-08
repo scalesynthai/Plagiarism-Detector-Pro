@@ -13,7 +13,7 @@
     "plag-serve": "bin/plag-serve.js"
   },
   "scripts": {
-    "test": "node tests_js/cli.test.js && node tests_js/hardening.test.js && node tests_js/accuracy.test.js",
+    "test": "node tests_js/cli.test.js && node tests_js/hardening.test.js && node tests_js/mcp_http.test.js && node tests_js/accuracy.test.js",
     "prepublishOnly": "npm test",
     "start": "node bin/plag.js",
     "mcp": "node bin/mcp-server.js",

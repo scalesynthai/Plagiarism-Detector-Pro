@@ -756,28 +756,44 @@ def create_app(config_class: type = Config) -> Flask:
         tool = next((t for t in _MCP_TOOLS if t["name"] == name), None)
         if tool is None:
             raise ValueError(f"Unknown tool: {name}")
+        if not isinstance(args, dict):
+            raise ValueError("Arguments must be an object")
         for key in tool["inputSchema"].get("required", []):
             if not isinstance(args.get(key), str) or not args[key].strip():
                 raise ValueError(f"'{key}' must be a non-empty string")
+        for key, value in args.items():
+            schema = tool["inputSchema"]["properties"].get(key)
+            if schema is None:
+                raise ValueError(f"Unknown argument: {key}")
+            expected = schema["type"]
+            if expected == "string" and not isinstance(value, str):
+                raise ValueError(f"'{key}' must be a string")
+            if expected == "boolean" and not isinstance(value, bool):
+                raise ValueError(f"'{key}' must be a boolean")
+        for key, value in args.items():
+            if isinstance(value, str):
+                validate_text(value)
 
         if name == "plag_scan_text":
             analysis = checker.analyze(
                 args["text"],
-                include_web_sources=args.get("include_web", True),
+                include_web_sources=args.get("include_web", False),
                 exclude_quotes=args.get("exclude_quotes", False),
                 exclude_bibliography=args.get("exclude_bibliography", False),
+                private_draft=True,
             )
             # Attach student coach (mirrors /check route)
             claim_analysis    = analysis.get("claim_analysis") or AcademicStudentCoach.scan_claims(args["text"])
             unsupported_claims = [c for c in claim_analysis if not c.get("has_citation")]
+            tone_suggestions = AcademicStudentCoach.analyze_tone_and_vocabulary(args["text"])
             analysis["student_coach"] = {
                 "unsupported_claims":       unsupported_claims,
                 "unsupported_claims_count": len(unsupported_claims),
                 "claims":                   claim_analysis,
                 "claims_count":             len(claim_analysis),
                 "cited_claims_count":       sum(1 for c in claim_analysis if c.get("has_citation")),
-                "tone_suggestions":         AcademicStudentCoach.analyze_tone_and_vocabulary(args["text"]),
-                "tone_suggestions_count":   len(AcademicStudentCoach.analyze_tone_and_vocabulary(args["text"])),
+                "tone_suggestions":         tone_suggestions,
+                "tone_suggestions_count":   len(tone_suggestions),
                 "thesis_evaluation":        AcademicStudentCoach.evaluate_thesis_abstract(args["text"]),
             }
             return analysis
@@ -812,11 +828,23 @@ def create_app(config_class: type = Config) -> Flask:
 
         raise ValueError(f"No handler for tool: {name}")
 
-    def _mcp_route_rpc(payload: dict) -> dict:
+    def _mcp_route_rpc(payload):
         """Route a single JSON-RPC 2.0 request and return the response dict."""
+        if (not isinstance(payload, dict) or payload.get("jsonrpc") != "2.0"
+                or not isinstance(payload.get("method"), str)):
+            return {"jsonrpc": "2.0", "id": None,
+                    "error": {"code": -32600, "message": "Invalid Request"}}
+
+        # JSON-RPC notifications never receive a response.
+        if "id" not in payload:
+            return None
+
         rpc_id = payload.get("id")
         method = payload.get("method", "")
         params = payload.get("params") or {}
+        if not isinstance(params, dict):
+            return {"jsonrpc": "2.0", "id": rpc_id,
+                    "error": {"code": -32602, "message": "Invalid params"}}
 
         if method == "initialize":
             return {"jsonrpc": "2.0", "id": rpc_id, "result": {
@@ -839,10 +867,16 @@ def create_app(config_class: type = Config) -> Flask:
                 return {"jsonrpc": "2.0", "id": rpc_id, "result": {
                     "content": [{"type": "text", "text": json.dumps(result)}]
                 }}
-            except Exception as exc:  # noqa: BLE001
+            except ValueError as exc:
                 return {"jsonrpc": "2.0", "id": rpc_id, "result": {
                     "isError": True,
-                    "content": [{"type": "text", "text": f"Error: {exc}"}],
+                    "content": [{"type": "text", "text": f"Invalid tool arguments: {public_message(exc, 'Check the tool name and arguments.')}"}],
+                }}
+            except Exception:  # noqa: BLE001
+                logger.exception("MCP tool call failed: %s", tool_name)
+                return {"jsonrpc": "2.0", "id": rpc_id, "result": {
+                    "isError": True,
+                    "content": [{"type": "text", "text": "The tool call could not be processed."}],
                 }}
 
         return {"jsonrpc": "2.0", "id": rpc_id,
@@ -870,13 +904,18 @@ def create_app(config_class: type = Config) -> Flask:
             resp.headers["Access-Control-Allow-Origin"] = "*"
             return resp
 
+        def _mcp_accepted():
+            resp = make_response("", 202)
+            resp.headers["Access-Control-Allow-Origin"] = "*"
+            return resp
+
         # GET /mcp — public info, no auth required
         if request.method == "GET":
             return _mcp_json({
                 "status":    "ok",
                 "server":    "plagiarism-detector-pro-mcp",
                 "version":   APP_VERSION,
-                "url":       "https://plag.subba.dev/mcp",
+                "url":       request.base_url,
                 "tools":     len(_MCP_TOOLS),
                 "transport": "streamable-http",
                 "spec":      "2024-11-05",
@@ -899,9 +938,14 @@ def create_app(config_class: type = Config) -> Flask:
 
         # Batch or single JSON-RPC request
         if isinstance(body, list):
-            return _mcp_json([_mcp_route_rpc(item) for item in body])
+            if not body:
+                return _mcp_json({"jsonrpc": "2.0", "id": None,
+                                  "error": {"code": -32600, "message": "Invalid Request"}}, 400)
+            responses = [response for item in body if (response := _mcp_route_rpc(item)) is not None]
+            return _mcp_json(responses) if responses else _mcp_accepted()
 
-        return _mcp_json(_mcp_route_rpc(body))
+        response = _mcp_route_rpc(body)
+        return _mcp_json(response) if response is not None else _mcp_accepted()
 
     # ── End MCP block ─────────────────────────────────────────────────────────
 
