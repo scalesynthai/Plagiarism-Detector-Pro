@@ -70,6 +70,9 @@ def create_app(config_class: type = Config) -> Flask:
     app = Flask(__name__)
     app.config.from_object(config_class)
 
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
     @app.before_request
     def validate_request():
         if request.is_json:
@@ -916,11 +919,14 @@ def create_app(config_class: type = Config) -> Flask:
 
         # GET /mcp — public info, no auth required
         if request.method == "GET":
+            base_url = request.base_url
+            if base_url.startswith("http://"):
+                base_url = "https://" + base_url[7:]
             return _mcp_json({
                 "status":    "ok",
                 "server":    "plagiarism-detector-pro-mcp",
                 "version":   APP_VERSION,
-                "url":       request.base_url,
+                "url":       base_url,
                 "tools":     len(_MCP_TOOLS),
                 "transport": "streamable-http",
                 "spec":      "2024-11-05",
@@ -931,7 +937,7 @@ def create_app(config_class: type = Config) -> Flask:
         if mcp_key:
             auth_header = (request.headers.get("Authorization") or "").strip()
             api_key_hdr = (request.headers.get("X-Api-Key") or "").strip()
-            query_key   = (request.args.get("key") or request.args.get("api_key") or request.args.get("token") or "").strip()
+            query_key   = (request.args.get("key") or request.args.get("api_key") or request.args.get("token") or request.args.get("apiKey") or "").strip()
 
             provided = ""
             if auth_header:
