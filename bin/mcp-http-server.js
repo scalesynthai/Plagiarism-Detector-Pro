@@ -317,8 +317,8 @@ const server = http.createServer(async (req, res) => {
     const supplied = Buffer.from(String(token));
     const expected = Buffer.from(String(API_KEY));
     if (supplied.length !== expected.length || !crypto.timingSafeEqual(supplied, expected)) {
-        res.writeHead(401, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: "Unauthorized", hint: "Pass your API key as: Authorization: Bearer <key>" }));
+        res.writeHead(403, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Forbidden", hint: "Pass the configured key in the X-Api-Key request header." }));
         return;
     }
 

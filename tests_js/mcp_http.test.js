@@ -59,7 +59,8 @@ function waitForReady(child) {
             method: "POST", headers: { "content-type": "application/json" },
             body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "ping" }),
         });
-        assert.equal(response.status, 401);
+        assert.equal(response.status, 403);
+        assert.equal(response.headers.get("www-authenticate"), null);
 
         const headers = { "content-type": "application/json", authorization: `Bearer ${key}` };
         response = await fetch(endpoint, {

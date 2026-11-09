@@ -139,8 +139,9 @@ claude mcp add plagiarism-detector-pro npx -y plagiarism-detector-pro mcp
 ### Web and Remote MCP Setup
 
 The deployed Flask application exposes Streamable HTTP at `https://plag.subba.dev/mcp`.
-Set `MCP_API_KEY` in the server environment, then configure the client with that URL
-and `Authorization: Bearer <MCP_API_KEY>`. Text scans are private-draft scans and web
+Set `MCP_API_KEY` in the server environment, choose **No sign in** in Claude, then
+add the fixed request header `X-Api-Key: <MCP_API_KEY>`. Do not select an OAuth client;
+this server does not expose an OAuth authorization service. Text scans are private-draft scans and web
 search is disabled unless the caller explicitly sets `include_web: true`.
 The public liveness endpoint is `https://plag.subba.dev/mcp/health`; a browser
 `GET` to `/mcp` returns `405` because the MCP transport itself accepts POST requests.

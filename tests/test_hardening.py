@@ -52,7 +52,8 @@ class HardeningTests(unittest.TestCase):
         unauthorized = self.client.post('/mcp', json={
             'jsonrpc': '2.0', 'id': 1, 'method': 'ping',
         })
-        self.assertEqual(unauthorized.status_code, 401)
+        self.assertEqual(unauthorized.status_code, 403)
+        self.assertNotIn('WWW-Authenticate', unauthorized.headers)
 
         headers = {'Authorization': 'Bearer mcp-test-key'}
         initialized = self.client.post('/mcp', headers=headers, json={

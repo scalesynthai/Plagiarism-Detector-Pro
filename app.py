@@ -966,10 +966,11 @@ def create_app(config_class: type = Config) -> Flask:
                 provided = query_key
 
             if not provided or not hmac.compare_digest(provided.encode("utf-8"), mcp_key.encode("utf-8")):
-                resp = _mcp_json({"error": "Unauthorized",
-                                  "hint":  "Pass your MCP API key as: Authorization: Bearer <key>"}, 401)
-                resp.headers["WWW-Authenticate"] = 'Bearer realm="mcp"'
-                return resp
+                # This server uses a fixed request header, not OAuth. Returning
+                # WWW-Authenticate: Bearer makes Claude attempt OAuth client
+                # registration against an authorization service that does not exist.
+                return _mcp_json({"error": "Forbidden",
+                                  "hint": "Pass the configured key in the X-Api-Key request header."}, 403)
 
         body = request.get_json(force=True, silent=True)
         if body is None:
