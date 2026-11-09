@@ -49,7 +49,13 @@ function waitForReady(child) {
         await waitForReady(child);
         const endpoint = `http://127.0.0.1:${port}/mcp`;
 
-        let response = await fetch(endpoint, {
+        let response = await fetch(endpoint);
+        assert.equal(response.status, 405);
+        assert.equal(response.headers.get("allow"), "POST, OPTIONS");
+        response = await fetch(`${endpoint}/health`);
+        assert.equal(response.status, 200);
+
+        response = await fetch(endpoint, {
             method: "POST", headers: { "content-type": "application/json" },
             body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "ping" }),
         });
@@ -62,6 +68,15 @@ function waitForReady(child) {
         });
         assert.equal(response.status, 200);
         assert.deepEqual(await response.json(), { jsonrpc: "2.0", id: 2, result: {} });
+
+        response = await fetch(endpoint, {
+            method: "POST", headers,
+            body: JSON.stringify({
+                jsonrpc: "2.0", id: 21, method: "initialize",
+                params: { protocolVersion: "2025-03-26", capabilities: {}, clientInfo: { name: "test", version: "1" } },
+            }),
+        });
+        assert.equal((await response.json()).result.protocolVersion, "2025-03-26");
 
         response = await fetch(endpoint, {
             method: "POST", headers,

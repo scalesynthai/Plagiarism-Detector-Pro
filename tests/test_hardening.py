@@ -56,10 +56,19 @@ class HardeningTests(unittest.TestCase):
 
         headers = {'Authorization': 'Bearer mcp-test-key'}
         initialized = self.client.post('/mcp', headers=headers, json={
-            'jsonrpc': '2.0', 'id': 1, 'method': 'initialize', 'params': {},
+            'jsonrpc': '2.0', 'id': 1, 'method': 'initialize',
+            'params': {'protocolVersion': '2025-03-26'},
         })
         self.assertEqual(initialized.status_code, 200)
         self.assertEqual(initialized.get_json()['result']['serverInfo']['version'], APP_VERSION)
+        self.assertEqual(initialized.get_json()['result']['protocolVersion'], '2025-03-26')
+
+        transport_get = self.client.get('/mcp')
+        self.assertEqual(transport_get.status_code, 405)
+        self.assertEqual(transport_get.headers['Allow'], 'POST, OPTIONS')
+        health = self.client.get('/mcp/health')
+        self.assertEqual(health.status_code, 200)
+        self.assertEqual(health.get_json()['spec'], '2025-03-26')
 
         notification = self.client.post('/mcp', headers=headers, json={
             'jsonrpc': '2.0', 'method': 'notifications/initialized',

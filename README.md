@@ -142,6 +142,8 @@ The deployed Flask application exposes Streamable HTTP at `https://plag.subba.de
 Set `MCP_API_KEY` in the server environment, then configure the client with that URL
 and `Authorization: Bearer <MCP_API_KEY>`. Text scans are private-draft scans and web
 search is disabled unless the caller explicitly sets `include_web: true`.
+The public liveness endpoint is `https://plag.subba.dev/mcp/health`; a browser
+`GET` to `/mcp` returns `405` because the MCP transport itself accepts POST requests.
 
 For a personal local server, run:
 
