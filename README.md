@@ -139,8 +139,9 @@ claude mcp add plagiarism-detector-pro npx -y plagiarism-detector-pro mcp
 ### Web and Remote MCP Setup
 
 The deployed Flask application exposes Streamable HTTP at `https://plag.subba.dev/mcp`.
-Set `MCP_API_KEY` in the server environment, then configure the client with that URL
-and `Authorization: Bearer <MCP_API_KEY>`. Text scans are private-draft scans and web
+Set `MCP_API_KEY` in the server environment, choose **No sign in** in Claude, then
+add the fixed request header `X-Api-Key: <MCP_API_KEY>`. Do not select an OAuth client;
+this server does not expose an OAuth authorization service. Text scans are private-draft scans and web
 search is disabled unless the caller explicitly sets `include_web: true`.
 The public liveness endpoint is `https://plag.subba.dev/mcp/health`; a browser
 `GET` to `/mcp` returns `405` because the MCP transport itself accepts POST requests.
@@ -159,10 +160,11 @@ for local development. The hosted Flask application does not require that tunnel
 
 | Tool Name | Parameters | Purpose |
 | :--- | :--- | :--- |
-| `plag_scan_text` | `text`, `exclude_quotes`, `exclude_bibliography`, `include_web` (hosted HTTP only) | Measures lexical overlap and reports advisory writing-pattern diagnostics |
-| `plag_scan_file` | `file_path`, `exclude_quotes`, `exclude_bibliography` | Ingests `.docx`, `.pdf`, `.tex`, `.ipynb`, `.md`, or `.txt` from disk |
+| `plag_scan_text` | `text`, `references_text`, `genre`, `detail_level`, paging/matching controls | Returns a compact review by default while using a separate bibliography for citation linkage |
+| `plag_scan_document` | `filename`, `content_base64`, section exclusions | Hosted MCP upload for `.docx` and text-based `.pdf` documents |
+| `plag_scan_file` | `file_path`, section exclusions and scan controls | Local MCP ingestion for `.docx` and text-based `.pdf` documents |
 | `plag_academic_coach` | `text` | Scans unsupported claims, tone booster formal synonyms, and thesis score |
-| `plag_paraphrase` | `sentence`, `source_title` | Restructures overlapping text into 3 scholarly formulations with attribution |
+| `plag_attribution_coach` | `sentence`, `source_title` | Advises whether to quote, cite, or add original analysis; does not generate detection-lowering rewrites |
 | `plag_generate_citation`| `query` | Resolves DOI / arXiv / Paper Title to BibTeX, APA, MLA, and IEEE |
 | `plag_alphabetize_references`| `references_text` | Auto-sorts and validates reference lists alphabetically |
 | `plag_compare_drafts` | `draft_v1`, `draft_v2` | Computes draft continuity %, added content %, and word delta |

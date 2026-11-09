@@ -59,7 +59,8 @@ function waitForReady(child) {
             method: "POST", headers: { "content-type": "application/json" },
             body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "ping" }),
         });
-        assert.equal(response.status, 401);
+        assert.equal(response.status, 403);
+        assert.equal(response.headers.get("www-authenticate"), null);
 
         const headers = { "content-type": "application/json", authorization: `Bearer ${key}` };
         response = await fetch(endpoint, {
@@ -96,6 +97,8 @@ function waitForReady(child) {
         const batch = await response.json();
         assert.equal(batch.length, 2);
         assert.ok(batch[0].result.tools.some(tool => tool.name === "plag_scan_text"));
+        assert.ok(batch[0].result.tools.some(tool => tool.name === "plag_scan_document"));
+        assert.ok(batch[0].result.tools.some(tool => tool.name === "plag_attribution_coach"));
         assert.equal(batch[1].error.code, -32600);
 
         response = await fetch(endpoint, {
@@ -108,6 +111,18 @@ function waitForReady(child) {
         const invalid = await response.json();
         assert.equal(invalid.result.isError, true);
         assert.equal(invalid.result.content[0].text, "Check the tool name and arguments.");
+
+        response = await fetch(endpoint, {
+            method: "POST", headers,
+            body: JSON.stringify({ jsonrpc: "2.0", id: 5, method: "tools/call", params: {
+                name: "plag_scan_text", arguments: { text: "Smith (2020) reported that measured outcomes increased.",
+                    references_text: "Smith, J. (2020). Measured outcomes. Journal of Testing." }
+            } }),
+        });
+        const compact = JSON.parse((await response.json()).result.content[0].text);
+        assert.ok(compact.summary);
+        assert.ok(compact.transparency);
+        assert.equal(compact.full_analysis, undefined);
         console.log("MCP HTTP transport regressions passed.");
     } finally {
         child.kill("SIGTERM");

@@ -1,4 +1,5 @@
 import io
+import base64
 import json
 import tempfile
 import unittest
@@ -52,7 +53,8 @@ class HardeningTests(unittest.TestCase):
         unauthorized = self.client.post('/mcp', json={
             'jsonrpc': '2.0', 'id': 1, 'method': 'ping',
         })
-        self.assertEqual(unauthorized.status_code, 401)
+        self.assertEqual(unauthorized.status_code, 403)
+        self.assertNotIn('WWW-Authenticate', unauthorized.headers)
 
         headers = {'Authorization': 'Bearer mcp-test-key'}
         initialized = self.client.post('/mcp', headers=headers, json={
@@ -109,6 +111,48 @@ class HardeningTests(unittest.TestCase):
             result = call({'text': 'valid sentence.'})
         self.assertTrue(result['isError'])
         self.assertNotIn('/secret/mcp/path', result['content'][0]['text'])
+
+    def test_mcp_scan_defaults_to_compact_output_and_links_separate_references(self):
+        response = self.client.post('/mcp', json={
+            'jsonrpc': '2.0', 'id': 20, 'method': 'tools/call',
+            'params': {'name': 'plag_scan_text', 'arguments': {
+                'text': 'Smith (2020) reported that the measured outcome increased significantly.',
+                'references_text': 'Smith, J. (2020). Measured outcomes. Journal of Testing.',
+                'include_web': False,
+            }},
+        })
+        result = json.loads(response.get_json()['result']['content'][0]['text'])
+        self.assertIn('summary', result)
+        self.assertIn('transparency', result)
+        self.assertNotIn('full_analysis', result)
+        self.assertNotIn('highlighted_sentences', result)
+        self.assertLess(len(response.get_json()['result']['content'][0]['text']), 30000)
+        self.assertEqual(result['summary']['unlinked_citations'], 0)
+        self.assertFalse(result['transparency']['web_search_enabled'])
+
+    def test_mcp_document_scan_accepts_docx_and_reports_excluded_blocks(self):
+        import docx
+        document = docx.Document()
+        document.add_paragraph('Course title and student name')
+        document.add_heading('Introduction', level=1)
+        document.add_paragraph('This body paragraph contains the analysis that should be scanned.')
+        table = document.add_table(rows=1, cols=1)
+        table.cell(0, 0).text = 'Table data should be skipped.'
+        stream = io.BytesIO()
+        document.save(stream)
+        response = self.client.post('/mcp', json={
+            'jsonrpc': '2.0', 'id': 21, 'method': 'tools/call',
+            'params': {'name': 'plag_scan_document', 'arguments': {
+                'filename': 'assignment.docx',
+                'content_base64': base64.b64encode(stream.getvalue()).decode(),
+                'include_web': False,
+            }},
+        })
+        result = json.loads(response.get_json()['result']['content'][0]['text'])
+        self.assertEqual(result['document']['format'], 'docx')
+        self.assertEqual(result['document']['blocks_skipped']['title_page'], 1)
+        self.assertEqual(result['document']['blocks_skipped']['tables'], 1)
+        self.assertIn('body paragraph', result['document']['scanned_text_preview'])
 
     def test_json_shapes_return_client_errors(self):
         endpoints = ['/check', '/api/cite', '/api/paraphrase', '/check/compare-drafts',
