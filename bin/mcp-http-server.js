@@ -20,6 +20,7 @@ const fs      = require("fs");
 const os      = require("os");
 const path    = require("path");
 const crypto  = require("crypto");
+const { scanOptionProperties, prepareText, prepareDocument, compactResult, attributionCoach } = require("../lib/mcp_adapter");
 
 
 const {
@@ -73,9 +74,17 @@ const TOOLS = [
                 text:                 { type: "string",  description: "The academic text or essay to scan." },
                 exclude_bibliography: { type: "boolean", description: "Exclude the References section from scoring." },
                 exclude_quotes:       { type: "boolean", description: "Exclude only quoted text from similarity scoring." }
+                , ...scanOptionProperties
             },
             required: ["text"]
         }
+    },
+    {
+        name: "plag_scan_document",
+        description: "Scans a base64-encoded DOCX or text-based PDF with section-aware exclusions.",
+        inputSchema: { type: "object", properties: { filename: { type: "string" }, content_base64: { type: "string" },
+            skip_title_page: { type: "boolean" }, skip_tables: { type: "boolean" }, skip_code: { type: "boolean" }, skip_appendix: { type: "boolean" },
+            ...scanOptionProperties }, required: ["filename", "content_base64"] }
     },
     {
         name: "plag_scan_file",
@@ -91,8 +100,8 @@ const TOOLS = [
         }
     },
     {
-        name: "plag_paraphrase",
-        description: "Synthesizes and restructures overlapping sentences into 3 distinct, high-integrity academic formulations with formal attribution.",
+        name: "plag_attribution_coach",
+        description: "Explains whether a passage should be quoted, cited, or restated through the student's own analysis; does not rewrite to lower a score.",
         inputSchema: {
             type: "object",
             properties: {
@@ -166,7 +175,11 @@ async function handleToolCall(name, args) {
     for (const [key, value] of Object.entries(args)) {
         const property = tool.inputSchema.properties[key];
         if (!property) throw new Error(`Unknown argument: ${key}`);
-        if (typeof value !== property.type) throw new Error(`Invalid type for ${key}`);
+        const validType = property.type === "array" ? Array.isArray(value)
+            : property.type === "integer" ? Number.isInteger(value)
+            : property.type === "object" ? value && typeof value === "object" && !Array.isArray(value)
+            : typeof value === property.type;
+        if (!validType) throw new Error(`Invalid type for ${key}`);
         if (typeof value === "string" && value.length > MAX_TEXT_CHARS) {
             throw new Error(`${key} exceeds the 100,000 character limit`);
         }
@@ -174,10 +187,19 @@ async function handleToolCall(name, args) {
 
     switch (name) {
         case "plag_scan_text":
-            return await scan(args.text, {
+            { const prepared = prepareText(args.text, args); const result = await scan(prepared.analysisText, {
                 excludeQuotes:       args.exclude_quotes,
-                excludeBibliography: args.exclude_bibliography
-            });
+                excludeBibliography: !!prepared.references || args.exclude_bibliography,
+                styleProfile: args.genre, referenceSources: args.reference_sources
+            }); return compactResult(result, prepared.body, args); }
+
+        case "plag_scan_document": {
+            if (!/^[A-Za-z0-9+/]*={0,2}$/.test(args.content_base64) || args.content_base64.length % 4 !== 0) throw new Error("content_base64 must be valid base64");
+            const prepared = prepareDocument(args.filename, Buffer.from(args.content_base64, "base64"), args);
+            const result = await scan(prepared.analysisText, { excludeBibliography: !!prepared.references,
+                styleProfile: args.genre, referenceSources: args.reference_sources });
+            return compactResult(result, prepared.body, args, prepared.extraction);
+        }
 
         case "plag_scan_file": {
             const text = DocumentExtractor.extractFromFile(args.file_path);
@@ -187,10 +209,8 @@ async function handleToolCall(name, args) {
             });
         }
 
-        case "plag_paraphrase":
-            return AcademicParaphraser.synthesizeSentence(
-                args.sentence, args.source_title, args.source_title
-            );
+        case "plag_attribution_coach":
+            return attributionCoach(args.sentence, args.source_title);
 
         case "plag_academic_coach": {
             const claims = AcademicStudentCoach.scanUnsupportedClaims(args.text);

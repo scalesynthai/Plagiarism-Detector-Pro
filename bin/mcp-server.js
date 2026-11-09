@@ -7,6 +7,8 @@
  */
 
 const readline = require("readline");
+const fs = require("fs");
+const { scanOptionProperties, prepareText, prepareDocument, compactResult, attributionCoach } = require("../lib/mcp_adapter");
 const {
     scan,
     AcademicParaphraser,
@@ -27,6 +29,7 @@ const TOOLS = [
                 exclude_bibliography: { type: "boolean", description: "Exclude the References section from scoring." },
                 exclude_quotes: { type: "boolean", description: "Exclude only quoted text from similarity scoring; citations remain included." },
                 server: { type: "string", description: "Optional remote server endpoint (e.g. https://plag.subba.dev)." }
+                , ...scanOptionProperties
             },
             required: ["text"]
         }
@@ -40,13 +43,15 @@ const TOOLS = [
                 file_path: { type: "string", description: "Absolute or relative path to the manuscript file." },
                 exclude_bibliography: { type: "boolean", description: "Exclude the References section from scoring." },
                 exclude_quotes: { type: "boolean", description: "Exclude only quoted text." }
+                , skip_title_page: { type: "boolean" }, skip_tables: { type: "boolean" }, skip_code: { type: "boolean" }, skip_appendix: { type: "boolean" }
+                , ...scanOptionProperties
             },
             required: ["file_path"]
         }
     },
     {
-        name: "plag_paraphrase",
-        description: "Synthesizes and restructures overlapping sentences into 3 distinct, high-integrity academic formulations with formal attribution (Active Inversion, Methodological, Conceptual).",
+        name: "plag_attribution_coach",
+        description: "Explains whether a passage should be quoted, cited, or restated through the student's own analysis; does not rewrite to lower a score.",
         inputSchema: {
             type: "object",
             properties: {
@@ -167,23 +172,31 @@ async function handleToolCall(name, args) {
     }
     for (const [key, value] of Object.entries(args)) {
         const property = tool.inputSchema.properties[key];
-        if (property && typeof value !== property.type) throw new Error(`Invalid type for ${key}`);
+        if (!property) throw new Error(`Unknown argument: ${key}`);
+        const validType = property.type === "array" ? Array.isArray(value)
+            : property.type === "integer" ? Number.isInteger(value)
+            : property.type === "object" ? value && typeof value === "object" && !Array.isArray(value)
+            : typeof value === property.type;
+        if (!validType) throw new Error(`Invalid type for ${key}`);
     }
     switch (name) {
         case "plag_scan_text":
-            return await scan(args.text, {
+            { const prepared = prepareText(args.text, args); const result = await scan(prepared.analysisText, {
                 excludeQuotes: args.exclude_quotes,
-                excludeBibliography: args.exclude_bibliography,
-                server: args.server
-            });
+                excludeBibliography: !!prepared.references || args.exclude_bibliography,
+                server: args.server, styleProfile: args.genre, referenceSources: args.reference_sources
+            }); return compactResult(result, prepared.body, args); }
 
         case "plag_scan_file": {
-            const text = DocumentExtractor.extractFromFile(args.file_path);
-            return await scan(text, { excludeQuotes: args.exclude_quotes, excludeBibliography: args.exclude_bibliography });
+            const prepared = prepareDocument(args.file_path, fs.readFileSync(args.file_path), args);
+            const result = await scan(prepared.analysisText, { excludeQuotes: args.exclude_quotes,
+                excludeBibliography: !!prepared.references || args.exclude_bibliography,
+                styleProfile: args.genre, referenceSources: args.reference_sources });
+            return compactResult(result, prepared.body, args, prepared.extraction);
         }
 
-        case "plag_paraphrase":
-            return AcademicParaphraser.synthesizeSentence(args.sentence, args.source_title, args.source_title);
+        case "plag_attribution_coach":
+            return attributionCoach(args.sentence, args.source_title);
 
         case "plag_academic_coach": {
             const claims = AcademicStudentCoach.scanUnsupportedClaims(args.text);

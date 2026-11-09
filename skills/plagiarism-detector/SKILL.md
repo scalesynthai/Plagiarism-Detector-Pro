@@ -19,11 +19,8 @@ Scans an essay, manuscript, or paragraph for:
 ### 2. `plag_scan_file` / `plag scan <file_path>`
 Ingests and scans `.docx`, `.pdf`, `.tex`, `.ipynb`, `.md`, and `.txt` files directly from disk.
 
-### 3. `plag_paraphrase` / `plag paraphrase "<sentence>" --source "<title>"`
-Synthesizes and restructures overlapping passages into 3 distinct scholarly formulations:
-1. **Active Inversion** with formal author attribution clause
-2. **Methodological Synthesis** (APA 7th / IEEE standard)
-3. **High-Density Conceptual Restructuring** prioritizing empirical findings over source syntax
+### 3. `plag_attribution_coach` (MCP) / `plag paraphrase "<sentence>" --source "<title>"` (legacy CLI)
+The MCP tool recommends quoting, citing, or adding original analysis and does not rewrite text to lower a detector score. The legacy CLI command remains for compatibility and requires attribution review.
 
 ### 4. `plag_academic_coach` / `plag coach <text>`
 Performs a 3-point academic integrity audit:

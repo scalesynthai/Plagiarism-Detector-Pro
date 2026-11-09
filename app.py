@@ -3,8 +3,13 @@ import logging
 import os
 import io
 import hmac
+import base64
+import hashlib
+import re
+import unicodedata
 import sqlite3
 import zipfile
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 from flask import Flask, request, render_template, jsonify, send_file, make_response, url_for as flask_url_for
@@ -24,6 +29,7 @@ from core.diff_comparator import DraftComparator
 from core.student_coach import AcademicStudentCoach
 from core.writing_cleanup import WritingCleanup
 from core.site_analytics import SiteAnalytics
+from core.vector_engine import VectorSearchEngine
 
 # Configure standard logging
 logging.basicConfig(
@@ -683,6 +689,20 @@ def create_app(config_class: type = Config) -> Flask:
     _MCP_PROTOCOL_VERSIONS = ("2025-06-18", "2025-03-26")
     _MCP_DEFAULT_PROTOCOL_VERSION = "2025-03-26"
 
+    _MCP_SCAN_OPTIONS = {
+        "references_text": {"type": "string", "description": "Reference list used for citation linkage but excluded from similarity scoring."},
+        "include_web": {"type": "boolean", "description": "Send search queries to configured external sources; default false."},
+        "genre": {"type": "string", "enum": ["academic_report", "business_report", "general_essay", "technical_documentation"]},
+        "detail_level": {"type": "string", "enum": ["summary", "standard", "full"], "description": "Defaults to summary."},
+        "page": {"type": "integer", "minimum": 1},
+        "page_size": {"type": "integer", "minimum": 1, "maximum": 50},
+        "fields": {"type": "array", "items": {"type": "string"}, "description": "Optional top-level result fields."},
+        "minimum_match_words": {"type": "integer", "minimum": 4, "maximum": 50},
+        "whitelist_terms": {"type": "array", "items": {"type": "string"}},
+        "reference_sources": {"type": "array", "items": {"type": "object"}, "description": "Cited sources as {title,text}; compared without persisting them."},
+        "export_report": {"type": "boolean", "description": "Include a dated Markdown report."},
+    }
+
     _MCP_TOOLS = [
         {
             "name": "plag_scan_text",
@@ -693,19 +713,37 @@ def create_app(config_class: type = Config) -> Flask:
                     "text":                 {"type": "string",  "description": "The academic text or essay to scan."},
                     "exclude_bibliography": {"type": "boolean", "description": "Exclude the References section from scoring."},
                     "exclude_quotes":       {"type": "boolean", "description": "Exclude only quoted text from similarity scoring."},
-                    "include_web":          {"type": "boolean", "description": "Include web search results (default true)."},
+                    "include_web":          {"type": "boolean", "description": "Include web search results (default false)."},
+                    **_MCP_SCAN_OPTIONS,
                 },
                 "required": ["text"],
             },
         },
         {
-            "name": "plag_paraphrase",
-            "description": "Restructures overlapping sentences into 3 distinct academic formulations with formal attribution (Active Inversion, Methodological, Conceptual).",
+            "name": "plag_scan_document",
+            "description": "Scans an uploaded DOCX or text-based PDF. Content is base64 encoded; title-page, table, code, and appendix blocks can be excluded.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "filename": {"type": "string", "description": "Filename ending in .docx or .pdf."},
+                    "content_base64": {"type": "string", "description": "Base64-encoded document bytes."},
+                    "skip_title_page": {"type": "boolean", "description": "Default true."},
+                    "skip_tables": {"type": "boolean", "description": "Default true."},
+                    "skip_code": {"type": "boolean", "description": "Default true."},
+                    "skip_appendix": {"type": "boolean", "description": "Default true."},
+                    **_MCP_SCAN_OPTIONS,
+                },
+                "required": ["filename", "content_base64"],
+            },
+        },
+        {
+            "name": "plag_attribution_coach",
+            "description": "Explains whether a passage should be quoted, cited, or restated through the student's own analysis. It does not rewrite text to lower a score.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
                     "sentence":     {"type": "string", "description": "The sentence to restructure."},
-                    "source_title": {"type": "string", "description": "Author name or reference publication for citation attribution."},
+                    "source_title": {"type": "string", "description": "Author or publication that should receive attribution."},
                 },
                 "required": ["sentence"],
             },
@@ -757,6 +795,132 @@ def create_app(config_class: type = Config) -> Flask:
         },
     ]
 
+    def _mcp_mixed_script_findings(text):
+        findings = []
+        for match in re.finditer(r"\b[^\W\d_]+\b", text, re.UNICODE):
+            word = match.group(0)
+            has_latin = any("LATIN" in unicodedata.name(ch, "") for ch in word)
+            foreign = [ch for ch in word if any(script in unicodedata.name(ch, "") for script in ("GREEK", "CYRILLIC"))]
+            if has_latin and foreign:
+                findings.append({"word": word, "offset": match.start(), "characters": foreign})
+        return findings
+
+    def _mcp_document_text(document, args):
+        kept, skipped = [], {"title_page": 0, "tables": 0, "code": 0, "appendix": 0, "references": 0}
+        in_appendix = False
+        found_body_heading = document.get("source_format") == "pdf"
+        for block in document.get("blocks", []):
+            value = block.get("text", "")
+            kind = block.get("type", "paragraph")
+            if re.match(r"^\s*(?:appendix|appendices)\b", value, re.I):
+                in_appendix = True
+            if kind == "heading" and re.match(r"^\s*(?:abstract|introduction|background|methods?)\b", value, re.I):
+                found_body_heading = True
+            reason = None
+            if args.get("skip_title_page", True) and ((block.get("page") == 1) or (document.get("source_format") == "docx" and not found_body_heading)):
+                reason = "title_page"
+            elif args.get("skip_tables", True) and kind == "table_cell":
+                reason = "tables"
+            elif args.get("skip_code", True) and kind == "code":
+                reason = "code"
+            elif args.get("skip_appendix", True) and in_appendix:
+                reason = "appendix"
+            elif kind == "reference":
+                reason = "references"
+            if reason:
+                skipped[reason] += 1
+            else:
+                kept.append(value)
+        return "\n\n".join(kept).strip(), skipped
+
+    def _mcp_checker_with_sources(reference_sources):
+        if not reference_sources:
+            return checker
+        isolated = PlagiarismChecker(None, search_timeout=app.config.get("WEB_SEARCH_TIMEOUT", 4))
+        isolated.sources = {key: dict(value) for key, value in checker.sources.items()}
+        for index, source in enumerate(reference_sources[:20]):
+            title, text = source.get("title", ""), source.get("text", "")
+            validate_text(text)
+            if not title.strip() or not text.strip():
+                raise ValueError("Each reference source requires non-empty title and text")
+            words = isolated.tokenize(text)
+            key = f"cited_{index}"
+            isolated.sources[key] = {"filename": title[:160], "filepath": None, "text": text, "words": words,
+                "word_count": len(words), "sentences": isolated.split_into_sentences(text), "tf": isolated.compute_tf(words),
+                "source_type": "user_cited_source", "badge": "User-provided cited source", "url": None}
+        return isolated
+
+    def _mcp_compact_result(analysis, scanned_text, args, extraction=None):
+        minimum = args.get("minimum_match_words", 4)
+        whitelist = {item.casefold() for item in args.get("whitelist_terms", []) if item.strip()}
+        rows = []
+        for row in analysis.get("highlighted_sentences", []):
+            if not row.get("is_plagiarized"):
+                continue
+            words = re.findall(r"\b\w+\b", row.get("text", ""))
+            if len(words) < minimum or (whitelist and all(word.casefold() in whitelist for word in words)):
+                continue
+            item = {key: row.get(key) for key in ("text", "source", "similarity", "url") if row.get(key) is not None}
+            value = row.get("text", "")
+            quoted = bool(row.get("is_quoted") or re.search(r"[\"“”]", value))
+            cited = bool(row.get("has_citation") or re.search(r"\([^)]*\d{4}[^)]*\)", value))
+            item["attribution_status"] = ("properly_attributed" if quoted and cited else
+                "citation_present_review_wording" if cited else "quote_needs_citation" if quoted else "attribution_not_detected")
+            rows.append(item)
+        page, size = args.get("page", 1), args.get("page_size", 10)
+        start = (page - 1) * size
+        citations = analysis.get("citation_analysis") or {}
+        style = analysis.get("style_review") or {}
+        ai = analysis.get("ai_analysis") or {}
+        mixed = _mcp_mixed_script_findings(scanned_text)
+        cited_source_review = []
+        if args.get("reference_sources"):
+            engine = VectorSearchEngine()
+            body_sentences = checker.split_into_sentences(scanned_text)[:50]
+            body_vectors = [(sentence, engine.encode(sentence)) for sentence in body_sentences]
+            for source in args["reference_sources"][:20]:
+                source_sentences = checker.split_into_sentences(source.get("text", ""))[:100]
+                source_vectors = [(sentence, engine.encode(sentence)) for sentence in source_sentences]
+                best = None
+                for body_sentence, body_vector in body_vectors:
+                    for source_sentence, source_vector in source_vectors:
+                        similarity = engine.cosine_distance(body_vector, source_vector)
+                        if best is None or similarity > best["similarity"]:
+                            best = {"similarity": similarity, "draft_passage": body_sentence[:500], "source_passage": source_sentence[:500]}
+                cited_source_review.append({"title": source.get("title"), "closest_passage": best,
+                    "method": "experimental hashed unigram/bigram cosine; review manually and do not treat as proof of paraphrase"})
+        result = {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "summary": {"engine_similarity_percent": analysis.get("overall_similarity", 0), "matched_words": analysis.get("matching_words_count", 0),
+                "eligible_words": analysis.get("total_words", 0), "similarity_band": analysis.get("safeassign_risk"),
+                "citations_detected": citations.get("in_text_citations_count", 0), "unlinked_citations": citations.get("unlinked_citations_count", 0)},
+            "writing_patterns": {"profile": style.get("profile", args.get("genre", "academic_report")),
+                "reliability": ai.get("reliability", "unknown"), "confidence": "limited" if ai.get("reliability") != "standard" else "review multiple categories",
+                "categories": style.get("category_breakdown", []), "note": "Review category evidence; no authorship or AI probability is reported."},
+            "matches": {"page": page, "page_size": size, "total": len(rows), "items": rows[start:start + size]},
+            "homoglyph_review": {"mixed_script_words": mixed, "count": len(mixed), "note": "Standalone Greek/math symbols are not flagged."},
+            "cited_source_review": cited_source_review,
+            "transparency": {"scanned_sha256": hashlib.sha256(scanned_text.encode()).hexdigest(), "characters_scanned": len(scanned_text),
+                "words_scanned": len(scanned_text.split()), "sources_searched": [row.get("filename") for row in analysis.get("sources_breakdown", [])],
+                "scanned_text_start": scanned_text[:500], "scanned_text_end": scanned_text[-500:] if len(scanned_text) > 500 else "",
+                "web_search_enabled": bool(args.get("include_web", False)),
+                "external_data": "Search excerpts may leave the server when web search is enabled; document text remains local otherwise.",
+                "matching": {"engine_minimum_match_words": 4, "reported_minimum_match_words": minimum, "whitelist_terms": sorted(whitelist),
+                    "method": "exact lexical overlap plus an experimental cited-source passage comparison when source text is supplied"}},
+        }
+        if extraction:
+            result["document"] = extraction
+        if args.get("detail_level", "summary") in {"standard", "full"}:
+            result["citation_review"] = citations
+            result["evidence_review"] = analysis.get("evidence_analysis")
+            result["writing_patterns"]["experimental_index"] = style.get("style_pattern_index")
+        if args.get("detail_level") == "full":
+            result["full_analysis"] = analysis
+        if args.get("export_report"):
+            result["report_markdown"] = f"# MCP Academic Review\n\nGenerated: {result['generated_at']}\n\nEngine similarity: {result['summary']['engine_similarity_percent']}%\n\nCitations: {result['summary']['citations_detected']} detected; {result['summary']['unlinked_citations']} unlinked.\n\nChecks: lexical overlap, citation linkage, mixed-script review, writing-pattern categories.\n"
+        fields = args.get("fields")
+        return {key: result[key] for key in fields if key in result} if fields else result
+
     def _mcp_run_tool(name: str, args: dict) -> dict:
         """Execute a named MCP tool synchronously and return its result dict."""
         tool = next((t for t in _MCP_TOOLS if t["name"] == name), None)
@@ -776,17 +940,36 @@ def create_app(config_class: type = Config) -> Flask:
                 raise ValueError(f"'{key}' must be a string")
             if expected == "boolean" and not isinstance(value, bool):
                 raise ValueError(f"'{key}' must be a boolean")
+            if expected == "integer" and (not isinstance(value, int) or isinstance(value, bool)):
+                raise ValueError(f"'{key}' must be an integer")
+            if expected == "array" and not isinstance(value, list):
+                raise ValueError(f"'{key}' must be an array")
+            if "enum" in schema and value not in schema["enum"]:
+                raise ValueError(f"'{key}' has an unsupported value")
+            if expected == "integer" and not schema.get("minimum", value) <= value <= schema.get("maximum", value):
+                raise ValueError(f"'{key}' is outside the supported range")
+            if expected == "array" and len(value) > (20 if key == "reference_sources" else 100):
+                raise ValueError(f"'{key}' contains too many items")
         for key, value in args.items():
             if isinstance(value, str):
-                validate_text(value)
+                if key == "content_base64":
+                    if len(value) > 12 * 1024 * 1024:
+                        raise ValueError("content_base64 exceeds the document upload limit")
+                else:
+                    validate_text(value)
 
         if name == "plag_scan_text":
-            analysis = checker.analyze(
-                args["text"],
+            body_text = args["text"]
+            references = args.get("references_text", "").strip()
+            analysis_text = body_text + ("\n\nReferences\n" + references if references else "")
+            scan_checker = _mcp_checker_with_sources(args.get("reference_sources"))
+            analysis = scan_checker.analyze(
+                analysis_text,
                 include_web_sources=args.get("include_web", False),
                 exclude_quotes=args.get("exclude_quotes", False),
-                exclude_bibliography=args.get("exclude_bibliography", False),
+                exclude_bibliography=bool(references) or args.get("exclude_bibliography", False),
                 private_draft=True,
+                style_profile=args.get("genre", "academic_report"),
             )
             # Attach student coach (mirrors /check route)
             claim_analysis    = analysis.get("claim_analysis") or AcademicStudentCoach.scan_claims(args["text"])
@@ -802,14 +985,38 @@ def create_app(config_class: type = Config) -> Flask:
                 "tone_suggestions_count":   len(tone_suggestions),
                 "thesis_evaluation":        AcademicStudentCoach.evaluate_thesis_abstract(args["text"]),
             }
-            return analysis
+            return _mcp_compact_result(analysis, body_text, args)
 
-        if name == "plag_paraphrase":
-            return AcademicParaphraser.synthesize_sentence(
-                args["sentence"],
-                args.get("source_title"),
-                args.get("source_title"),
-            )
+        if name == "plag_scan_document":
+            filename = args["filename"]
+            if Path(filename).suffix.lower() not in {".docx", ".pdf"}:
+                raise ValueError("MCP document scans accept .docx or .pdf files")
+            try:
+                raw = base64.b64decode(args["content_base64"], validate=True)
+            except (ValueError, TypeError) as exc:
+                raise ValueError("content_base64 must be valid base64") from exc
+            document = extract_document(io.BytesIO(raw), filename)
+            body_text, skipped = _mcp_document_text(document, args)
+            if not body_text:
+                raise ValueError("No scannable body text remained after section exclusions")
+            references = args.get("references_text", "").strip()
+            analysis_text = body_text + ("\n\nReferences\n" + references if references else "")
+            scan_checker = _mcp_checker_with_sources(args.get("reference_sources"))
+            analysis = scan_checker.analyze(analysis_text, include_web_sources=args.get("include_web", False),
+                exclude_bibliography=bool(references), private_draft=True,
+                style_profile=args.get("genre", "technical_documentation"))
+            extraction = {"filename": filename, "format": document.get("source_format"),
+                "blocks_extracted": len(document.get("blocks", [])), "blocks_skipped": skipped,
+                "warnings": document.get("warnings", []), "scanned_text_preview": body_text[:500]}
+            return _mcp_compact_result(analysis, body_text, args, extraction)
+
+        if name == "plag_attribution_coach":
+            source = args.get("source_title") or "the source"
+            return {"passage": args["sentence"], "source": source,
+                    "guidance": ["Use quotation marks and a citation if retaining distinctive wording.",
+                                 "Cite the source when summarizing its finding.",
+                                 "Restate the idea through your own analysis and explain why it supports your argument."],
+                    "note": "This tool does not generate detector-avoidance rewrites."}
 
         if name == "plag_academic_coach":
             claims = AcademicStudentCoach.scan_unsupported_claims(args["text"])

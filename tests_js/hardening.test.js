@@ -89,18 +89,26 @@ const { scan, DocumentExtractor, PlagiarismApiClient, CitationGenerator } = requ
         JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'unknown' }),
         JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'ping' }),
         JSON.stringify({ jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'plag_scan_text', arguments: { text: 123 } } }),
+        JSON.stringify({ jsonrpc: '2.0', id: 4, method: 'tools/call', params: { name: 'plag_scan_text', arguments: {
+            text: 'Smith (2020) reported that measured outcomes increased.',
+            references_text: 'Smith, J. (2020). Measured outcomes. Journal of Testing.'
+        } } }),
     ];
     const child = spawnSync(process.execPath, [path.join(__dirname, '../bin/mcp-server.js')], {
         input: requests.join('\n') + '\n', encoding: 'utf8', timeout: 10000,
     });
     assert.equal(child.status, 0, child.stderr);
     const responses = child.stdout.trim().split('\n').map(JSON.parse);
-    assert.equal(responses.length, 5);
+    assert.equal(responses.length, 6);
     assert.equal(responses[0].error.code, -32700);
     assert.equal(responses[1].error.code, -32600);
     assert.equal(responses.find(r => r.id === 1).error.code, -32601);
     assert.deepEqual(responses.find(r => r.id === 2).result, {});
     assert.equal(responses.find(r => r.id === 3).result.isError, true);
+    const compact = JSON.parse(responses.find(r => r.id === 4).result.content[0].text);
+    assert.ok(compact.summary);
+    assert.ok(compact.transparency);
+    assert.equal(compact.full_analysis, undefined);
     console.log('JavaScript hardening regressions passed.');
 })().catch(error => { console.error(error); process.exitCode = 1; });
 
