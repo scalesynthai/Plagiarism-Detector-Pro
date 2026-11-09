@@ -674,11 +674,14 @@ def create_app(config_class: type = Config) -> Flask:
         }), 200
 
     # ── MCP (Model Context Protocol) HTTP endpoint ───────────────────────────
-    # Implements Streamable HTTP transport (spec 2024-11-05) so Claude Web,
+    # Implements stateless Streamable HTTP transport (MCP 2025-03-26+) so Claude Web,
     # Claude Desktop, Cursor, and any MCP-aware client can call plag tools
     # directly at https://plag.subba.dev/mcp
     # Auth: Bearer token via Authorization or X-Api-Key header.
     # Set MCP_API_KEY env var on the server. Leave blank to disable auth.
+
+    _MCP_PROTOCOL_VERSIONS = ("2025-06-18", "2025-03-26")
+    _MCP_DEFAULT_PROTOCOL_VERSION = "2025-03-26"
 
     _MCP_TOOLS = [
         {
@@ -850,8 +853,11 @@ def create_app(config_class: type = Config) -> Flask:
                     "error": {"code": -32602, "message": "Invalid params"}}
 
         if method == "initialize":
+            requested_version = params.get("protocolVersion")
+            protocol_version = (requested_version if requested_version in _MCP_PROTOCOL_VERSIONS
+                                else _MCP_DEFAULT_PROTOCOL_VERSION)
             return {"jsonrpc": "2.0", "id": rpc_id, "result": {
-                "protocolVersion": "2024-11-05",
+                "protocolVersion": protocol_version,
                 "serverInfo":      {"name": "plagiarism-detector-pro-mcp", "version": APP_VERSION},
                 "capabilities":    {"tools": {}},
             }}
@@ -887,10 +893,12 @@ def create_app(config_class: type = Config) -> Flask:
 
     @app.route("/mcp", methods=["GET", "POST", "OPTIONS"])
     @app.route("/mcp/", methods=["GET", "POST", "OPTIONS"])
+    @app.route("/mcp/health", methods=["GET", "OPTIONS"])
     def mcp_endpoint():
         """
-        MCP Streamable HTTP endpoint (spec 2024-11-05).
-        GET  /mcp  → server info (no auth, liveness probe)
+        Stateless MCP Streamable HTTP endpoint (spec 2025-03-26).
+        GET  /mcp  → 405 (stateless servers do not open an SSE stream)
+        GET  /mcp/health → public server info
         POST /mcp  → JSON-RPC 2.0 (single or batch), requires Bearer token auth
         """
         # CORS preflight
@@ -917,8 +925,14 @@ def create_app(config_class: type = Config) -> Flask:
             resp.headers["Access-Control-Expose-Headers"] = "*"
             return resp
 
-        # GET /mcp — public info, no auth required
+        # Keep ordinary health JSON off the transport URL. Streamable HTTP
+        # clients interpret GET /mcp as a request for a standalone SSE stream.
         if request.method == "GET":
+            if request.path.rstrip("/") == "/mcp":
+                resp = _mcp_json({"error": "Method not allowed",
+                                  "hint": "Use POST for MCP requests or GET /mcp/health for status."}, 405)
+                resp.headers["Allow"] = "POST, OPTIONS"
+                return resp
             base_url = request.base_url
             if base_url.startswith("http://"):
                 base_url = "https://" + base_url[7:]
@@ -926,10 +940,11 @@ def create_app(config_class: type = Config) -> Flask:
                 "status":    "ok",
                 "server":    "plagiarism-detector-pro-mcp",
                 "version":   APP_VERSION,
-                "url":       base_url,
+                "url":       base_url.removesuffix("/health"),
                 "tools":     len(_MCP_TOOLS),
                 "transport": "streamable-http",
-                "spec":      "2024-11-05",
+                "spec":      _MCP_DEFAULT_PROTOCOL_VERSION,
+                "supported_protocol_versions": list(_MCP_PROTOCOL_VERSIONS),
             })
 
         # POST /mcp — authenticate when MCP_API_KEY is set

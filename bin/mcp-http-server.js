@@ -3,7 +3,7 @@
 /**
  * Plagiarism Detector Pro — Personal Remote MCP HTTP Server
  *
- * Transport : Streamable HTTP  (MCP spec 2024-11-05)
+ * Transport : Streamable HTTP  (MCP spec 2025-03-26)
  * Auth      : Bearer token (auto-generated and stored in ~/.plag-mcp.json)
  * Usage     : node bin/mcp-http-server.js
  *             MCP_PORT=3456 MCP_API_KEY=mykey node bin/mcp-http-server.js
@@ -59,6 +59,8 @@ const cfg     = process.env.MCP_API_KEY ? null : loadConfig();
 const API_KEY = process.env.MCP_API_KEY || cfg.api_key;
 const MAX_REQUEST_BYTES = 1024 * 1024;
 const MAX_TEXT_CHARS = 100000;
+const PROTOCOL_VERSIONS = ["2025-06-18", "2025-03-26"];
+const DEFAULT_PROTOCOL_VERSION = "2025-03-26";
 
 // ── MCP Tool Definitions ─────────────────────────────────────────────────────
 const TOOLS = [
@@ -234,10 +236,12 @@ async function routeRpc(request) {
 
     switch (method) {
         case "initialize":
+            const requestedVersion = params && params.protocolVersion;
             return {
                 jsonrpc: "2.0", id,
                 result: {
-                    protocolVersion: "2024-11-05",
+                    protocolVersion: PROTOCOL_VERSIONS.includes(requestedVersion)
+                        ? requestedVersion : DEFAULT_PROTOCOL_VERSION,
                     serverInfo: { name: "plagiarism-detector-pro-mcp", version: PKG.version },
                     capabilities: { tools: {} }
                 }
@@ -287,7 +291,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     // ── Health / info (no auth required) ────────────────────────────────────
-    if (req.method === "GET" && (pathname === "/health" || pathname === "/")) {
+    if (req.method === "GET" && (pathname === "/health" || pathname === "/mcp/health" || pathname === "/")) {
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({
             status:  "ok",
@@ -296,6 +300,12 @@ const server = http.createServer(async (req, res) => {
             tools:   TOOLS.length,
             transport: "streamable-http"
         }));
+        return;
+    }
+
+    if (req.method === "GET" && (pathname === "/mcp" || pathname === "/mcp/")) {
+        res.writeHead(405, { "Content-Type": "application/json", "Allow": "POST, OPTIONS" });
+        res.end(JSON.stringify({ error: "Method not allowed", hint: "Use POST for MCP requests or GET /mcp/health for status." }));
         return;
     }
 
